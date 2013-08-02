@@ -62,9 +62,10 @@ def addElbowFkOffset(ikJnts, handCtl, wristDrv, elbowDrnCons):
     fkOffsetJnts = abRT.duplicateJointHierarchy(ikJnts, [jnt.replace('IKX', 'FKOffset') for jnt in ikJnts], fkOffsetGrp)
     
     # get transforms from IK chain
-    mc.parentConstraint(ikJnts[0], fkOffsetJnts[0])
-    mc.connectAttr(ikJnts[1]+'.tx', fkOffsetJnts[1]+'.tx', f=True)
-    mc.connectAttr(ikJnts[2]+'.tx', fkOffsetJnts[2]+'.tx', f=True)
+    mc.parentConstraint(ikJnts[0], fkOffsetJnts[0]) # position & rotation for shoulder
+    mc.connectAttr(ikJnts[1]+'.tx', fkOffsetJnts[1]+'.tx', f=True) # stretchy for upperArm
+    mc.connectAttr(ikJnts[2]+'.tx', fkOffsetJnts[2]+'.tx', f=True) # stretchy for lowerArm
+    
     
     # add offset rotations from ctrl
     # use orient constraint to avoid gimbal problems
@@ -85,6 +86,24 @@ def addElbowFkOffset(ikJnts, handCtl, wristDrv, elbowDrnCons):
     # remove the old IK target
     mc.parentConstraint(ikJnts[1], elbowDrnCons, e=1, rm=1)
     
+    # add wristFKOffsetCtl
+    wristFKCtl = ru.ctlCurve(prefix_side+'wristFKOffset_ctl', 'circle', 0, (0,0,0), size=2, colorId=22, snap=ikJnts[2], ctlOffsets=['space', 'stretchy', 'IkOri'])
+    mc.parent(wristFKCtl.home, armGrp)
+    abRT.hideAttr(wristFKCtl.crv, ['tx','ty','tz','sx','sy','sz','v'])
+    
+    # wristOffsetCtl is in the FKOffset-elbow space
+    mc.parentConstraint(fkOffsetJnts[1], wristFKCtl.grp['space'])
+    mc.connectAttr(ikJnts[2]+'.tx', wristFKCtl.grp['stretchy']+'.tx', f=True)
+    mc.orientConstraint(handCtl, wristFKCtl.grp['IkOri'])
+    
+    # connect viz (together with elbow)
+    mc.connectAttr(handCtl+'.elbowFkOffsetViz', wristFKCtl.crv+'.v', f=True)
+    
+    #===========================================================================
+    # Final wrist rotation -
+    # 
+    #===========================================================================
+    mc.orientConstraint(wristFKCtl.crv, fkOffsetJnts[2], mo=True) # final rotation for wrist
     
     
 def create_distanceBetween(transA, transB, globalCompensate='Main'):
@@ -132,6 +151,7 @@ def addOnToASRig():
     elbowMdl = 'IKXElbow_L_IKLenght_L'
     wristMdl = 'IKXWrist_L_IKLenght_L'
     addElbowSnap(pvCtl, shoulderGrp, handCtl, elbowMdl, wristMdl)
+    
     # select on the right side:
     pvCtl = 'PoleArm_R'
     shoulderGrp = 'IKOffsetShoulder_R'
@@ -147,6 +167,7 @@ def addOnToASRig():
     wristDrv = 'IKFKAlignedArm_L'
     elbowDrnCons = 'FKIKMixElbow_L_parentConstraint1'
     addElbowFkOffset(ikJnts, handCtl, wristDrv, elbowDrnCons)
+    
     # select IK shoulder, elbow, wrist on right side:
     ikJnts = ['IKXShoulder_R', 'IKXElbow_R', 'IKXWrist_R'] 
     handCtl = 'IKArm_R'
