@@ -2,6 +2,68 @@ import maya.cmds as mc
 import abRiggingTools as abRT
 reload(abRT) # force recompile
 import maya.OpenMaya as om
+from maya.mel import eval as meval
+
+def makeUniformCrv(origCrv, numOfCVs, name):
+    '''
+    Makes a new curve with numOfCVs cvs
+    CVs will be spaced out uniformly along origCrv
+    return new crv
+    '''
+    # make new curve with numOfCVs cvs
+    crv = mc.curve(p=[(pt,pt,pt) for pt in range(numOfCVs)])
+    crv = mc.rename(crv, name+'_crv')
+    
+    # make a motionPath node for each CV
+    for cvId in range(numOfCVs):
+        mp = mc.createNode('motionPath', n=name+'_mp_%d' % cvId)
+        mc.connectAttr(origCrv+'.worldSpace', mp+'.gp', f=True)
+        mc.setAttr(mp+'.u', float(cvId)/(numOfCVs-1))
+        mc.setAttr(mp+'.fm', True)
+        mc.connectAttr(mp+'.ac', crv+'.cp[%d]' % cvId)
+        
+    return crv
+
+def renameEndJnts(jnts, search, replace):
+    '''
+    Rename child joints
+    '''
+    for eachJnt in jnts:
+        childJnts = mc.listRelatives(eachJnt, c=True, type='joint')
+        newName = eachJnt.replace(search, replace)
+        if len(childJnts) == 1:
+            mc.rename(childJnts[0], newName)
+        else:
+            mc.error('There should only be one endJnt per joint')
+            
+
+def cleanDuplicate(targetObj):
+    """
+    arguments:
+    targetObj - name of mesh that you want to duplicate
+    
+    todo:
+    1. check that targetObj is a valid mesh
+    2. currently resets deformer envelopes to 1... need to remember original value?
+    3. cleanup intermediate object(s), possibly by obj export/import.
+    
+    """
+    
+    # get list of deformers on targetObj
+    allDeformers = meval('findRelatedDeformer("%s")'%targetObj)
+    
+    # disable all deformers by setting envelope to 0
+    for eachDfm in allDeformers:
+        print eachDfm
+        mc.setAttr('%s.envelope'%eachDfm, 0)
+    
+    # make duplicate    
+    mc.duplicate(targetObj, n='%s_cleanDuplicate'%targetObj)
+    
+    # re-enable all deformers by setting envelope to 1
+    for eachDfm in allDeformers:
+        mc.setAttr('%s.envelope'%eachDfm, 1)
+
 
 #===============================================================================
 # CONTROL CURVE CLASS
@@ -272,7 +334,7 @@ def alignJointToWorld(jnt, downAxis, downVector, secondaryAxis, secondaryVector)
     
 
 
-def connectVisibilityToggle(targets, control, name):
+def connectVisibilityToggle(targets, control, name, default=True):
     '''
     Connects visibility attributes of targets to control.name attribute
     
@@ -283,7 +345,7 @@ def connectVisibilityToggle(targets, control, name):
         targets = [targets]
     
     # create new attribute
-    mc.addAttr(control, ln=name, at='bool', k=True, dv=True)
+    mc.addAttr(control, ln=name, at='bool', k=True, dv=default)
     
     # connect visibilities
     for eachTarget in targets:
@@ -297,9 +359,15 @@ def connectVisibilityToggle(targets, control, name):
                 mc.connectAttr(control+'.'+name, eachShape+'.lodv', f=True)
         
 
-def parentSnap():
+def parentSnap(child, parent):
     '''
+    parent and set transforms to 0
     '''
+    mc.parent(child, parent)
+    mc.setAttr(child+'.t', 0,0,0)
+    mc.setAttr(child+'.r', 0,0,0)
+    mc.setAttr(child+'.s', 1,1,1)
+    return child
 
 def gPos(point):
     '''
@@ -351,7 +419,7 @@ def attachToMotionPath(crv, uVal, obj, fm):
     
     # connect to obj
     mc.connectAttr(mpNd+'.ac', obj+'.t', f=True)
-    mc.connectAttr(mpNd+'.r', obj+'.r', f=True)
+    #mc.connectAttr(mpNd+'.r', obj+'.r', f=True)
     
     return mpNd
 
