@@ -3,6 +3,44 @@ import abRiggingTools as abRT
 reload(abRT) # force recompile
 import maya.OpenMaya as om
 from maya.mel import eval as meval
+import pymel.core as pm
+
+def getClosestUVOnSurface(surface, point):
+    '''
+    return (u,v) closest to point (x,y,z) on surface
+    '''
+    
+
+
+def makeCrvThroughObjs(objs, name=None, connect=False):
+    '''
+    Makes a new curve with a CV on each obj
+    
+    if connect = True, also connect CV positions
+    
+    Return new crv
+    '''
+    if name is None:
+        name = '_'.join(objs[0].split('_')[:2])
+        
+    # get positions of objs
+    pos = []
+    for eachObj in objs:
+        pos.append(mc.xform(eachObj, q=True, t=True, ws=True))
+    
+    # create curve
+    crv = mc.curve(p=pos)
+    crv = mc.rename(crv, name+'_crv')
+    
+    if connect:
+        # get point from objs to drive curve CVs
+        for obj in objs:
+            pmm = mc.createNode('pointMatrixMult', n=obj+'_pmm_0')
+            mc.connectAttr(obj+'.worldMatrix', pmm+'.inMatrix', f=True)
+            mc.connectAttr(pmm+'.output', crv+'.cp[%d]' % objs.index(obj))
+    
+    return crv
+    
 
 def makeUniformCrv(origCrv, numOfCVs, name):
     '''
@@ -469,7 +507,8 @@ def spaceSwitchSetup(drivers, driven, controller, cType, niceNames):
         mc.addAttr(controller, ln=aTitle[cType]+niceName, nn=niceName, at='float', min=0, max=1, dv=0, k=True)
         mc.connectAttr(controller + '.' + aTitle[cType]+niceName, cons+'.'+alias, f=True)
     
-    # set first target weight to 1
+    # set first target weight to 1 by default
     mc.setAttr(controller+'.'+aTitle[cType]+niceNames[0], 1)
+    mc.addAttr(controller+'.'+aTitle[cType]+niceNames[0], e=True, dv=1)
     
     return cons

@@ -6,6 +6,81 @@ reload(cn)
 
 import maya.cmds as mc
 
+def addVolume(curve, stretchAmts, name=None):
+    '''
+    add volume preservation for squash & stretch controls
+    
+    stretchAmts is a dictionary that defines default stretchy values for each CtlCurve-
+    {'A_ctl', 1.1,
+    'B_ctl', 1.3,
+    ...}
+    
+    attributes for adjusting strechy values are added to the curve
+    if name is None, nodes will be named based on curve prefix
+    '''
+    
+    if name is None:
+        name = '_'.join(curve.split('_')[:2])
+    
+    # add attributes to curve
+    # for user to adjust stretchy behaviour
+    mc.addAttr(curve, ln='volume', at='double', dv=1, min=0, max=1, k=True)
+    
+    mc.addAttr(curve, ln='stretchAmts', at='double', k=True)
+    mc.setAttr(curve+'.stretchAmts', l=True)
+    for ctl, val in stretchAmts.items():
+        mc.addAttr(curve, ln=ctl+'_stAmt', at='double', dv=val, k=True)
+        
+    # attributes for debugging
+    mc.addAttr(curve, ln='debug', at='double', k=True)
+    mc.setAttr(curve+'.debug', l=True)
+    mc.addAttr(curve, ln='stretchRatio', at='double', k=True)
+    mc.addAttr(curve, ln='inverseStretch', at='double', k=True)
+    
+    #===========================================================================
+    # get curve information
+    #===========================================================================
+    cif = mc.createNode('curveInfo', n='spineIkCrv_cif')
+    mc.connectAttr(curve+'.local', cif+'.inputCurve', f=True)
+    
+    # stretchRatio = arcLength / originalLength
+    mdl = mc.createNode('multiplyDivide', n='spineIkCrv_md')
+    mc.setAttr(mdl+'.input2X', mc.getAttr(cif+'.arcLength'))
+    mc.connectAttr(cif+'.arcLength', mdl+'.input1X', f=True)
+    mc.setAttr(mdl+'.op', 2)
+    
+    #===========================================================================
+    # connect stretchShape values to Y/Z scale of MPs
+    #===========================================================================
+    # get sqrt(stretchRatio)
+    sqrtMd = mc.createNode('multiplyDivide', n='sqrtStretch_md')
+    mc.connectAttr(mdl+'.ox', sqrtMd+'.input1X', f=True)
+    mc.setAttr(sqrtMd+'.input2X', 0.5)
+    mc.setAttr(sqrtMd+'.op', 3)
+    
+    # get invScale = 1/sqrt(stretchRatio)
+    invertMd = mc.createNode('multiplyDivide', n='stretchInvert_md')
+    mc.setAttr(invertMd+'.input1X', 1)
+    mc.connectAttr(sqrtMd+'.ox', invertMd+'.input2X', f=True)
+    mc.setAttr(invertMd+'.op', 2)
+    
+    # connect stretch values to curve, just make it easier to see
+    mc.connectAttr(mdl+'.ox', curve+'.stretchRatio', f=True)
+    mc.connectAttr(invertMd+'.ox', curve+'.inverseStretch', f=True)
+    
+    # MP.scaleY/Z = pow(invScale, ssVal)
+    for ctl, val in stretchAmts.items():
+        mdPow = mc.createNode('multiplyDivide', n=ctl+'_ss_md')
+        mc.connectAttr(curve + '.' + ctl + '_stAmt', mdPow+'.input2X', f=True)
+        mc.connectAttr(invertMd+'.outputX', mdPow+'.input1X', f=True)
+        mc.setAttr(mdPow+'.op', 3)
+        # connect to space_grp above ctl
+        # assuming that we are using ctlCurve obj, so the name has a _space suffix
+        mc.connectAttr(mdPow+'.outputX', ctl+'_space.sy', f=True)
+        mc.connectAttr(mdPow+'.outputX', ctl+'_space.sz', f=True)
+    
+    
+
 def addMidMP(startMP, endMP, startAimMP, endAimMP, aimVector, upVector, name):
     '''
     add a midLoc positioned between startMP and endMP

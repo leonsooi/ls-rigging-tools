@@ -2,6 +2,8 @@ import maya.cmds as mc
 import lsRigTools as rt
 import lsCreateNode as cn
 import lsMotionSystems as ms
+import lsControlSystems as cs
+import abRiggingTools as abRT
 reload(ms)
 reload(cn)
 reload(rt)
@@ -41,7 +43,7 @@ def addJntsOnSurfIntersection(surf1, surf2, jntsNum):
         
     # normal constraint to surf1
     for loc in locs:
-        mc.normalConstraint(surf1, loc, aim=(1,0,0))
+        mc.normalConstraint(surf2, loc, aim=(1,0,0))
     
     jnts = []
     # add joints under locators
@@ -157,3 +159,99 @@ def rigEyes():
     tipTangentMP = ms.addTangentMPTo('RT_eyeTip_mPt', 'RT_eyeBase_mPt', 'z', default=0.2, reverse=True)
     midMP = ms.addMidMP(baseTangentMP, tipTangentMP, 'RT_eyeBase_mPt', 'RT_eyeTip_mPt', (0,0,1), (0,1,0), 'RT_mid_mPt')
     crv = ms.createSplineMPs(('RT_eyeBase_mPt', baseTangentMP, midMP, tipTangentMP, 'RT_eyeTip_mPt'), 8, 'RT_eyeSpine', (0,3,0))
+    
+    #===========================================================================
+    # add IK offset ctrls to eyeball
+    #===========================================================================
+    lfMps = mc.ls(sl=True)
+    ctls = []
+    
+    # create left controls
+    for ctlId in range(0,len(lfMps)):
+        ctl = cs.ctlCurve(lfMps[ctlId].replace('_MPJnt_', '_ctl_'), 'circle', 0, size=6, snap=lfMps[ctlId])
+        ctl.setSpaces([lfMps[ctlId]], ['Eye'])
+        ctls.append(ctl)
+        
+    rtMps = mc.ls(sl=True)
+    ctls = []
+    
+    # create right controls
+    for ctlId in range(0,len(rtMps)):
+        ctl = cs.ctlCurve(rtMps[ctlId].replace('_MPJnt_', '_ctl_'), 'circle', 0, size=6, snap=rtMps[ctlId])
+        ctl.setSpaces([rtMps[ctlId]], ['Eye'])
+        ctls.append(ctl)
+        
+    #===========================================================================
+    # Add stretchy volume for eyeBall spine
+    #===========================================================================
+    
+    stretchAmts = {'LT_eyeSpine_ctl_0':10,
+                'LT_eyeSpine_ctl_1':9,
+                'LT_eyeSpine_ctl_2':8,
+                'LT_eyeSpine_ctl_3':5,
+                'LT_eyeSpine_ctl_4':3,
+                'LT_eyeSpine_ctl_5':1.25,
+                'LT_eyeSpine_ctl_6':0,
+                'LT_eyeSpine_ctl_7':-1}
+    
+    ms.addVolume('LT_eyeSpine_uniform_crv_crv', stretchAmts)
+    
+    stretchAmts = {'RT_eyeSpine_ctl_0':10,
+                'RT_eyeSpine_ctl_1':9,
+                'RT_eyeSpine_ctl_2':8,
+                'RT_eyeSpine_ctl_3':5,
+                'RT_eyeSpine_ctl_4':3,
+                'RT_eyeSpine_ctl_5':1.25,
+                'RT_eyeSpine_ctl_6':0,
+                'RT_eyeSpine_ctl_7':-1}
+    
+    ms.addVolume('RT_eyeSpine_uniform_crv_crv', stretchAmts)
+    #===========================================================================
+    # Add control lattice to eyeBall nurbs
+    #===========================================================================
+    
+    # Create lattice - hard coded to 8 ctls in Z
+    eyeSphere = 'LT_eyeBallIntersect_srf_0'
+    prefix = 'LT_eyeBallIntersect_'
+    ffd, lat, latBase = mc.lattice(eyeSphere, n=prefix+'ffd', oc=True, dv=(4,4,8))
+    grp = abRT.groupFreeze(lat)
+    rt.transferAttrValues(lat+'.s', grp+'.s', False)
+    mc.setAttr(lat+'.s',1,1,1)
+    mc.parent(latBase, grp)
+    
+    # Create lattice - hard coded to 8 ctls in Z
+    eyeSphere = 'RT_eyeBallIntersect_srf_0'
+    prefix = 'RT_eyeBallIntersect_'
+    ffd, lat, latBase = mc.lattice(eyeSphere, n=prefix+'ffd', oc=True, dv=(4,4,8))
+    grp = abRT.groupFreeze(lat)
+    rt.transferAttrValues(lat+'.s', grp+'.s', False)
+    mc.setAttr(lat+'.s',1,1,1)
+    mc.parent(latBase, grp)
+    
+    # DO THIS FOR LEFT AND RIGHT SIDES
+    
+    # Create joints under each ctl
+    ctls = mc.ls(os=True)
+    jnts = []
+    for eachCtl in ctls:
+        mc.select(cl=True)
+        jnt = mc.joint(n=eachCtl.replace('_ctl', '_jnt'))
+        rt.parentSnap(jnt, eachCtl)
+        jnts.append(jnt)
+        mc.setAttr(jnt+'.radius', 3)
+        mc.setAttr(jnt+'.jointOrient', 0,0,0)
+        
+    # Weight joints to lattice
+    skn = mc.skinCluster(jnts, lat, name=lat+'_skn')[0]
+    for jnt in jnts:
+        i = jnts.index(jnt)
+        mc.skinPercent(skn, lat+'.pt[*][*][%d]'%i, tv=((jnt, 1)))
+
+def eyeRigFixes():
+    # Fix normal constraint to locators
+    selLocs = mc.ls(sl=True)
+    target = 'CT_eyeBallHeadIntersecter_srf_0'
+    zeroTarget = 'RT_eyeBallIntersect_srf_0'
+    for eachLoc in selLocs:
+        cons = mc.normalConstraint(target, eachLoc)
+        mc.normalConstraint(zeroTarget, eachLoc, e=True, w=0)
