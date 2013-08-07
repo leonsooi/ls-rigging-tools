@@ -1,9 +1,7 @@
 import maya.cmds as mc
 import abRiggingTools as abRT
 reload(abRT) # force recompile
-import maya.OpenMaya as om
 from maya.mel import eval as meval
-import pymel.core as pm
 
 def getClosestUVOnSurface(surface, point):
     '''

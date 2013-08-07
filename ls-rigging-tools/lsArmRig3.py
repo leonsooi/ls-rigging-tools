@@ -5,12 +5,22 @@ import abRiggingTools as abRT
 reload(abRT)
 import lsRigTools as rt
 reload(rt)
+import lsControlSystems as cs
+reload(cs)
 
-def addElbowSnap(pvCtl, shoulderGrp, handCtl, elbowMdl, wristMdl):
+"""
+lsArmRig v0.0.3
+
+Updates:
+1. FKElbowOffset is parented to PV control, like the JS rig. This is to avoid a cycle when handRoll is used.
+2. Using new lsControlSystems module
+"""
+
+def addElbowSnap(pvCtl, shoulderGrp, handCtl, handIkH, elbowMdl, wristMdl, stretchyRange):
     '''
     '''
     elbowDistPlug = create_distanceBetween(shoulderGrp, pvCtl)
-    wristDistPlug = create_distanceBetween(pvCtl, handCtl)
+    wristDistPlug = create_distanceBetween(pvCtl, handIkH)
     
     initElbowTx = mc.getAttr(elbowMdl+'.input2X')
     initWristTx = mc.getAttr(wristMdl+'.input2X')
@@ -40,7 +50,11 @@ def addElbowSnap(pvCtl, shoulderGrp, handCtl, elbowMdl, wristMdl):
     mc.connectAttr(elbowBlend+'.output', elbowMdl+'.input2X', f=True)
     mc.connectAttr(wristBlend+'.output', wristMdl+'.input2X', f=True)
     
-def addElbowFkOffset(ikJnts, handCtl, wristDrv, elbowDrnCons):
+    # when elbowSnap is 0, stretchMax is 10
+    # when elbowSnap is 1, stretchMax is 0
+    rt.connectSDK(pvCtl+'.elbowSnap', stretchyRange+'.maxX', {0:1,1:0})
+    
+def addElbowFkOffset(pvCtl, ikJnts, handCtl, handIkH, wristDrv, elbowDrnCons):
     '''
     ikJnts - (shoulder, elbow, wrist)
     '''
@@ -48,35 +62,62 @@ def addElbowFkOffset(ikJnts, handCtl, wristDrv, elbowDrnCons):
     
     armGrp = mc.group(em=True, n=prefix_side+'armGrp')
     
-    elbowFKCtl = ru.ctlCurve(prefix_side+'elbowFKOffset_ctl', 'circle', 0, (0,0,0), size=3, colorId=22, snap=ikJnts[1], ctlOffsets=['space'])
+    """
+    NOT NEEDED - 
+    Wrist control will be directed controlled by pvCtl
+    
+    elbowFKCtl = cs.ctlCurve(prefix_side+'elbowFKOffset_ctl', 'circle', 0, (0,0,0), size=3, colorId=22, snap=pvCtl)
     mc.parent(elbowFKCtl.home, armGrp)
     abRT.hideAttr(elbowFKCtl.crv, ['tx','ty','tz','sx','sy','sz','v'])
     
-    # elbowOffsetCtl is in the IK-elbow space
-    mc.parentConstraint(ikJnts[1], elbowFKCtl.grp['space'])
-    
-    # connect viz
-    mc.addAttr(handCtl, ln='elbowFkOffsetViz', at='bool', dv=False, k=True)
-    mc.connectAttr(handCtl+'.elbowFkOffsetViz', elbowFKCtl.crv+'.v', f=True)
-    
-    # duplicate joint chain
+    # elbowOffsetCtl is in the pvCtl space
+    # mc.parentConstraint(ikJnts[1], elbowFKCtl.grp['space'])
+    elbowFKCtl.setSpaces([pvCtl], ['PoleVector'])
+    """
+
+    # duplicate joint chain (ikJnts[1:]) don't need the shoulder
     fkOffsetGrp = mc.group(em=True, n=prefix_side+'armFkOffset_grp', p=armGrp)
-    fkOffsetJnts = abRT.duplicateJointHierarchy(ikJnts, [jnt.replace('IKX', 'FKOffset') for jnt in ikJnts], fkOffsetGrp)
+    fkOffsetJnts = abRT.duplicateJointHierarchy(ikJnts[1:], [jnt.replace('IKX', 'FKOffset') for jnt in ikJnts[1:]], fkOffsetGrp)
     
+    '''
     # get transforms from IK chain
     mc.parentConstraint(ikJnts[0], fkOffsetJnts[0]) # position & rotation for shoulder
     mc.connectAttr(ikJnts[1]+'.tx', fkOffsetJnts[1]+'.tx', f=True) # stretchy for upperArm
     mc.connectAttr(ikJnts[2]+'.tx', fkOffsetJnts[2]+'.tx', f=True) # stretchy for lowerArm
+    '''
     
+    # get offset rotations & rotations from ctrl
+    pos = mc.xform(pvCtl, q=True, ws=True, t=True)
+    mc.xform(fkOffsetJnts[0], t=pos, ws=True)
+    # abRT.snapToPosition(elbowFKCtl.crv, fkOffsetJnts[0])
+    mc.setAttr(fkOffsetJnts[0]+'.jointOrient', 0,0,0)
+    mc.setAttr(fkOffsetJnts[0]+'.ry', 180)
+    mc.setAttr(fkOffsetJnts[1]+'.jointOrient', 0,0,0)
+    mc.setAttr(fkOffsetJnts[1]+'.r', 0,0,0)
+    mc.parentConstraint(pvCtl, fkOffsetJnts[0], mo=True)
     
-    # add offset rotations from ctrl
-    # use orient constraint to avoid gimbal problems
-    mc.orientConstraint(elbowFKCtl.crv, fkOffsetJnts[1])
+    # unlock rotations for pvCtl, so that we can rotate the elbow
+    mc.setAttr(pvCtl+'.rx', l=False, k=True)
+    mc.setAttr(pvCtl+'.ry', l=False, k=True)
+    mc.setAttr(pvCtl+'.rz', l=False, k=True)
     
+    """
+    NOT NEEDED - 
+    since FKOffset will drive the Hand
+    the Hand will drive the ikHandle
+    the ikHandle drive the ikJoints
+    Therefore, the deformation system should still follow the ikJoints
+    
+    #===========================================================================
+    # REPLACE IK DRIVERS WITH FKOFFSET DRIVERS
+    #===========================================================================
+    
+    # 1. WRIST DRV (END OF CHAIN)
     # wristDrv = IKFKAlignedArm_L is responsible for driving the endLoc of the bendyCrv
     # therefore, reparent from IKWrist to FKOffsetWrist
     mc.parent(wristDrv, fkOffsetJnts[2])
     
+    # 2. ELBOW DRV (START OF CHAIN)
     # elbowDrvCons is responsible for driving the startLoc of the bendyCrv
     mc.parentConstraint(fkOffsetJnts[1], elbowDrnCons)
     wal = mc.parentConstraint(elbowDrnCons, q=1, wal=1)
@@ -87,15 +128,24 @@ def addElbowFkOffset(ikJnts, handCtl, wristDrv, elbowDrnCons):
     mc.connectAttr(inConns[0], elbowDrnCons+'.'+wal[2], f=True)
     # remove the old IK target
     mc.parentConstraint(ikJnts[1], elbowDrnCons, e=1, rm=1)
+    """
     
     # add wristFKOffsetCtl
-    wristFKCtl = ru.ctlCurve(prefix_side+'wristFKOffset_ctl', 'circle', 0, (0,0,0), size=2, colorId=22, snap=ikJnts[2], ctlOffsets=['space', 'stretchy', 'IkOri'])
+    wristFKCtl = cs.ctlCurve(prefix_side+'wristFKOffset_ctl', 'circle', 0, (0,0,0), size=2, colorId=22, snap=fkOffsetJnts[1], ctlOffsets=['stretchy', 'IkOri'])
     mc.parent(wristFKCtl.home, armGrp)
     abRT.hideAttr(wristFKCtl.crv, ['tx','ty','tz','sx','sy','sz','v'])
     
     # wristOffsetCtl is in the FKOffset-elbow space
-    mc.parentConstraint(fkOffsetJnts[1], wristFKCtl.grp['space'])
-    mc.connectAttr(ikJnts[2]+'.tx', wristFKCtl.grp['stretchy']+'.tx', f=True)
+    # mc.parentConstraint(fkOffsetJnts[1], wristFKCtl.grp['space'])
+    wristFKCtl.setSpaces([fkOffsetJnts[0]], ['Elbow'])
+    
+    # length for lower arm
+    mc.addAttr(pvCtl, ln='length', at='double', dv=0, k=True)
+    mc.connectAttr(pvCtl+'.length', wristFKCtl.grp['stretchy']+'.tx', f=True)
+    
+    """
+    NOT NEEDED ANYMORE-
+    It will just follow orientation of FKOffsetElbow
     
     # wristOffsetCtl's align can be switched between parent (FKOffset) or IKHand
     # place a group aligned properly to hand under IKHand for better orientConstraint (since IKHand is in world-space orientation)
@@ -103,15 +153,27 @@ def addElbowFkOffset(ikJnts, handCtl, wristDrv, elbowDrnCons):
     rt.parentSnap(IkHandAlignTarget, wristFKCtl.crv)
     mc.parent(IkHandAlignTarget, handCtl)
     rt.spaceSwitchSetup([IkHandAlignTarget, elbowFKCtl.crv], wristFKCtl.grp['IkOri'], wristFKCtl.crv, 'orientConstraint', ['IkHand','FkElbow'])
+    """
     
-    # connect viz (together with elbow)
-    mc.connectAttr(handCtl+'.elbowFkOffsetViz', wristFKCtl.crv+'.v', f=True)
-    
-    #===========================================================================
-    # Final wrist rotation -
-    # 
-    #===========================================================================
-    mc.orientConstraint(wristFKCtl.crv, fkOffsetJnts[2], mo=True) # final rotation for wrist
+    # create group to blend between IK & FKOffset
+    blendGrp = mc.group(em=True, n=handCtl+'-IKFKOffsetBlend_grp', p=armGrp)
+    abRT.snapToPosition(handCtl, blendGrp)
+    fkOffsetWristTgt = mc.group(em=True, n=wristFKCtl.crv+'_spaceTgt')
+    abRT.snapToPosition(handCtl, fkOffsetWristTgt)
+    mc.parent(fkOffsetWristTgt, wristFKCtl.crv)
+    mc.setAttr(fkOffsetWristTgt+'.t', 0,0,0)
+    pCons = mc.parentConstraint(handCtl, fkOffsetWristTgt, blendGrp)[0]
+    wal = mc.parentConstraint(pCons, q=True, wal=True)
+        
+    # connect blend for fkOffset (together with elbow)
+    mc.addAttr(pvCtl, ln='elbowFkOffsetViz', at='double', dv=0, min=0, max=1, k=True)
+    mc.connectAttr(pvCtl+'.elbowFkOffsetViz', wristFKCtl.crv+'.v', f=True)
+    rev = mc.createNode('reverse', n=pvCtl+'_elbowFkOffsetViz_rev')
+    mc.connectAttr(pvCtl+'.elbowFkOffsetViz', rev+'.inputX', f=True)
+    mc.connectAttr(rev+'.outputX', pCons+'.'+wal[0], f=True)
+    mc.connectAttr(pvCtl+'.elbowFkOffsetViz', pCons+'.'+wal[1], f=True)
+
+    mc.parentConstraint(wristFKCtl.crv, fkOffsetJnts[1], mo=True) # final rotation & position for wristOffset
     
     
 def create_distanceBetween(transA, transB, globalCompensate='Main'):
@@ -156,29 +218,37 @@ def addOnToASRig():
     pvCtl = 'PoleArm_L'
     shoulderGrp = 'IKOffsetShoulder_L'
     handCtl = 'IKArm_L'
+    handIkH = 'IKXArmHandle_L'
     elbowMdl = 'IKXElbow_L_IKLenght_L'
     wristMdl = 'IKXWrist_L_IKLenght_L'
-    addElbowSnap(pvCtl, shoulderGrp, handCtl, elbowMdl, wristMdl)
+    stretchyRange = 'IKSetRangeStretchArm_L'
+    addElbowSnap(pvCtl, shoulderGrp, handCtl, handIkH, elbowMdl, wristMdl, stretchyRange)
     
     # select on the right side:
     pvCtl = 'PoleArm_R'
     shoulderGrp = 'IKOffsetShoulder_R'
     handCtl = 'IKArm_R'
+    handIkH = 'IKXArmHandle_R'
     elbowMdl = 'IKXElbow_R_IKLenght_R'
     wristMdl = 'IKXWrist_R_IKLenght_R'
-    addElbowSnap(pvCtl, shoulderGrp, handCtl, elbowMdl, wristMdl)
+    stretchyRange = 'IKSetRangeStretchArm_R'
+    addElbowSnap(pvCtl, shoulderGrp, handCtl, handIkH, elbowMdl, wristMdl, stretchyRange)
     
     # ADD ELBOW FKOFFSET
     # select IK shoulder, elbow, wrist on left side:
+    pvCtl = 'PoleArm_L'
     ikJnts = ['IKXShoulder_L', 'IKXElbow_L', 'IKXWrist_L']
     handCtl = 'IKArm_L'
+    handIkH = 'IKXArmHandle_L'
     wristDrv = 'IKFKAlignedArm_L'
     elbowDrnCons = 'FKIKMixElbow_L_parentConstraint1'
-    addElbowFkOffset(ikJnts, handCtl, wristDrv, elbowDrnCons)
+    addElbowFkOffset(pvCtl, ikJnts, handCtl, handIkH, wristDrv, elbowDrnCons)
     
     # select IK shoulder, elbow, wrist on right side:
+    pvCtl = 'PoleArm_R'
     ikJnts = ['IKXShoulder_R', 'IKXElbow_R', 'IKXWrist_R'] 
     handCtl = 'IKArm_R'
+    handIkH = 'IKXArmHandle_R'
     wristDrv = 'IKFKAlignedArm_R'
     elbowDrnCons = 'FKIKMixElbow_R_parentConstraint1'
-    addElbowFkOffset(ikJnts, handCtl, wristDrv, elbowDrnCons)
+    addElbowFkOffset(pvCtl, ikJnts, handCtl, handIkH, wristDrv, elbowDrnCons)

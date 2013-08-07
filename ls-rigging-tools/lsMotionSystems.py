@@ -6,6 +6,139 @@ reload(cn)
 
 import maya.cmds as mc
 
+
+def placePivotsForReverseRoll(baseJnt, bendPos=(0,0,0), leftPos=(0,0,0), rightPos=(0,0,0)):
+    '''
+    creates bendPivot, leftPivot, rightPivot
+    to be adjusted manually
+    '''
+    bendPivot = mc.spaceLocator(n=baseJnt+'_bendPivot_loc')[0]
+    rt.parentSnap(bendPivot, baseJnt)
+    mc.setAttr(bendPivot+'.t', *bendPos)
+    
+    leftPivot = mc.spaceLocator(n=baseJnt+'_leftPivot_loc')[0]
+    rt.parentSnap(leftPivot, baseJnt)
+    mc.setAttr(leftPivot+'.t', *leftPos)
+    
+    rightPivot = mc.spaceLocator(n=baseJnt+'_rightPivot_loc')[0]
+    rt.parentSnap(rightPivot, baseJnt)
+    mc.setAttr(rightPivot+'.t', *rightPos)
+    
+    return bendPivot, leftPivot, rightPivot
+
+    
+
+def addReverseRoll(jnts, bendPivot, leftPivot, rightPivot):
+    '''
+    add reverse roll to hand or foot setups
+    
+    jnts - 
+    [base,
+    [digitBase, digitEnd],
+    ...
+    ]
+    
+    digitBase joints will be parentConstrained to the new "stableDigitJoints" that sticks with the IK handles
+    (so you should pass in an offset grp above the actual joint)
+    
+    ***
+    ASSUME ONE SPLIT JOINT BETWEEN BASE AND DIGIT 
+    TO BE CUSTOMIZED
+    ***
+    
+    returns rollGrp, baseJnt
+    
+    EXAMPLE USE ON HAND:
+    rollGrp (TRS, and attributes Bend & Side) should be driven by Ik/FKHand
+    rollLocs rotations are driven by attributes on the Hand
+    baseStableJnt is a child of the rollLocs, and therefore rotate with pivots at the rollLocs
+    baseStableJnt drives the child of Ik/FkHand
+    
+    '''
+    
+    #===========================================================================
+    # BUILD DRIVER JOINT CHAIN
+    #===========================================================================
+    
+    baseJnt = jnts[0]
+    digitJnts = jnts[1:]
+    basePos = mc.xform(baseJnt, q=True, t=True, ws=True)
+    
+    # base joint
+    mc.select(cl=True)
+    baseStableJnt = mc.joint(n=baseJnt+'_stable')
+    rt.parentSnap(baseStableJnt, baseJnt)
+    mc.setAttr(baseStableJnt+'.jointOrient', 0,0,0)
+    mc.parent(baseStableJnt, w=True)
+    
+    ikHs = []
+    
+    # digit joints
+    for base, tip in digitJnts:
+        
+        #=======================================================================
+        # MAKE JOINTS
+        #=======================================================================
+        
+        mc.select(cl=True)
+        
+        # split joint
+        digitPos = mc.xform(base, q=True, t=True, ws=True)
+        # get midPoint between base to digitBase
+        midPoint = [(b + d)/2 for b, d in zip(basePos, digitPos)]
+        splitJnt = mc.joint(p=midPoint, n=base+'_mid')
+        
+        # digit base jnt
+        digitBaseJnt = mc.joint(p=digitPos, n=base+'_stable')
+        
+        # digit end jnt
+        tipPos = mc.xform(tip, q=True, t=True, ws=True)
+        digitEndJnt = mc.joint(p=tipPos, n=base+'_stableTip')
+        
+        # orient joint chain
+        mc.joint(splitJnt, oj='xyz', ch=True, sao='yup', e=True)
+        mc.setAttr(digitEndJnt+'.jointOrient', 0,0,0)
+        
+        mc.parent(splitJnt, baseStableJnt)
+        
+        #=======================================================================
+        # MAKE IKHANDLE
+        #=======================================================================
+        
+        ikH = mc.ikHandle(solver='ikSCsolver', n=base+'_ikH', sj=digitBaseJnt, ee=digitEndJnt)[0]
+        ikHs.append(ikH)
+        
+        #=======================================================================
+        # PARENT CONSTRAINT original joints to stable joints
+        #=======================================================================
+        mc.parentConstraint(digitBaseJnt, base, mo=True)
+    
+    ikHdlGrp = mc.group(ikHs, n=baseJnt+'reverseRoll_ikHdl_grp')
+    
+    # parent baseStableJnt under locators to make multiple pivots
+    
+    rollGrp = abRT.groupFreeze(baseStableJnt)
+    mc.parent(bendPivot, rollGrp)
+    mc.parent(leftPivot, bendPivot)
+    mc.parent(rightPivot, leftPivot)
+    mc.parent(baseStableJnt, rightPivot)
+    mc.parent(ikHdlGrp, rollGrp)
+    
+    # hide locators for debugging
+    rt.connectVisibilityToggle([bendPivot, leftPivot, rightPivot], rollGrp, 'debugPivotLocs', False)
+    
+    # add attributes for controlling bend and side-to-side
+    mc.addAttr(rollGrp, ln='bend', at='double', min=-10, max=10, dv=0, k=True)
+    mc.addAttr(rollGrp, ln='side', at='double', min=-10, max=10, dv=0, k=True)
+    
+    rt.connectSDK(rollGrp+'.bend', bendPivot+'.rz', {-10:90, 10:-90})
+    rt.connectSDK(rollGrp+'.side', leftPivot+'.rx', {0:0, 10:-90})
+    rt.connectSDK(rollGrp+'.side', rightPivot+'.rx', {0:0, -10:90})
+            
+    return rollGrp, baseStableJnt
+    
+
+
 def addVolume(curve, stretchAmts, name=None):
     '''
     add volume preservation for squash & stretch controls
