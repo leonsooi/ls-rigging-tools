@@ -412,7 +412,7 @@ def gPos(point):
     return point.x, point.y, point.z
 
 
-def alignOnMotionPath(crv, uVal, obj, worldUpMatrix, fm, fa=0, ua=2, wut=1, wu=(0,0,1)):
+def alignOnMotionPath(crv, uVal, obj, worldUpMatrix, fm, fa=0, ua=2, wut=1, wu=(0,0,1), **kwargs):
     '''
     Creates motion path node and sets up connections for alignment (position & rotation)
     
@@ -438,6 +438,10 @@ def alignOnMotionPath(crv, uVal, obj, worldUpMatrix, fm, fa=0, ua=2, wut=1, wu=(
     # connect to obj
     mc.connectAttr(mpNd+'.ac', obj+'.t', f=True)
     mc.connectAttr(mpNd+'.r', obj+'.r', f=True)
+    
+    # more attrs to set
+    for attr, val in kwargs.items():
+        mc.setAttr(mpNd+'.'+attr, val)
     
     return mpNd
 

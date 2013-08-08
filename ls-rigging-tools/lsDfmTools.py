@@ -54,15 +54,14 @@ def mirrorClusterWeightOnSelVerts(srcClus, destClus, symTable):
     for eachVert in selVertsId:
         if eachVert in symTable:
             mirrorClusterWeightOnVert(srcClus, destClus, symTable, eachVert)
-    
-def getClusterFromSelection():
+
+def getClusterFromTransform(transform):
     '''
     return name of cluster deformer from selected transform
     '''
-    sel = mc.ls(sl=1)[0]
-    dfm = mc.listConnections(sel+'.worldMatrix', type='cluster', destination=True)[0]
+    dfm = mc.listConnections(transform+'.worldMatrix', type='cluster', destination=True)[0]
     return dfm
-    
+
 #===============================================================================
 # add & remove selected vertices to DEFORMER MEMBERSHIP
 #===============================================================================
