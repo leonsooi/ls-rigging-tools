@@ -10,7 +10,7 @@ def getClosestUVOnSurface(surface, point):
     
 
 
-def makeCrvThroughObjs(objs, name=None, connect=False):
+def makeCrvThroughObjs(objs, name=None, connect=False, degree=3):
     '''
     Makes a new curve with a CV on each obj
     
@@ -27,7 +27,7 @@ def makeCrvThroughObjs(objs, name=None, connect=False):
         pos.append(mc.xform(eachObj, q=True, t=True, ws=True))
     
     # create curve
-    crv = mc.curve(p=pos)
+    crv = mc.curve(p=pos, d=degree)
     crv = mc.rename(crv, name+'_crv')
     
     if connect:

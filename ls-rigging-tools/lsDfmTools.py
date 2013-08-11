@@ -1,5 +1,6 @@
 import maya.cmds as mc
 from maya.mel import eval as meval
+import pymel.core as pm
 
 #===============================================================================
 # Components
@@ -17,6 +18,79 @@ def getMeshName(componentName):
     Return mesh name of component name
     '''
     return componentName.split('.')[0]
+
+#===============================================================================
+# SMOOTH SKIN WEIGHTS
+#===============================================================================
+def transferWeightsDfmToSkn(dfm, skn, srcGeo, destGeo, sknInf):
+    """
+    Transfer weightGeometryFilter weights to skinCluster weights
+    dfm - deformer (string)
+    skn - skinCluster (string)
+    srcGeo - geometry with the deformer (string)
+    destGeo - geometry with the skinCluster (string)
+    sknInf - index of joint/influence to transfer weights to (int)
+    """
+    weightList = getDfmWeights(dfm, srcGeo)
+    
+    pySkn = pm.PyNode(skn)
+    
+    pySkn.setWeights(destGeo, [sknInf], weightList)
+
+def transferWeightsSknToDfm(dfm, skn, srcGeo, destGeo, sknInf):
+    """
+    Transfer skinCluster weights to geometryWeightFilter
+    dfm - deformer (string)
+    skn - skinCluster (string)
+    srcGeo - geometry with the skinCluster (string)
+    destGeo - geometry with the deformer (string)
+    sknInf - index of joint/influence to transfer weights from (int)
+    """
+    # get weights
+    pySkn = pm.PyNode(skn)
+    weightList = list(pySkn.getWeights(srcGeo, sknInf))
+    
+    # set weights
+    setDfmWeights(dfm, destGeo, weightList)
+
+#===============================================================================
+# DEFORMER WEIGHTS (for the weightGeometryFilter base node)
+#===============================================================================
+def getGeoIndex(dfm, geo):
+    """
+    return index of geometry in deformer
+    geo - should be a shape node
+    """
+    deformedGeos = mc.deformer(dfm, q=True, g=True)
+    geoId = deformedGeos.index(geo)
+    deformedGeosId = mc.deformer(dfm, q=True, gi=True)
+    return deformedGeosId[geoId]
+
+def getVertDfmWeight(dfm, vertId, geo=0):
+    if geo:
+        geoId = getGeoIndex(dfm, geo)
+    else:
+        geoId = 0
+    return mc.getAttr(dfm+'.wl[%d].w[%d]'%(geoId,vertId))
+
+def setVertDfmWeight(dfm, vertId, weight, geo=0):
+    if geo:
+        geoId = getGeoIndex(dfm, geo)
+    else:
+        geoId = 0
+    mc.setAttr(dfm+'.wl[%d].w[%d]'%(geoId,vertId), weight)
+
+def getDfmWeights(dfm, geo):
+    vertNum = mc.polyEvaluate(geo, v=True)
+    weightList = []
+    for vertId in range(vertNum):
+        weightList.append(getVertDfmWeight(dfm, vertId, geo))
+    return weightList
+
+def setDfmWeights(dfm, geo, weightList):
+    vertNum = mc.polyEvaluate(geo, v=True)
+    for vertId in range(vertNum):
+        setVertDfmWeight(dfm, vertId, weightList[vertId], geo)
 
 #===============================================================================
 # Cluster weights

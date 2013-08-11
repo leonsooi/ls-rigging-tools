@@ -15,3 +15,8 @@ def deleteLockedNodes(nodes):
     '''
     mc.lockNode(nodes, l=False)
     mc.delete(nodes)
+
+def removeLocalAxis():
+    for each in mc.ls(sl=True):
+        if mc.toggle(each, q=True, la=True):
+            mc.toggle(each, la=True)
