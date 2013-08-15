@@ -1,6 +1,8 @@
 import abRiggingTools as abRT
 import maya.cmds as mc
 import lsRigTools as rt
+import lsGeneralTools as gt
+reload(gt)
 
 class ctlCurve:
     '''
@@ -52,3 +54,54 @@ class ctlCurve:
         if niceNames is None:
             niceNames=spaces
         rt.spaceSwitchSetup(spaces, self.space, self.crv, 'parentConstraint', niceNames)
+        
+
+class FKChain():
+    """
+    FK Chain control system
+    """
+
+    def __init__(self, name, pivots):
+        """
+        Creates group name_fkChainCS_0
+        pivots (list) - list of pivots in a hierarchy
+        """
+        self.ctlOptions = {}
+        self.ctlOptions['wireSize'] = 10.0
+        self.ctlOptions['downAxis'] = 0
+        
+        self.root = mc.group(em=True, n=name+'_fkChainCS_0')
+        
+        for opt, val in self.ctlOptions.items():
+            attrType = gt.getMayaType(val)
+            mc.addAttr(self.root, ln=opt, at=attrType)
+            mc.setAttr(self.root+'.'+opt, e=True, cb=True)
+            mc.setAttr(self.root+'.'+opt, val)
+        
+        self.pivots = pivots
+    
+    def updateOptions(self):
+        self.ctlOptions['wireSize'] = mc.getAttr(self.root+'.wireSize')
+        self.ctlOptions['downAxis'] = mc.getAttr(self.root+'.downAxis')
+    
+    def build(self):
+        
+        self.updateOptions()
+        
+        ctls = []
+        parentCtl = None
+        counter = 0
+        
+        for eachPivot in self.pivots:
+            ctl = ctlCurve(self.root+'_ctl_%d'%counter, 'circle', 0, size=self.ctlOptions['wireSize'], snap=eachPivot)
+            mc.parentConstraint(ctl.crv, eachPivot)
+            if parentCtl:
+                mc.parentConstraint(parentCtl.crv, ctl.home, mo=True)
+            counter += 1
+            ctls.append(ctl.home)
+            parentCtl = ctl
+            
+        self.ctlGrp = mc.group(ctls, n=self.root+'_ctlGrp', p=self.root)
+        
+        
+        

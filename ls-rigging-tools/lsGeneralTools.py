@@ -20,3 +20,17 @@ def removeLocalAxis():
     for each in mc.ls(sl=True):
         if mc.toggle(each, q=True, la=True):
             mc.toggle(each, la=True)
+            
+def getMayaType(var):
+    '''
+    return datatype of a variable/value for Maya
+    '''
+    typeDict={str: 'string',
+              unicode: 'string',
+              float: 'double',
+              bool:'bool',
+              int:'long'}
+    
+    return typeDict[type(var)]
+    
+    
