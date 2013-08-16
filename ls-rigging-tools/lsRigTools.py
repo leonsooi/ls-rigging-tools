@@ -179,30 +179,31 @@ def connectSDK(inPlug, outPlug, keys, name=''):
 # COPY & PASTE TRANSFORMS into a dictionary
 #===============================================================================
 
-def getXforms(selObjs):
+def getXforms(selObjs, **kwargs):
     '''
     return translate, rotates, and scales in a dictionary {obj : [trans, rot, scale]}
     '''
     xforms = {}
     
     for obj in selObjs:
-        trans = list(mc.getAttr(obj+'.t')[0])
-        rot = list(mc.getAttr(obj+'.r')[0])
-        scale = list(mc.getAttr(obj+'.s')[0])
+        trans = list(mc.xform(obj, q=True, t=True, **kwargs))
+        rot = list(mc.xform(obj, q=True, ro=True, **kwargs))
+        scale = list(mc.xform(obj, q=True, s=True, **kwargs))
         xforms[obj] = [trans, rot, scale]
         
     return xforms
 
-def setXforms(xforms):
+def setXforms(xforms, **kwargs):
     '''
     Uses a dictionary {obj : [trans, rot, scale]} to set values on objs
     '''
     for obj, xform in xforms.items():
         if mc.objExists(obj):
             trans, rot, scale = xform[:3]
-            mc.setAttr(obj+'.t', *trans)
-            mc.setAttr(obj+'.r', *rot)
-            mc.setAttr(obj+'.s', *scale)
+            print trans, obj
+            mc.xform(obj, t=trans, **kwargs)
+            mc.xform(obj, ro=rot, **kwargs)
+            mc.xform(obj, s=scale, **kwargs)
     
 
 """
@@ -481,6 +482,24 @@ def duplicateSnapObjToTransforms(obj, transformsList):
         
     return objs
 
+def makeOffsetLoc(master, target):
+    '''
+    creates offsetLoc snapped to target, but parented under master 
+    therefore, it inherits transforms from master, but has the offsets matching target
+    used for space switching offsets
+    
+    add attribute target+'_offsetViz' to master
+    
+    return offsetLoc
+    '''
+    
+    offsetLoc = mc.spaceLocator(n='%s_%s_offsetLoc'%(master, target))[0]
+    abRT.snapToPosition(target, offsetLoc)
+    mc.parent(offsetLoc, master)
+    connectVisibilityToggle([offsetLoc], master, target+'_offsetViz', False)
+    
+    return offsetLoc
+        
 
 def spaceSwitchSetup(drivers, driven, controller, cType, niceNames):
     '''

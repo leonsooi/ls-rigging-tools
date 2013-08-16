@@ -185,25 +185,25 @@ def rigEyes():
     # Add stretchy volume for eyeBall spine
     #===========================================================================
     
-    stretchAmts = {'LT_eyeSpine_ctl_0':10,
-                'LT_eyeSpine_ctl_1':9,
-                'LT_eyeSpine_ctl_2':8,
-                'LT_eyeSpine_ctl_3':5,
-                'LT_eyeSpine_ctl_4':3,
-                'LT_eyeSpine_ctl_5':1.25,
-                'LT_eyeSpine_ctl_6':0,
-                'LT_eyeSpine_ctl_7':-1}
+    stretchAmts = {'LT_eyeSpine_ctl_0_space':10,
+                'LT_eyeSpine_ctl_1_space':9,
+                'LT_eyeSpine_ctl_2_space':8,
+                'LT_eyeSpine_ctl_3_space':5,
+                'LT_eyeSpine_ctl_4_space':3,
+                'LT_eyeSpine_ctl_5_space':1.25,
+                'LT_eyeSpine_ctl_6_space':0,
+                'LT_eyeSpine_ctl_7_space':-1}
     
     ms.addVolume('LT_eyeSpine_uniform_crv_crv', stretchAmts)
     
-    stretchAmts = {'RT_eyeSpine_ctl_0':10,
-                'RT_eyeSpine_ctl_1':9,
-                'RT_eyeSpine_ctl_2':8,
-                'RT_eyeSpine_ctl_3':5,
-                'RT_eyeSpine_ctl_4':3,
-                'RT_eyeSpine_ctl_5':1.25,
-                'RT_eyeSpine_ctl_6':0,
-                'RT_eyeSpine_ctl_7':-1}
+    stretchAmts = {'RT_eyeSpine_ctl_0_space':10,
+                'RT_eyeSpine_ctl_1_space':9,
+                'RT_eyeSpine_ctl_2_space':8,
+                'RT_eyeSpine_ctl_3_space':5,
+                'RT_eyeSpine_ctl_4_space':3,
+                'RT_eyeSpine_ctl_5_space':1.25,
+                'RT_eyeSpine_ctl_6_space':0,
+                'RT_eyeSpine_ctl_7_space':-1}
     
     ms.addVolume('RT_eyeSpine_uniform_crv_crv', stretchAmts)
     #===========================================================================

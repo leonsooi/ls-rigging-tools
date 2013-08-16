@@ -1,3 +1,5 @@
+import operator
+
 import lsRigTools as rt
 reload(rt)
 import abRiggingTools as abRT
@@ -161,7 +163,10 @@ def addVolume(curve, stretchAmts, name=None):
     
     mc.addAttr(curve, ln='stretchAmts', at='double', k=True)
     mc.setAttr(curve+'.stretchAmts', l=True)
-    for ctl, val in stretchAmts.items():
+    
+    sorted_stretchAmts = sorted(stretchAmts.iteritems(), key=operator.itemgetter(0))
+    
+    for ctl, val in sorted_stretchAmts:
         mc.addAttr(curve, ln=ctl+'_stAmt', at='double', dv=val, k=True)
         
     # attributes for debugging
@@ -202,15 +207,15 @@ def addVolume(curve, stretchAmts, name=None):
     mc.connectAttr(invertMd+'.ox', curve+'.inverseStretch', f=True)
     
     # MP.scaleY/Z = pow(invScale, ssVal)
-    for ctl, val in stretchAmts.items():
+    for ctl, val in sorted_stretchAmts:
         mdPow = mc.createNode('multiplyDivide', n=ctl+'_ss_md')
         mc.connectAttr(curve + '.' + ctl + '_stAmt', mdPow+'.input2X', f=True)
         mc.connectAttr(invertMd+'.outputX', mdPow+'.input1X', f=True)
         mc.setAttr(mdPow+'.op', 3)
         # connect to space_grp above ctl
         # assuming that we are using ctlCurve obj, so the name has a _space suffix
-        mc.connectAttr(mdPow+'.outputX', ctl+'_space.sy', f=True)
-        mc.connectAttr(mdPow+'.outputX', ctl+'_space.sz', f=True)
+        mc.connectAttr(mdPow+'.outputX', ctl+'.sy', f=True)
+        mc.connectAttr(mdPow+'.outputX', ctl+'.sz', f=True)
     
     
 
@@ -309,7 +314,7 @@ def createSplineMPs(MPs, newMPsNum, name, twistOffset):
     
     twistOffset - vector to offset twistCrv
     
-    returns list of new MPs
+    returns [(drvCrv, twistCrv, oldDrvCrv), MPJnts]
     '''
     numOfMPs = len(MPs)
     
@@ -364,3 +369,5 @@ def createSplineMPs(MPs, newMPsNum, name, twistOffset):
     rt.connectVisibilityToggle((MPJntsGrp, drvCrv), MPs[0], 'drvMPs', default=False)
     
     mc.group(oldDrvCrv, twistCrv, drvCrv, aimLocsGrp, MPJntsGrp, n=name+'_splineMPs_grp')
+    
+    return (drvCrv, twistCrv, oldDrvCrv), MPJnts

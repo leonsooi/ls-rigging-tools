@@ -1,6 +1,31 @@
 import maya.cmds as mc
 from maya.mel import eval as meval
 
+import lsRigTools as rt
+import lsCreateNode as cn
+reload(cn)
+
+def addProxyGeoToJnt(jnt, geo, child=None):
+    '''
+    Parent-snaps geo under jnt
+    If child=None, uses first child of jnt
+    Distance between jnt & child drives scaleX (assuming X is downAxis)
+    '''
+    geo = mc.duplicate(geo, n=jnt+'_proxy')[0]
+    rt.parentSnap(geo, jnt)
+    
+    if not child:
+        child = mc.listRelatives(jnt, c=True, type='joint')[0]
+    
+    # get distance between jnt and child
+    
+    dist = cn.create_distanceBetween(jnt, child)
+    finalScale = cn.create_multiplyDivide(dist, jnt+'.scaleX', 2)
+    mc.connectAttr(finalScale, geo+'.sx', f=True)
+    
+    return geo
+
+
 def movePolysFromObj():
     '''
     # 1. Select faces
