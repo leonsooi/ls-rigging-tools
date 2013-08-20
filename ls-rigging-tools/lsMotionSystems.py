@@ -8,7 +8,117 @@ reload(cn)
 
 import maya.cmds as mc
 
+def addOffsetPt(pt, aims, upObj, name):
+    '''
+    '''
+    # make master grp
+    masterGrp = mc.group(n=name+'_offsetPt_grp', em=True)
+    mc.addAttr(masterGrp, ln='rollDistance', at='double', k=True, dv=2)
+    
+    #===========================================================================
+    # BASE
+    #===========================================================================
+    # create base locator (drive base surface)
+    baseLoc = mc.spaceLocator(n=name+'_baseLoc')[0]
+    
+    # point constraint to pt
+    mc.pointConstraint(pt, baseLoc)
+    
+    # aim constraint to aim(s), using upObj as up object
+    orientLocs = [] # should have maximum of 2 items
+    for eachAim in aims:
+        oriLoc = mc.spaceLocator(n=name+'_oriLoc#')[0]
+        mc.pointConstraint(pt, oriLoc)
+        if aims.index(eachAim) == 1:
+            aimVec = (-1,0,0) # for the second aim constraint, use -X to aim opposite direction
+        else:
+            aimVec = (1,0,0)
+        mc.aimConstraint(eachAim, oriLoc, aim=aimVec, u=(0,1,0), wuo=upObj, wut='object')
+        orientLocs.append(oriLoc)
+        
+    mc.orientConstraint(orientLocs, baseLoc)
+    
+    # create base bnd jnt, parent under base loc
+    baseBndJnt = mc.joint(n=name+'_base_bndJnt')
+    rt.parentSnap(baseBndJnt, baseLoc)
+    
+    #===========================================================================
+    # OFFSET
+    #===========================================================================
+    # create offset locator (drive offset surface), parent snap to base loc
+    offsetLoc = mc.spaceLocator(n=name+'_offsetLoc')[0]
+    rt.parentSnap(offsetLoc, baseLoc)
+    
+    # create acs locator (for automation), parent snap to offset loc
+    offsetAcsLoc = mc.spaceLocator(n=name+'_offset_acsLoc')[0]
+    rt.parentSnap(offsetAcsLoc, offsetLoc)
+    
+    #===========================================================================
+    # ROLL
+    #===========================================================================
+    # create roll loc, parent snap to base loc, translate Z by masterGrp.rollDistance
+    rollLoc = mc.spaceLocator(n=name+'_rollLoc')[0]
+    rt.parentSnap(rollLoc, baseLoc)
+    mc.connectAttr(masterGrp+'.rollDistance', rollLoc+'.tz', f=True)
+    
+    # create offset roll loc
+    offsetRollLoc = mc.spaceLocator(n=name+'_roll_offsetLoc')[0]
+    rt.parentSnap(offsetRollLoc, rollLoc)
+    
+    # create acs roll loc (for automation), parent snap to roll offset loc
+    acsRollLoc = mc.spaceLocator(n=name+'_roll_acsLoc')[0]
+    rt.parentSnap(acsRollLoc, offsetRollLoc)
+    
+    #===========================================================================
+    # calculate Offset transform in Roll space
+    #===========================================================================
+    # offset-acs-loc.worldMatrix X roll-loc.inverseWorldMatrix
+    mm = mc.createNode('multMatrix', n=name+'_calcRollSpace_mm')
+    mc.connectAttr(offsetAcsLoc+'.worldMatrix[0]', mm+'.matrixIn[0]', f=True)
+    mc.connectAttr(rollLoc+'.worldInverseMatrix[0]', mm+'.matrixIn[1]', f=True)
+    
+    dm = mc.createNode('decomposeMatrix', n=name+'_calcRollSpace_dm')
+    mc.connectAttr(mm+'.matrixSum', dm+'.inputMatrix', f=True)
 
+    #===========================================================================
+    # offset bnd jnt
+    #===========================================================================
+    # use calculated position in roll-space, but parent under acs-roll-loc, to inherit offsets
+    # make a locked loc first (to receive transforms)
+    lockedLoc = mc.spaceLocator(n=name+'_readTransforms_loc')[0]
+    rt.parentSnap(lockedLoc, acsRollLoc)
+    
+    mc.connectAttr(dm+'.outputTranslate', lockedLoc+'.t', f=True)
+    mc.connectAttr(dm+'.outputRotate', lockedLoc+'.r', f=True)
+    mc.connectAttr(dm+'.outputScale', lockedLoc+'.s', f=True)
+    
+    # user-controllable locator
+    ctl = mc.spaceLocator(n=name+'_ctl')[0]
+    rt.parentSnap(ctl, lockedLoc)
+    
+    # bnd jnt for offset surface
+    offsetBndJnt = mc.joint(n=name+'_offset_bndJnt')
+    
+    #===========================================================================
+    # HIDING
+    #===========================================================================
+    mc.addAttr(masterGrp, ln='debugVis', at='bool', k=True)
+    mc.setAttr(masterGrp+'.debugVis', l=True)
+    rt.connectVisibilityToggle(offsetBndJnt, masterGrp, 'offsetJnt', False)
+    rt.connectVisibilityToggle(baseBndJnt, masterGrp, 'baseJnt', False)
+    rt.connectVisibilityToggle(ctl, masterGrp, 'ctl', True)
+    rt.connectVisibilityToggle(offsetRollLoc, masterGrp, 'rollLoc', True)
+    rt.connectVisibilityToggle(orientLocs, masterGrp, 'orientLocs', False)
+    rt.connectVisibilityToggle([baseLoc, oriLoc, offsetLoc, offsetAcsLoc, rollLoc, acsRollLoc, lockedLoc], masterGrp, 'locs', False)
+    
+    mc.parent(baseLoc, orientLocs, masterGrp)
+    mc.select(masterGrp, r=True)
+    
+    return masterGrp
+    
+    
+    
+    
 def placePivotsForReverseRoll(baseJnt, bendPos=(0,0,0), leftPos=(0,0,0), rightPos=(0,0,0)):
     '''
     creates bendPivot, leftPivot, rightPivot

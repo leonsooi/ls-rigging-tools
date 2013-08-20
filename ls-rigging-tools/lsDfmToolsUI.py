@@ -35,3 +35,21 @@ def removeVertsFromDeformer():
     selDfm = dt.getClusterFromTransform(selTransform)
     dt.removeVertsFromDeformer(selVerts, selDfm)
     
+
+def copyVertPos():
+    '''
+    Select verts, shift-select target to copy to, run
+    '''
+    srcVerts = mc.ls(os=True, fl=True)[:-1]
+    target = mc.ls(os=True)[-1]
+    dt.copyVertPos(srcVerts, target)
+    
+def copyVertPosFrom():
+    '''
+    Select verts on target mesh, shift-select source mesh
+    '''
+    destVerts = mc.ls(os=True, fl=True)[:-1]
+    source = mc.ls(os=True)[-1]
+    target = dt.getMeshName(destVerts[0])
+    srcVerts = [vtxName.replace(target, source) for vtxName in destVerts]
+    dt.copyVertPos(srcVerts, target)

@@ -3,6 +3,11 @@ import abRiggingTools as abRT
 reload(abRT) # force recompile
 from maya.mel import eval as meval
 
+def addSurfaceAttachLoc(edge1, edge2):
+    '''
+    '''
+    
+
 def getClosestUVOnSurface(surface, point):
     '''
     return (u,v) closest to point (x,y,z) on surface

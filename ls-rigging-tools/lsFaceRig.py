@@ -9,6 +9,30 @@ reload(cn)
 reload(rt)
 
 #===============================================================================
+# Lips
+#=============================================================================== 
+def lips():
+    '''
+    '''
+ms.addOffsetPt('cMuscleSurfAttach5', ['cMuscleSurfAttach6', 'cMuscleSurfAttach7'], 'CT_lipsOffset_throatAim_loc_0', 'CT_up')
+ms.addOffsetPt('cMuscleSurfAttach8', ['cMuscleSurfAttach10', 'cMuscleSurfAttach9'], 'CT_lipsOffset_throatAim_loc_0', 'CT_dn')
+ms.addOffsetPt('cMuscleSurfAttach21', ['cMuscleSurfAttach22', 'cMuscleSurfAttach23'], 'CT_lipsOffset_throatAim_loc_0', 'LT_cnr')
+ms.addOffsetPt('cMuscleSurfAttach37', ['cMuscleSurfAttach38', 'cMuscleSurfAttach36'], 'CT_lipsOffset_throatAim_loc_0', 'RT_cnr')
+
+ms.addOffsetPt('cMuscleSurfAttach11', ['cMuscleSurfAttach12'], 'CT_lipsOffset_throatAim_loc_0', 'LT_upSide')
+ms.addOffsetPt('cMuscleSurfAttach15', ['cMuscleSurfAttach16'], 'CT_lipsOffset_throatAim_loc_0', 'LT_upSneer')
+ms.addOffsetPt('cMuscleSurfAttach2', ['cMuscleSurfAttach19'], 'CT_lipsOffset_throatAim_loc_0', 'LT_upPinch')
+ms.addOffsetPt('cMuscleSurfAttach4', ['cMuscleSurfAttach20'], 'CT_lipsOffset_throatAim_loc_0', 'LT_dnPinch')
+ms.addOffsetPt('cMuscleSurfAttach17', ['cMuscleSurfAttach18'], 'CT_lipsOffset_throatAim_loc_0', 'LT_dnSneer')
+ms.addOffsetPt('cMuscleSurfAttach13', ['cMuscleSurfAttach14'], 'CT_lipsOffset_throatAim_loc_0', 'LT_dnSide')
+
+ms.addOffsetPt('cMuscleSurfAttach24', ['cMuscleSurfAttach25'], 'CT_lipsOffset_throatAim_loc_0', 'RT_upSide')
+ms.addOffsetPt('cMuscleSurfAttach28', ['cMuscleSurfAttach29'], 'CT_lipsOffset_throatAim_loc_0', 'RT_upSneer')
+ms.addOffsetPt('cMuscleSurfAttach32', ['cMuscleSurfAttach33'], 'CT_lipsOffset_throatAim_loc_0', 'RT_upPinch')
+ms.addOffsetPt('cMuscleSurfAttach34', ['cMuscleSurfAttach35'], 'CT_lipsOffset_throatAim_loc_0', 'RT_dnPinch')
+ms.addOffsetPt('cMuscleSurfAttach30', ['cMuscleSurfAttach31'], 'CT_lipsOffset_throatAim_loc_0', 'RT_dnSneer')
+ms.addOffsetPt('cMuscleSurfAttach26', ['cMuscleSurfAttach27'], 'CT_lipsOffset_throatAim_loc_0', 'RT_dnSide')
+#===============================================================================
 # Eyeball collide with eyelids
 #===============================================================================
 def addJntsOnSurfIntersection(surf1, surf2, jntsNum):
