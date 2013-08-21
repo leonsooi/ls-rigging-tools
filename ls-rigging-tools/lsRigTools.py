@@ -13,7 +13,66 @@ def getClosestUVOnSurface(surface, point):
     return (u,v) closest to point (x,y,z) on surface
     '''
     
+def getCrvCvsNum(crv):
+    '''
+    assume open curve
+    '''
+    spans = mc.getAttr(crv+'.spans')
+    deg = mc.getAttr(crv+'.degree')
+    return spans + deg
 
+def extendCrv(beforePts, srcCrv, afterPts, name):
+    '''
+    '''
+    """
+    # DOES NOT WORK FOR CURVES THAT USE CREATE INPUT
+    totalCvsNum = len(beforePts) + getCrvCvsNum(srcCrv) + len(afterPts)
+    
+    # create curve with necessary cvs
+    crv = mc.curve(p=[(pt,pt,pt) for pt in range(totalCvsNum)])
+    crv = mc.rename(crv, name)
+    
+    # connect beforePts
+    for cvId in range(len(beforePts)):
+        eachPt = beforePts[cvId]
+        pmm = mc.createNode('pointMatrixMult', n=eachPt+'_wsTrans_pmm')
+        mc.connectAttr(eachPt+'.worldMatrix', pmm+'.inMatrix', f=True)
+        mc.connectAttr(pmm+'.output', crv+'.controlPoints[%d]'%cvId, f=True)
+        
+    # connect crvPts
+    for cvId in range(getCrvCvsNum(srcCrv)):
+        srcId = cvId
+        targetId = cvId + len(beforePts)
+        mc.connectAttr(srcCrv+'.controlPoints[%d]'%srcId, crv+'.controlPoints[%d]'%targetId, f=True)
+        
+    # connect afterPts
+    for cvId in range(len(afterPts)):
+        eachPt = afterPts[cvId]
+        targetId = cvId + len(beforePts) + getCrvCvsNum(srcCrv)
+        pmm = mc.createNode('pointMatrixMult', n=eachPt+'_wsTrans_pmm')
+        mc.connectAttr(eachPt+'.worldMatrix', pmm+'.inMatrix', f=True)
+        mc.connectAttr(pmm+'.output', crv+'.controlPoints[%d]'%targetId, f=True)
+    """
+    # add locators before curve 
+    allLocs = []
+    allLocs.append(*beforePts)
+    
+    # make locators on curve
+    locNum = mc.getAttr(srcCrv+'.spans') + 1
+    
+    for locId in range(locNum):
+        loc = mc.spaceLocator(n=name+'_onCrv_loc%d'%locId)[0]
+        attachToMotionPath(srcCrv, locId, loc, False)
+        allLocs.append(loc)
+        
+    # add locators after curve
+    allLocs.append(*afterPts)
+    
+    # make crv
+    crv = makeCrvThroughObjs(allLocs, name, True)
+    
+    return crv
+        
 
 def makeCrvThroughObjs(objs, name=None, connect=False, degree=3):
     '''
@@ -538,3 +597,34 @@ def spaceSwitchSetup(drivers, driven, controller, cType, niceNames):
     mc.addAttr(controller+'.'+aTitle[cType]+niceNames[0], e=True, dv=1)
     
     return cons
+
+def makeArcThroughLocs(locs, name):
+    '''
+    locs (list) - three locators
+    '''
+    # make point matrix mults to get world space positions
+    pmms = []
+    for eachLoc in locs:
+        pmm = mc.createNode('pointMatrixMult', n=eachLoc+'wsTrans_pmm')
+        pmms.append(pmm)
+        mc.connectAttr(eachLoc+'.worldMatrix', pmm+'.inMatrix', f=True)
+        
+    # make arc node that takes in the three ws positions
+    arcNd = mc.createNode('makeThreePointCircularArc', n=name+'_arc')
+    
+    mc.connectAttr(pmms[0]+'.output', arcNd+'.pt1', f=True)
+    mc.connectAttr(pmms[1]+'.output', arcNd+'.pt2', f=True)
+    mc.connectAttr(pmms[2]+'.output', arcNd+'.pt3', f=True)
+    
+    mc.setAttr(arcNd+'.sections', 4)
+    
+    # make curve node that takes in arc
+    crvNd = mc.createNode('nurbsCurve', n=name+'_arc_crvShape')
+    mc.connectAttr(arcNd+'.outputCurve', crvNd+'.create')
+    
+    # rename the crv transform
+    parent = mc.listRelatives(crvNd, p=True)[0]
+    parent = mc.rename(parent, name+'_arc_crv')
+    
+    return parent, crvNd
+    
