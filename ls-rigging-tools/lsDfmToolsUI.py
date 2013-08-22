@@ -7,6 +7,10 @@ import lsDfmTools as dt
 import maya.cmds as mc
 reload(dt)
 
+def copyMeshShape():
+    src, dest = mc.ls(os=True)[:2]
+    dt.copyMeshShape(src, dest)
+
 def getClusterFromTransform():
     '''
     return name of cluster deformer from selected transform
