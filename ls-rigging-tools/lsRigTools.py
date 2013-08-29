@@ -2,10 +2,40 @@ import maya.cmds as mc
 import abRiggingTools as abRT
 reload(abRT) # force recompile
 from maya.mel import eval as meval
+import pymel.core as pm
 
-def addSurfaceAttachLoc(edge1, edge2):
+def copyJntsWithInputs(jnts):
     '''
     '''
+    
+
+def convertToPointOnPolyConstraint(mesh, oldLoc, name=None, inMesh=None):
+    '''
+    convert surf attach transform to pointOnPoly
+    '''
+        
+    pyMesh = pm.PyNode(mesh)
+    pos = mc.xform(oldLoc, t=True, q=True, ws=True)
+    
+    # get UVs
+    u, v = pyMesh.getUVAtPoint(pos, space='world')
+    
+    # delete surfAttachShape
+    surfAttachShape = mc.listRelatives(oldLoc, c=True, type='cMuscleSurfAttach')[0]
+    mc.delete(surfAttachShape)
+    
+    # constraint to mesh
+    cons = mc.pointOnPolyConstraint(mesh, oldLoc)[0]
+    # set UVs
+    tl = mc.pointOnPolyConstraint(cons, q=True, tl=True)[0]
+    # U and V aliases
+    mc.setAttr(cons+'.'+tl+'U0', u)
+    mc.setAttr(cons+'.'+tl+'V0', v)
+    
+    # swap the inMesh, if required
+    if inMesh:
+        mc.connectAttr(inMesh, cons+'.target[0].targetMesh', f=True)
+    
     
 
 def getClosestUVOnSurface(surface, point):
