@@ -1,3 +1,7 @@
+#===============================================================================
+# DEPRECATED - use lsRigTools.cleanDuplicate
+#===============================================================================
+
 """
 lsCleanDuplicate v0.0.1
 Makes a "clean" duplicate of the original base mesh 

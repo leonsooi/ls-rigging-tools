@@ -12,6 +12,13 @@ def getComponentId(componentName):
     '''
     return int(componentName.split('[')[1][:-1])
 
+def getComponentIds(componentNames):
+    '''
+    Return list of component ids
+    '''
+    return [getComponentId(name) for name in componentNames]
+    
+
 
 def getMeshName(componentName):
     '''

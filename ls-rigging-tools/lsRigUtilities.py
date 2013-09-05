@@ -1,3 +1,7 @@
+#===============================================================================
+# DEPRECATED - use lsRigTools
+#===============================================================================
+
 import maya.cmds as mc
 import abRiggingTools as abRT
 reload(abRT) # force recompile

@@ -3,6 +3,7 @@ import abRiggingTools as abRT
 reload(abRT) # force recompile
 from maya.mel import eval as meval
 import pymel.core as pm
+import lsCreateNode as cn
 
 def copyJntsWithInputs(jnts):
     '''
@@ -268,6 +269,39 @@ def connectSDK(inPlug, outPlug, keys, name=''):
     
     return node
     
+def connectAttrs(srcObj, destObj, attrs):
+    for eachAttr in attrs:
+        mc.connectAttr(srcObj+'.'+eachAttr, destObj+'.'+eachAttr, f=True)
+        
+def connectAttrsGo():
+    '''
+    select srcObj, shift-select destObj
+    shift-select attrs in channelbox
+    run
+    '''
+    selAttrs = mc.channelBox('mainChannelBox', q=True, sma=True, soa=True, ssa=True)
+    srcObj, destObj = mc.ls(os=True)[:2]
+    connectAttrs(srcObj, destObj, selAttrs)
+    mc.select(srcObj, r=True)
+    
+def reverseAttr(obj, attr):
+    outPlugs = mc.listConnections(obj+'.'+attr, s=False, p=True)    
+    revPlug = cn.create_multDoubleLinear(obj+'.'+attr, -1)
+    for eachPlug in outPlugs:
+        mc.connectAttr(revPlug, eachPlug, f=True)
+
+def reverseAttrGo():
+    '''
+    select objects, select attrs in channel box, run
+    '''
+    selObjs = mc.ls(sl=True)
+    selAttrs = mc.channelBox('mainChannelBox', q=True, sma=True, soa=True, ssa=True)
+    
+    for eachObj in selObjs:
+        for eachAttr in selAttrs:
+            reverseAttr(eachObj, eachAttr)
+            
+    mc.select(selObjs, r=True)
 
 #===============================================================================
 # COPY & PASTE TRANSFORMS into a dictionary
