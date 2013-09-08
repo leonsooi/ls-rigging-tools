@@ -204,3 +204,84 @@ def transferWeightsWireToSkn():
     dt.transferWeightsDfmToSkn('CT_toothOffset1_wire_dfm', 'skinCluster8', 'CT_gumBlockGlobal_geo_0Shape', 'temp', 1)
     dt.transferSkinWeights('temp', 'transferGeo')
     dt.transferWeightsSknToDfm('CT_toothOffset4_wire_dfm', 'skinCluster9', 'transferGeo', 'CT_gumBlockGlobal_geo_0Shape', 1)
+
+def fixMPCurvesForOffsetCtrlRig():
+    # fix teethOffset motion paths
+    for mpId in range(12):
+        mp = 'CT_teethOffset_align_loc_%d_mp'%mpId
+        mc.connectAttr('CT_teethOffsetDrv_crv_0.local', mp+'.geometryPath', f=True)
+        
+    for mpId in range(12):
+        mp = 'CT_teethOffset_aim_loc_%d_mp'%mpId
+        mc.connectAttr('CT_teethOffsetAim_crv_0.local', mp+'.geometryPath', f=True)
+        
+    # convert motionPaths to parametricLength
+    for mpId in range(12):
+        mp = 'CT_teethOffset_align_loc_%d_mp'%mpId
+        rt.mpConvertToPL(mp)
+        
+    for mpId in range(12):
+        mp = 'CT_teethOffset_aim_loc_%d_mp'%mpId
+        rt.mpConvertToPL(mp)
+        
+    # connect offsetCtl attrs to offsetJnts in local rig
+    for ctlId in range(12):
+        ctl = 'CT_toothOffset%d_ctlA'%ctlId
+        jnt = 'CT_teethLocal%d_bndA'%(ctlId+1)
+        mc.connectAttr(ctl+'.t', jnt+'.t', f=True)
+        mc.connectAttr(ctl+'.r', jnt+'.r', f=True)
+        mc.connectAttr(ctl+'.s', jnt+'.s', f=True)
+        
+    for ctlId in range(12):
+        ctl = 'CT_toothOffset%d_ctlB'%ctlId
+        jnt = 'CT_teethLocal%d_bndB'%(ctlId+1)
+        mc.connectAttr(ctl+'.t', jnt+'.t', f=True)
+        mc.connectAttr(ctl+'.rx', jnt+'.rx', f=True)
+        mc.connectAttr(ctl+'.ry', jnt+'.ry', f=True)
+        mc.connectAttr(ctl+'.rz', jnt+'.rz', f=True)
+        mc.connectAttr(ctl+'.s', jnt+'.s', f=True)
+        
+    """
+    *** DOES NOT WORK BECAUSE THERE IS NO BLENDING B/T INDIVIDUAL TOOTHSES
+    
+    # BEND CONTROLS
+    teethTweakCtls = [u'RT_teethCnr_drv_ctl',
+     u'RT_teeth_drv_ctl',
+     u'CT_teeth_drv_ctl',
+     u'LT_teeth_drv_ctl',
+     u'LT_teethCnr_drv_ctl']
+    
+    mc.addAttr(ln='bend', k=True, at='double', min=-1, max=1, dv=0)
+    
+    for ctlId in range(12):
+        ctlBender = 'CT_toothOffset%d_ctlB_bend'%ctlId
+        rmpNd = mc.createNode('remapValue', n=ctlBender+'_bend_rmp')
+        # create value positions
+        mc.setAttr(rmpNd+'.vl[0].vlp', 0)
+        mc.setAttr(rmpNd+'.vl[1].vlp', 0.25)
+        mc.setAttr(rmpNd+'.vl[2].vlp', 0.5)
+        mc.setAttr(rmpNd+'.vl[3].vlp', 0.75)
+        mc.setAttr(rmpNd+'.vl[4].vlp', 1)
+        # connect value from bend attr
+        mc.connectAttr(teethTweakCtls[0]+'.bend', rmpNd+'.vl[0].vlfv', f=True)
+        mc.connectAttr(teethTweakCtls[1]+'.bend', rmpNd+'.vl[1].vlfv', f=True)
+        mc.connectAttr(teethTweakCtls[2]+'.bend', rmpNd+'.vl[2].vlfv', f=True)
+        mc.connectAttr(teethTweakCtls[3]+'.bend', rmpNd+'.vl[3].vlfv', f=True)
+        mc.connectAttr(teethTweakCtls[4]+'.bend', rmpNd+'.vl[4].vlfv', f=True)
+        # set interpolation
+        mc.setAttr(rmpNd+'.vl[0].vli', 3)
+        mc.setAttr(rmpNd+'.vl[1].vli', 3)
+        mc.setAttr(rmpNd+'.vl[2].vli', 3)
+        mc.setAttr(rmpNd+'.vl[3].vli', 3)
+        mc.setAttr(rmpNd+'.vl[4].vli', 3)
+        # set inputValue based on ctlId
+        mc.setAttr(rmpNd+'.inputValue', float(ctlId)/11)
+        # connect to ctlBender
+        mc.connectAttr(rmpNd+'.outValue', ctlBender+'.ry', f=True)
+        
+    # add auto bend to local rig's bend
+    for jntId in range(12):
+        attrToAdd = 'CT_toothOffset%d_ctlB_bend.ry'%jntId
+        addTo = 'CT_teethLocal%d_bndB.ry'%(jntId+1)
+        rt.connectAddAttr(attrToAdd, addTo)
+    """

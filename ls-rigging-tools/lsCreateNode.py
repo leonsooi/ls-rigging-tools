@@ -39,6 +39,26 @@ def create_multDoubleLinear(plug1, plug2):
     
     return mdl+'.output'
 
+def create_addDoubleLinear(plug1, plug2):
+    '''
+    return outputPlug that gives plug1 * plug2
+    plug2 can also be a constant double
+    '''
+    name = plug1.split('.')[0]
+    adl = mc.createNode('addDoubleLinear', n=name+'_adl')
+    mc.connectAttr(plug1, adl+'.input1', f=True)
+    
+    # check whether plug2 is a plug or constant
+    if isinstance(plug2, basestring):
+        # this is a string, so should be a plug
+        # (since mdl does not accept string as inputs anyway)
+        mc.connectAttr(plug2, adl+'.input2', f=True)
+    else:
+        mc.setAttr(adl+'.input2', plug2)
+    
+    return adl+'.output'
+    
+
 def create_multiplyDivide(plug1, plug2, op):
     '''
     return outputPlug that gives plug1 * plug2

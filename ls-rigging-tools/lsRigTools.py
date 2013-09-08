@@ -4,6 +4,7 @@ reload(abRT) # force recompile
 from maya.mel import eval as meval
 import pymel.core as pm
 import lsCreateNode as cn
+reload(cn)
 
 def copyJntsWithInputs(jnts):
     '''
@@ -302,6 +303,16 @@ def reverseAttrGo():
             reverseAttr(eachObj, eachAttr)
             
     mc.select(selObjs, r=True)
+    
+def connectAddAttr(srcAttr, destAttr):
+    '''
+    add value from srcAttr to destAttr's incoming connection
+    Assume there is one incoming connection to destAttr
+    '''
+    oldAttr = mc.listConnections(destAttr, s=True, p=True, d=False)[0]
+    newPlug = cn.create_addDoubleLinear(oldAttr, srcAttr)
+    mc.connectAttr(newPlug, destAttr, f=True)
+    
 
 #===============================================================================
 # COPY & PASTE TRANSFORMS into a dictionary
@@ -540,6 +551,9 @@ def gPos(point):
     '''
     return point.x, point.y, point.z
 
+#===============================================================================
+# MOTION PATHS
+#===============================================================================
 
 def alignOnMotionPath(crv, uVal, obj, worldUpMatrix, fm, fa=0, ua=2, wut=1, wu=(0,0,1), **kwargs):
     '''
@@ -592,6 +606,31 @@ def attachToMotionPath(crv, uVal, obj, fm):
     
     return mpNd
 
+def mpConvertToFM(mpNode):
+    '''
+    Converts motionPath type from paramatric length to fraction mode
+    '''
+    
+def mpConvertToPL(mpNm):
+    '''
+    Converts motionPath type from fraction mode to paramatric length
+    Return new uValue for motionPath
+    '''
+    mpNd = pm.PyNode(mpNm)
+    crvNd = mpNd.getPathObject()
+    
+    # calculate uValye
+    uVal = mc.getAttr(mpNm+'.u')
+    crvLen = crvNd.length()
+    lenOnCrv = uVal * crvLen
+    paramOnCrv = crvNd.findParamFromLength(lenOnCrv)
+    
+    # set uValue
+    mc.setAttr(mpNd+'.fm', 0)
+    mc.setAttr(mpNd+'.u', paramOnCrv)
+    
+    return paramOnCrv
+    
 
 def duplicateSnapObjToTransforms(obj, transformsList):
     '''
