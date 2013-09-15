@@ -285,3 +285,17 @@ def fixMPCurvesForOffsetCtrlRig():
         addTo = 'CT_teethLocal%d_bndB.ry'%(jntId+1)
         rt.connectAddAttr(attrToAdd, addTo)
     """
+    
+def updatePlaneReaderLocs():
+    # Update plane reader locs pointOnPolyConstraint to read a new mesh
+    # upper plane
+    selCons = [u'CT_upperTeethPlaneReader_loc_pointOnPolyConstraint1', u'LT_upperTeethPlaneReaderA_loc_pointOnPolyConstraint1', u'LT_upperTeethPlaneReaderB_loc_pointOnPolyConstraint1', u'RT_upperTeethPlaneReaderA_loc_pointOnPolyConstraint1', u'RT_upperTeethPlaneReaderB_loc_pointOnPolyConstraint1']
+    newMesh = 'CT_mFTUpperTeethPlaneReader_geoShape.worldMesh'
+    for eachCon in selCons:
+        mc.connectAttr(newMesh, eachCon+'.target[0].targetMesh', f=True)
+        
+    # lower plane
+    selCons = [u'CT_lowerTeethPlaneReader_loc_pointOnPolyConstraint1', u'LT_lowerTeethPlaneReaderA_loc_pointOnPolyConstraint1', u'LT_lowerTeethPlaneReaderB_loc_pointOnPolyConstraint1', u'RT_lowerTeethPlaneReaderA_loc_pointOnPolyConstraint1', u'RT_lowerTeethPlaneReaderB_loc_pointOnPolyConstraint1']
+    newMesh = 'CT_mFTLowerTeethPlaneReader_geoShape.worldMesh'
+    for eachCon in selCons:
+        mc.connectAttr(newMesh, eachCon+'.target[0].targetMesh', f=True)

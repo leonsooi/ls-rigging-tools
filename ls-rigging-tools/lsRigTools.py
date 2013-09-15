@@ -272,7 +272,8 @@ def connectSDK(inPlug, outPlug, keys, name=''):
     
 def connectAttrs(srcObj, destObj, attrs):
     for eachAttr in attrs:
-        mc.connectAttr(srcObj+'.'+eachAttr, destObj+'.'+eachAttr, f=True)
+        if not mc.isConnected(srcObj+'.'+eachAttr, destObj+'.'+eachAttr):
+            mc.connectAttr(srcObj+'.'+eachAttr, destObj+'.'+eachAttr, f=True)
         
 def connectAttrsGo():
     '''
@@ -596,7 +597,7 @@ def attachToMotionPath(crv, uVal, obj, fm):
     
     # create motionPath
     mpNd = mc.createNode('motionPath', n=obj+'_mp')
-    mc.connectAttr(crv+'.local', mpNd+'.gp', f=True)
+    mc.connectAttr(crv+'.worldSpace[0]', mpNd+'.gp', f=True)
     mc.setAttr(mpNd+'.uValue', uVal)
     mc.setAttr(mpNd+'.fractionMode', fm)
     
@@ -605,6 +606,11 @@ def attachToMotionPath(crv, uVal, obj, fm):
     #mc.connectAttr(mpNd+'.r', obj+'.r', f=True)
     
     return mpNd
+
+def mpConvertToLocal(mpNode):
+    worldSpc = mc.listConnections(mpNode+'.gp', p=True, s=True, d=False)[0]
+    localSpc = worldSpc.replace('.worldSpace', '.local')
+    mc.connectAttr(localSpc, mpNode+'.gp', f=True)
 
 def mpConvertToFM(mpNode):
     '''
