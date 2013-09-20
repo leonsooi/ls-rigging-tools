@@ -25,7 +25,8 @@ def createWireOffsetCtl(nodeName, dfmGeo, attachGeo=None, ctlNum=1, size=1, addG
         drvSys, drvLocs = createPtDriverSys(nodeName, attachGeo=attachGeo)
     elif '.e' in firstSel:
         # edge
-        drvSys, drvLocs = createCrvDriverSys(nodeName, ctlNum, attachGeo=attachGeo)
+        print 'form: %s' % form
+        drvSys, drvLocs = createCrvDriverSys(nodeName, ctlNum, attachGeo=attachGeo, form=form)
     else:
         # invalid selection
         mc.error('invalid selection: %s' % firstSel)
@@ -81,7 +82,7 @@ def createCtlSys(nodeName, drvLocs, size=1, addGrp=1):
     '''
     Adds controls under drvLocs, to be used as offset controls
     size - [float] radius of nurbs sphere control
-            if size=1, radius will be 0.125 of distance between first 2 locators
+            if size=1, radius will be 0.2 of distance between first 2 locators
     addGrp - [int] number of offset grps above the control
     Returns ctlSysGrp, and a list of controls
     '''
@@ -90,7 +91,7 @@ def createCtlSys(nodeName, drvLocs, size=1, addGrp=1):
     pos2 = pm.dt.Point(mc.xform(drvLocs[1], q=True, ws=True, t=True))
     vec = pos2 - pos1
     dist = vec.length()
-    size = dist * 0.125 * size
+    size = dist * 0.2 * size
     
     # create controls
     ctls = []
@@ -99,11 +100,11 @@ def createCtlSys(nodeName, drvLocs, size=1, addGrp=1):
         grp = eachLoc
         # add offset grps
         for grpId in range(addGrp):
-            grp = mc.group(em=True, n=eachLoc.replace('_wireOffset_drvLoc', '_wireOffset_offset%d_grp'%grpId), p=grp)
+            grp = mc.group(em=True, n=eachLoc.replace('_wireOffset_drvLoc', '_wireOffset_offset%d_grp'%grpId).replace('Orig',''), p=grp)
             mc.xform(grp, os=True, a=True, t=(0,0,0), ro=(0,0,0))
             
         # create control
-        ctl = mc.sphere(r=size, n=eachLoc.replace('_wireOffset_drvLoc', '_wireOffset_ctl'))[0]
+        ctl = mc.sphere(r=size, n=eachLoc.replace('_wireOffset_drvLoc', '_wireOffset_ctl').replace('Orig',''))[0]
         mc.delete(ctl, ch=True)
         rt.parentSnap(ctl, grp)
         
@@ -174,9 +175,10 @@ def createPtDriverSys(nodeName, attachGeo=None):
     
     # get vertex selections
     selVerts = mc.ls(os=True, fl=True)
-    
+
     # create control placement locators on each vert
     drvLocs = []
+    origLocs = []
     popcNodes = []
     ctlNum = len(selVerts)
     for ctlId in range(ctlNum):
@@ -193,7 +195,17 @@ def createPtDriverSys(nodeName, attachGeo=None):
         # if attachGeo is defined, use attachGeo to drive pointOnPolyConstraint
         popcNode = mc.listRelatives(loc, c=True, type='pointOnPolyConstraint')[0]
         if attachGeo:
+            # make origLoc to preserve position
+            origLoc = mc.group(n=loc.replace('_drvLoc', '_drvLocOrig'), em=True)
+            rt.parentSnap(origLoc, loc)
+            mc.parent(origLoc, w=True)
+            
+            # swap input mesh for popcNode -> this will move drvLoc
             mc.connectAttr(attachGeo, popcNode+'.target[0].targetMesh', f=True)
+            
+            # parent origLoc back under driverLoc, and use origLoc as driverLoc instead
+            mc.parent(origLoc, loc)
+            origLocs.append(origLoc)
             
         popcNodes.append(popcNode)
     
@@ -204,6 +216,9 @@ def createPtDriverSys(nodeName, attachGeo=None):
     mc.addAttr(drvSysGrp, ln='enabled', at='bool', k=True, dv=True)
     for eachPopc in popcNodes:
         rt.connectSDK(drvSysGrp+'.enabled', eachPopc+'.nodeState', {1:0, 0:2})
+    
+    if attachGeo:
+        return drvSysGrp, origLocs
     
     return drvSysGrp, drvLocs
 
@@ -219,10 +234,7 @@ def createCrvDriverSys(nodeName, ctlNum, form=0, attachGeo=None):
     drvCrv, p2cNode = mc.polyToCurve(form=form, degree=1, n=nodeName+'_wireOffset_crv')
     p2cNode = mc.rename(p2cNode, nodeName+'_wireOffset_p2c')
     crvSpans = mc.getAttr(drvCrv+'.spans')
-    
-    # if attachGeo is defined, use attachGeo to drive pointOnPolyConstraint
-    if attachGeo:
-        mc.connectAttr(attachGeo, p2cNode+'.inputPolymesh', f=True)
+
     
     # create control placement locators on drvCrv
     drvLocs = []
@@ -238,6 +250,7 @@ def createCrvDriverSys(nodeName, ctlNum, form=0, attachGeo=None):
         param = crvSpans
         rt.attachToMotionPath(drvCrv, param, loc, False)
         drvLocs.append(loc)
+        
     
     drvLocGrp = mc.group(drvLocs, n=nodeName+'_wireOffset_drvLocs_grp')
     drvSysGrp = mc.group(drvCrv, drvLocGrp, n=nodeName+'_wireOffset_drvSys_grp')
@@ -247,5 +260,25 @@ def createCrvDriverSys(nodeName, ctlNum, form=0, attachGeo=None):
     
     mc.addAttr(drvSysGrp, ln='enabled', at='bool', k=True, dv=True)
     rt.connectSDK(drvSysGrp+'.enabled', p2cNode+'.nodeState', {1:0, 0:2})
+    
+        
+    # if attachGeo is defined, use attachGeo to drive polyToCurve
+    if attachGeo:
+        # make an origLoc for each driverLoc to preserve orig positions
+        origLocs = []
+        for eachLoc in drvLocs:
+            origLoc = mc.group(n=eachLoc.replace('_drvLoc', '_drvLocOrig'), em=True)
+            rt.parentSnap(origLoc, eachLoc)
+            mc.parent(origLoc, w=True)
+            origLocs.append(origLoc)
+            
+        # switch the input mesh for polyToCurve -> this will move drvLocs
+        mc.connectAttr(attachGeo, p2cNode+'.inputPolymesh', f=True)
+        
+        # parent orig loc back under driver loc, preserving transforms
+        for drv, orig in zip(drvLocs, origLocs):
+            mc.parent(orig, drv)
+            
+        return drvSysGrp, origLocs
     
     return drvSysGrp, drvLocs
