@@ -1,9 +1,9 @@
 import maya.cmds as mc
 import lsRigTools as rt
 
-def getMirroredPos(ctls):
+def getMirroredPos(ctls, parent=None):
     '''
-    Mirror a list of ctls, all in worldSpace
+    Mirror a list of ctls, in worldSpace if parent=None
     Assume to use X world axis
     Assume local mirror axis is Z
     
@@ -15,6 +15,11 @@ def getMirroredPos(ctls):
     loc2 = mc.spaceLocator()[0]
     mc.parent(loc2, loc1)
     flipGrp = mc.group(n='tempFlipGrp', em=True, w=True)
+    
+    if parent:
+        mc.parent(flipGrp, parent)
+        mc.xform(flipGrp, os=True, t=(0,0,0), ro=(0,0,0))
+        mc.parent(flipGrp, w=True)
     
     posList = []
     rotList = []
