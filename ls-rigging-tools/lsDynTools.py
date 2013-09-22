@@ -46,7 +46,7 @@ def makeDynamicWire(jnts, geo, name, ctl):
     
     # attributes on ctl
     mc.addAttr(ctl, ln='tDynamics', nn='DYNAMICS', at='enum', en='-----', k=True)
-    mc.setAttr(ctl+'.tDynamics', l=True)
+    #mc.setAttr(ctl+'.tDynamics', l=True)
     mc.addAttr(ctl, ln='enabled', at='bool', dv=True, k=True)
     mc.addAttr(ctl, ln='weight', at='double', min=0, max=1, dv=1, k=True)
     

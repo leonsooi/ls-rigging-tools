@@ -23,6 +23,7 @@ def spaceSwitchWeights(spaces, newSpace):
         
     return retDict
 
+
 def createAnimMM():
     '''
     '''
@@ -35,13 +36,43 @@ def createAnimMM():
         return None
     
     # if there are objects, make more menus
-    mc.menuItem(l='Space Switching', en=True, rp='NE', sm=True)
-    createSpaceSwitchMM(selObjs[0])
-    mc.setParent('..', m=True)
     
-    mc.menuItem(l='Align Switching', en=True, rp='E', sm=True)
-    createAlignSwitchMM(selObjs[0])
-    mc.setParent('..', m=True)
+    # space switching menu
+    enabled = mc.objExists(selObjs[0]+'.tSPACE')
+    mc.menuItem(l='Space Switching', en=enabled, rp='NE', sm=enabled)
+    
+    if enabled:
+        createSpaceSwitchMM(selObjs[0])
+        mc.setParent('..', m=True)
+    
+    # align switching menu
+    enabled = mc.objExists(selObjs[0]+'.tALIGN')
+    mc.menuItem(l='Align Switching', en=enabled, rp='E', sm=enabled)
+    
+    if enabled:
+        createAlignSwitchMM(selObjs[0])
+        mc.setParent('..', m=True)
+    
+    # dummy menus
+    if mc.objExists(selObjs[0]+'.relatedName'):
+        relatedName = mc.getAttr(selObjs[0]+'.relatedName')
+        mc.menuItem(l='Key %s'%relatedName, en=True, rp='SE')
+        mc.menuItem(l='Select %s'%relatedName, en=True, rp='S')
+    else:
+        mc.menuItem(l='No Related Items', en=False, rp='SE')
+        mc.menuItem(l='No Related Items', en=False, rp='S')
+        
+    mc.menuItem(l='Key Selected', en=True, rp='SW')
+    mc.menuItem(l='Flip Pose', en=True, rp='W')
+    mc.menuItem(l='Mirror Pose', en=True, rp='NW')
+    
+    # dummy IKFK snapping menu
+    if mc.objExists(selObjs[0]+'.tIK2FKSnap'):
+        mc.menuItem(l='Snap IK to FK', en=True, rp='N')
+    elif mc.objExists(selObjs[0]+'.tFK2IKSnap'):
+        mc.menuItem(l='Snap FK to IK', en=True, rp='N')
+    else:
+        mc.menuItem(l='No FK/IK Snapping', en=False, rp='N')
     
 def createSpaceSwitchMM(obj):
     spaces = [attr for attr in mc.listAttr(obj, ud=True) if attr[:5] == 'SPACE']
