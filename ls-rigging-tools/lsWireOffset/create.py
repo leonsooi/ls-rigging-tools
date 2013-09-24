@@ -115,7 +115,7 @@ def createCtlSys(nodeName, drvLocs, size=1, addGrp=1):
         mc.disconnectAttr(ctlShape+'.instObjGroups', shdConn)
         # assign color override
         mc.setAttr(ctlShape+'.overrideEnabled', 1)
-        mc.setAttr(ctlShape+'.overrideColor', 7)
+        mc.setAttr(ctlShape+'.overrideColor', 6)
         
         ctls.append(ctl)
     
