@@ -6,6 +6,10 @@ Original abAutoRig.mel must be in scripts folder
 Both Standard and Premium versions will work 
 '''
 
+'''
+TEST
+'''
+
 from maya.mel import eval as meval
 import maya.cmds as mc
 import itertools

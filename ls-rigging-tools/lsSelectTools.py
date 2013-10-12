@@ -1,4 +1,33 @@
 import maya.cmds as mc
+import lsDfmTools as dt
+
+def transferComponentSelection(selComponents, destMesh):
+    '''
+    transfers selection of components to destMesh
+    '''
+
+    selComponentsIds = [dt.getComponentId(component) for component in selComponents]
+    
+    componentType = selComponents[0].split('.')[1].split('[')[0]
+    
+    newComponents = ['%s.%s[%d]'%(destMesh, componentType, faceId) for faceId in selComponentsIds]
+    
+    return newComponents
+
+def transferComponentSelectionGo():
+    '''
+    select components on source mesh,
+    shift-select dest mesh,
+    execute
+    '''
+    sel = mc.ls(sl=True, fl=True)
+    destMesh = sel[-1]
+    selComponents = sel[:-1]
+    
+    newComponents = transferComponentSelection(selComponents, destMesh)
+    
+    mc.select(newComponents, r=True)
+    
 
 def selectVertsFromIdList(mesh, idList):
     '''
