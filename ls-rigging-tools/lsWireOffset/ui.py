@@ -48,8 +48,8 @@ def createNew(txtFld):
     '''
     '''
     # hard-coded variables
-    deformGeo = 'CRIG:MOD:CT_body_geo_0'
-    attachGeo = 'CRIG:CT_spineSquashLattice_dfm.outputGeometry[0]'
+    deformGeo = 'CT_body_geo_0ShapeDeformedDeformed'
+    attachGeo = 'polySoftEdge1.output'
     #deformGeo = 'pSphere1'
     #attachGeo = None
     ctlNum = 16
