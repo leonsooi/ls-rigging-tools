@@ -3,6 +3,7 @@
 	<name>ls-rigging-tools</name>
 	<comment></comment>
 	<projects>
+		<project>cgm</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
