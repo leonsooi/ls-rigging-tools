@@ -4,6 +4,8 @@
 	<comment></comment>
 	<projects>
 		<project>cgm</project>
+		<project>ngSkinTools</project>
+		<project>pymel</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
