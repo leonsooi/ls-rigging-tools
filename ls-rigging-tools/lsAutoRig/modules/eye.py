@@ -2,7 +2,9 @@ import time
 
 import pymel.core as pm
 from maya.mel import eval as meval
+import maya.cmds as mc
 
+import lsRigTools as rt
 import lsAutoRig.lib.mesh as mesh
 reload(mesh)
 import lsAutoRig.lib.datatypes as data
@@ -568,3 +570,25 @@ def updateConnections(masterGrp, upperAngle, lowerAngle):
     masterGrp.lowerMiddle.set(midLowerAngle)
     masterGrp.lowerClosed.set(midLowerAngle-midUpperAngle)
     masterGrp.lowerOverclosed.set(midLowerAngle-(3.0*midUpperAngle/2.0))
+    
+    
+def integrationWithFAT():
+    '''
+    Eye module integration with Facial Animation Toolset
+    '''
+    rt.connectSDK('L_Blink_AU45.tx', 'LT_eyelid_master_grp_0.blink', {0:0, 100:-0.81})
+    rt.connectSDK('R_Blink_AU45.tx', 'RT_eyelid_master_grp_0.blink', {0:0, 100:-0.81})
+    rt.connectSDK('Left_Upper_Lid.tx', 'LT_eyelid_master_grp_0.upperLid', {0:0, 100:-1, -100:1})
+    rt.connectSDK('Left_Lower_Lid.tx', 'LT_eyelid_master_grp_0.lowerLid', {0:0, 100:1, -100:-1})
+    rt.connectSDK('Right_Upper_Lid.tx', 'RT_eyelid_master_grp_0.upperLid', {0:0, 100:-1, -100:1})
+    rt.connectSDK('Right_Lower_Lid.tx', 'RT_eyelid_master_grp_0.lowerLid', {0:0, 100:1, -100:-1})
+    
+    mc.pointConstraint('MarkerJoint_LLID', 'LT_eyelid_upperDrv_startJnt_0', mo=True)
+    mc.pointConstraint('MarkerJoint_LLACH', 'LT_eyelid_lowerDrv_startJnt_0', mo=True)
+    mc.pointConstraint('MarkerJoint_RLID', 'RT_eyelid_upperDrv_startJnt_0', mo=True)
+    mc.pointConstraint('MarkerJoint_RLACH', 'RT_eyelid_lowerDrv_startJnt_0', mo=True)
+    
+    rt.connectSDK('eyeshift.tx', 'left_eye_grp.ry', {0:0, -100:-50, 100:50})
+    rt.connectSDK('eyeshift.tx', 'right_eye_grp.ry', {0:0, -100:-50, 100:50})
+    rt.connectSDK('eyeshift.ty', 'left_eye_grp.rx', {0:0, -100:20, 100:-20})
+    rt.connectSDK('eyeshift.ty', 'right_eye_grp.rx', {0:0, -100:20, 100:-20})
