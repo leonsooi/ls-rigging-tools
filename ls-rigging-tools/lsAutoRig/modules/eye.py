@@ -199,10 +199,9 @@ def createDriverEyelidJoint(startPos, endPos, name):
     return startJnt, endJnt
     
 
-def constructEyelidsDeformer(name, eyePivot):
+def constructEyelidsDeformer(name, eyePivot, edgeLoop):
     
-    # select edge loop
-    # ... [user]
+    pm.select(edgeLoop, r=True)
     crv = pm.polyToCurve(form=1, degree=3, ch=False)[0]
     crv = pm.PyNode(crv)
     crv.rename(name + '_aimAt_crv_0')
@@ -471,6 +470,8 @@ def selectInUpOutLowCVsOnCurve(crv):
 
 def buildEyeRig(name, eyePivot, edgeLoop, loops):
     '''
+    DEPRECATED - USE FACEUI
+    INTERFACE TO FUNCTION DEFS HAVE CHANGED
     example use:
     (assume that skin cluster and layers are already set up)
     buildEyeRig('LT_eyelid', PyNode('LT_eye_geo'), pm.ls(sl=True, fl=True), 8)
