@@ -48,13 +48,13 @@ def createNew(txtFld):
     '''
     '''
     # hard-coded variables
-    deformGeo = 'CRIG:MOD:CT_body_geo_0'
-    attachGeo = 'CRIG:CT_spineSquashLattice_dfm.outputGeometry[0]'
+    deformGeo = 'CRIG:TGUE:CT_tongueJaw_geo_0'
+    attachGeo = 'CT_dynTongue_dyn_wireDfm.outputGeometry[0]'
     # deformGeo = 'MOD:CT_body_geo_0'
     # attachGeo = 'MOD:CT_body_bsp_0.outputGeometry[0]'
-    ctlNum = 16
+    ctlNum = 10
     size = 1
-    form = 1 # 0 is open, 1 is periodic
+    form = 0 # 0 is open, 1 is periodic
     
     nodeName = mc.textFieldGrp(txtFld, q=True, text=True)
     create.createWireOffsetCtl(nodeName, deformGeo, attachGeo=attachGeo, ctlNum=ctlNum, size=size, form=form)

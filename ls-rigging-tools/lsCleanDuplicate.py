@@ -10,10 +10,17 @@ Useful for creating blendshapes or deleting deformer history
 Usage: 
 import lsCleanDuplicate
 lsCleanDuplicate.lsCleanDuplicate(targetObj)
+
+OR
+
+Select objects
+import lsCleanDuplicate
+lsCleanDuplicate.lsCleanDuplicateRun()
 """
 
 import maya.cmds as mc
 from maya.mel import eval as meval
+import pymel.core as pm
 
 def lsCleanDuplicate(targetObj):
     """
@@ -36,8 +43,26 @@ def lsCleanDuplicate(targetObj):
         mc.setAttr('%s.envelope'%eachDfm, 0)
     
     # make duplicate    
-    mc.duplicate(targetObj, n='%s_cleanDuplicate'%targetObj)
+    dup = mc.duplicate(targetObj, n='%s_cleanDuplicate'%targetObj)[0]
+    
+    # use pymel to unlock attrs
+    dupNode = pm.PyNode(dup)
+    attrsToUnlock = ('tx','ty','tz', 'rx','ry','rz', 'sx','sy','sz', 'v')
+    [dupNode.attr(attrToUnlock).unlock() for attrToUnlock in attrsToUnlock]
     
     # re-enable all deformers by setting envelope to 1
     for eachDfm in allDeformers:
         mc.setAttr('%s.envelope'%eachDfm, 1)
+        
+    return dup
+
+def lsCleanDuplicateRun():
+    """
+    Run from UI
+    Select objects to duplicate, run
+    """
+    objs = mc.ls(sl=True)
+    dups = []
+    for eachObj in objs:
+        dups.append(lsCleanDuplicate(eachObj))
+    mc.select(dups)

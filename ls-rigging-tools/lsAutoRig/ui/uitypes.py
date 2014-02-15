@@ -58,7 +58,7 @@ class Selector(pm.uitypes.TextFieldButtonGrp):
         and display in textField
         '''
         self.selection = pm.ls(sl=True)
-        print self.selection
+        
         self.refreshDisplay()
         
         if self.additionalCmd:

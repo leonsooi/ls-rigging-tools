@@ -21,13 +21,19 @@ class VertexLoops():
         
         pm.select(selVerts, r=True)
         
+        pm.progressWindow(title='Analyzing edge loops', progress=0, max=loopNum)
+        
         # traverse loops outward from selection
-        for _ in range(loopNum):
+        for loopId in range(loopNum):
             previousLoop += nextLoop
             pm.runtime.GrowPolygonSelectionRegion()
             selVertsLoop = pm.ls(sl=True, fl=True)
             nextLoop = [vert for vert in selVertsLoop if vert not in previousLoop]
             self.vertLoops.append(nextLoop)
+            # increment progress window
+            pm.progressWindow(e=True, step=1, status='\nAnalyzing loop %d' % (loopId+1))
+        
+        pm.progressWindow(e=True, endProgress=True)
         
     def length(self):
         return len(self.vertLoops)

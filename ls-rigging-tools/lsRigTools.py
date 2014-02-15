@@ -6,6 +6,55 @@ import pymel.core as pm
 import lsCreateNode as cn
 reload(cn)
 
+def alignTransformToMeshGo(method=''):
+    '''
+    select transforms, select mesh, go
+    '''
+    transforms = pm.ls(sl=True)[:-1]
+    mesh = pm.ls(sl=True)[-1]
+    for each in transforms:
+        alignTransformToMesh(each, mesh, method=method)
+
+def alignTransformToMesh(transform, mesh, method=''):
+    '''
+    transform - PyNode.transform
+    mesh - PyNode.mesh
+    method - 'sliding' or 'normal'
+    
+    eg:
+    alignTransformToMesh(grp, mesh, 'normal')
+    '''
+    pos = transform.getRotatePivot(space='world')
+    normal = mesh.getClosestNormal(pos, space='world')[0]
+    if method == 'sliding':
+        orientToVector(transform, (0,0,1), normal, (0,1,0), (0,1,0))
+    elif method == 'normal':
+        orientToVector(transform, (0,1,0), (0,1,0), (0,0,1), normal)
+    
+
+def orientToVector(transform, priAxis, priVec, secAxis, secVec):
+    '''
+    rotates translate to align with vector
+    
+    transform - PyNode.transform
+    priAxis, priVec, secAxis, secVec - vectors
+    
+    example:
+    orientToVector(grp, (0,1,0), upVec, (0,0,1), normalVec)
+    
+    this will first align grp's Y-axis with upVec,
+    then Z-axis to normalVec
+    '''
+    cons = pm.createNode('aimConstraint')
+    cons.constraintRotate >> transform.rotate
+    
+    cons.aimVector.set(priAxis)
+    cons.target[0].targetTranslate.set(priVec)
+    cons.upVector.set(secAxis)
+    cons.worldUpVector.set(secVec)
+    
+    pm.delete(cons)
+
 def copyJntsWithInputs(jnts):
     '''
     '''
