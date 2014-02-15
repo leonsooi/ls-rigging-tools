@@ -6,6 +6,21 @@ import pymel.core as pm
 import lsCreateNode as cn
 reload(cn)
 
+def mirrorTransformGo():
+    transforms = pm.ls(sl=True)
+    mirrored = []
+    for each in transforms:
+        mirrored.append(mirrorTransform(each))
+    pm.select(transforms, mirrored, r=True)
+    
+
+def mirrorTransform(transform):
+    m = transform.duplicate(n=transform.name().replace('lf_', 'rt_'))[0]
+    m.tx.set(-transform.tx.get())
+    m.ry.set(-transform.ry.get())
+    m.rz.set(-transform.rz.get())
+    return m
+
 def alignTransformToMeshGo(method=''):
     '''
     select transforms, select mesh, go
@@ -14,6 +29,7 @@ def alignTransformToMeshGo(method=''):
     mesh = pm.ls(sl=True)[-1]
     for each in transforms:
         alignTransformToMesh(each, mesh, method=method)
+    pm.select(transforms, r=True)
 
 def alignTransformToMesh(transform, mesh, method=''):
     '''
