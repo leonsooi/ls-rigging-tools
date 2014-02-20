@@ -6,6 +6,57 @@ Created on Feb 14, 2014
 
 import pymel.core as pm
 
+def patchToFixScale(bnd):
+    '''
+    # PATCH TO PRIMARY DRIVERS BW IN V39
+    # patch to fix priDrv scale (through blendweighteds)
+    # subtract 1 from the decomposeMatrix node, so that scales are nornmalized to 0
+    # blendweighted node blends values at 0
+    # add 1 to blended value, then pass to priDrv
+    
+    e.g.
+    bnd = pm.PyNode('lf_low_cheek_bnd')
+    '''
+    priDrv = bnd.getParent(2)
+    channels = ['sx', 'sy', 'sz']
+    bwNds = [bnd.attr(ch + '_bwMsg').get() for ch in channels]
+    
+    # ITER through bwNds to fix each one
+    for bwNd in bwNds:
+        ###bwNd = bwNds[0]
+        
+        inputAttrs = bwNd.input.inputs(p=True, s=True)
+        inputNds = [attr.node() for attr in inputAttrs]
+        
+        # ITER through each input to remove BTA,
+        # and subtract 1
+        for attr, nd in zip(inputAttrs, inputNds):
+            ###attr = inputAttrs[0]
+            ###nd = inputNds[0]
+            adl = pm.createNode('addDoubleLinear', n=nd.replace('_bta', '_adl'))
+            # get bta's input
+            btaInput = nd.input[1].inputs(s=True, p=True)[0]
+            # reroute bta input to adl
+            btaInput >> adl.input1
+            adl.input2.set(-1)
+            # adl connect bw (replace bta)
+            inputPlug = attr.outputs(p=True)[0]
+            adl.output >> inputPlug
+            # get the index, so that we can also connect the weight
+            # (assuming they follow the same logical index)
+            inputId = inputPlug.index()
+            weightPlug = nd.attributesBlender.inputs(p=True)[0]
+            weightPlug >> bwNd.weight[inputId]
+            # delete BTA
+            pm.delete(nd)
+            
+        # add 1 to the bwNd output
+        outPlug = bwNd.output.outputs(p=True)[0]
+        adl = pm.createNode('addDoubleLinear', n=bwNd.replace('_bw', '_adl'))
+        bwNd.output >> adl.input1
+        adl.input2.set(1)
+        adl.output >> outPlug
+
 def addMotionSystemToBnd(bnd):
     # msg attr to ctl
     ctl = pm.PyNode(bnd.name().replace('_bnd', '_ctrl'))
