@@ -111,7 +111,7 @@ def addMotionSystemToBndGo():
         mss.append(ms)
     pm.group(mss, n='face_motion_grp')
         
-addMotionSystemToBndGo()
+# addMotionSystemToBndGo()
 
     
 def addPrimaryCtlToBnd(bnd):
@@ -130,7 +130,7 @@ def addPrimaryCtlToBnd(bnd):
     ctl[1].centerZ.set(0.04)
     pm.delete(ctl, ch=True)
     
-addPrimaryCtlToBnd(pm.ls(sl=True)[0])
+# addPrimaryCtlToBnd(pm.ls(sl=True)[0])
 
 def connectBndsToPriCtlGo():
     bnds = pm.ls(sl=True)[:-1]
@@ -187,15 +187,14 @@ def connectBndToPriCtl(bnd, priCtl):
     bnd.addAttr(priCtl+'_weight', at='double', k=True, min=0, max=1, dv=1)
     for eachChannel in ['tx','ty','tz','rx','ry','rz']:
         bnd.attr(priCtl+'_weight') >> bwNodes[eachChannel].weight[nextIndex]
-    # scales need to be blended back to 1 (not 0)
+    # scales need a minus 1, to be normalized to 0 for blending
     for eachChannel in ['sx','sy','sz']:
-        bta = pm.createNode('blendTwoAttr', n=bnd.replace('_bnd', '_%s_bta'%eachChannel))
-        bta.input[0].set(1)
-        dmNd.attr('o%s'%eachChannel) >> bta.input[1]
-        bnd.attr(priCtl+'_weight') >> bta.attributesBlender
-        bta.output >> bwNodes[eachChannel].i[nextIndex]
+        adl = pm.createNode('addDoubleLinear', n=bnd.replace('_bnd', '_%s_adl'%eachChannel))
+        adl.input2.set(-1)
+        dmNd.attr('o%s'%eachChannel) >> adl.input1
+        adl.output >> bwNodes[eachChannel].i[nextIndex]
         
-connectBndsToPriCtlGo()
+# connectBndsToPriCtlGo()
 
 def addSecondaryCtlToBnd(bnd):
     # add secondary control to bnd
@@ -230,4 +229,4 @@ def addSecondaryCtls():
         cths.append(cth)
     pm.group(cths, n='face_ctrls_grp')
     
-addSecondaryCtls()
+# addSecondaryCtls()
