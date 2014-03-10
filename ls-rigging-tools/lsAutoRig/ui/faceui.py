@@ -14,6 +14,130 @@ import lsAutoRig.modules.eye as eye
 reload(uitypes)
 reload(eye)
 
+import lsAutoRig.lib.context as context
+reload(context)
+
+class newUI(pm.uitypes.Window):
+    """
+    """
+    
+    # constants 
+    _TITLE = 'Face Rig System'
+    _WINDOW = 'lsFRS_win'
+    
+    _LTPREFIX = 'LT_'
+    _RTPREFIX = 'RT_'
+    
+    imageRefPath = 'C:/Users/Leon/Pictures/FRS/Images/'
+    
+    mesh = pm.PyNode('body_geo')
+    
+    def __new__(cls):
+        '''
+        delete old window and create new instance
+        '''
+        if pm.window(cls._WINDOW, exists=True):
+            pm.deleteUI(cls._WINDOW)
+            
+        self = pm.window(cls._WINDOW, title=cls._TITLE, menuBar=True)
+
+        return pm.uitypes.Window.__new__(cls, self)
+    
+    def __init__(self):
+        '''
+        create UI
+        '''
+        with pm.menu(l='Options') as menuOptions:
+            pm.menuItem(l='Refresh')
+            pm.menuItem(l='Reset')
+        
+        with pm.menu(l='Help') as menuHelp:
+            pm.menuItem(l='Documentation')
+            pm.menuItem(l='About')
+        
+        with pm.tabLayout() as mainTab:
+            
+            with pm.columnLayout(adj=True) as geoSelectionLayout:
+                pass
+            
+            with pm.columnLayout(adj=True) as jntPlacementLayout:
+            
+                with pm.verticalLayout(ratios=(1,10,1), spacing=10) as jntPlacementVertLayout:
+                    
+                    #self.chk_symmetry = pm.checkBox(l='Symmetry', v=True)
+                    self.btn_startJntPlacement = pm.button(l='Start Joint Placement', c=pm.Callback(self.startJointPlacement))
+                    
+                    self.img_jntReference = pm.image(image=self.imageRefPath+'FRSRef_default.jpg')
+                
+                    with pm.rowLayout(numberOfColumns=3, adj=2) as jntRowLayout:
+                        self.btn_jntScrollLt = pm.button(l='<<', w=40)
+                        self.txt_jntCurrent = pm.text(label='Click "Start Joint Placement" above to begin.', align='center')
+                        self.btn_jntScrollRt = pm.button(l='>>', w=40, c=pm.Callback(self.selectNextItem))
+                        
+                with pm.verticalLayout() as edgeLoopsVertLayout:
+
+                    #pm.separator(style='in')
+                        
+                    #self.sel_eyeLoopLt = uitypes.Selector(l='Left Eye Loop', lw=100)
+                    #self.sel_eyeLoopRt = uitypes.Selector(l='Right Eye Loop', lw=100)
+                    self.int_eyeRigidLoops = pm.intSliderGrp(l='Eye Rigid Loops', field=True, cw3=(100,40,140),
+                                                          min=1, max=12, fieldMaxValue=99, v=4)
+                    self.int_eyeFalloffLoops = pm.intSliderGrp(l='Eye Falloff Loops', field=True, cw3=(100,40,140),
+                                                            min=1, max=12, fieldMaxValue=99, v=4)
+                    
+                    #pm.separator(style='in')
+                    
+                    #self.int_lipLoop = uitypes.Selector(l='Lip Loop', lw=100)
+                    self.int_lipRigidLoops = pm.intSliderGrp(l='Lip Rigid Loops', field=True, cw3=(100,40,140),
+                                                          min=1, max=12, fieldMaxValue=99, v=4)
+                    self.int_lipFalloffLoops = pm.intSliderGrp(l='Lip Falloff Loops', field=True, cw3=(100,40,140),
+                                                            min=1, max=12, fieldMaxValue=99, v=4)
+                    
+                with pm.verticalLayout(spacing=10) as buildRigVertLayout:
+                    self.btn_buildRig = pm.button(l='Build Rig')
+                    
+        mainTab.setTabLabel((geoSelectionLayout,'Geometry'))
+        mainTab.setTabLabel((jntPlacementLayout,'Joints'))
+        mainTab.setSelectTab(jntPlacementLayout)
+        
+        self.show()
+        
+        
+    def startJointPlacement(self):
+        '''
+        '''
+        self.btn_startJntPlacement.setLabel('Restart Joint Placement')
+        
+        self.placementGrp = pm.group(n='CT_placement_grp', em=True)
+        
+        jntPlacementContext = context.FaceJointPlacementContext(self.mesh, self, self.placementGrp)
+        jntPlacementContext.runContext()
+        
+    def selectNextItem(self):
+        '''
+        '''
+        if self.txt_jntCurrent.getLabel() == 'Select mouth lips loop':
+            
+            self.txt_jntCurrent.setLabel('Select left eyelid loop')
+            
+            # assign selection to placement_grp attr
+            sel = pm.ls(sl=True, fl=True)
+            self.placementGrp.addAttr('mouthLipsLoop', dt='stringArray')
+            self.placementGrp.attr('mouthLipsLoop').set(len(sel), *sel, type='stringArray')
+            pm.select(cl=True)
+            
+        elif self.txt_jntCurrent.getLabel() == 'Select left eyelid loop':
+            self.txt_jntCurrent.setLabel('Set rigid and falloff loops below')
+            pm.setToolTo('selectSuperContext')
+            
+            # assign selection to placement_grp attr
+            sel = pm.ls(sl=True, fl=True)
+            self.placementGrp.addAttr('leftEyelidLoop', dt='stringArray')
+            self.placementGrp.attr('leftEyelidLoop').set(len(sel), *sel, type='stringArray')
+            
+            pm.select(cl=True)
+        
+
 class UI(pm.uitypes.Window):
     """
     """

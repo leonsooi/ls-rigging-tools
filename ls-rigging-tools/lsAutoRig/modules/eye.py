@@ -598,6 +598,25 @@ def selectInUpOutLowCVsOnCurve(crv):
         innerCV = crv.cv[allCVs.index(max(allCVs, key=lambda x: x[0]))]
         
     pm.select(innerCV, upperCV, outerCV, lowerCV, r=True)
+    
+def returnInUpOutLowCVsOnCurve(crv):
+    '''
+    Return inner, upper, outer, lower cvs on curve
+    '''
+    allCVs = crv.getCVs()
+    # find upper, outer, lower first
+    upperCV = crv.cv[allCVs.index(max(allCVs, key=lambda x: x[1]))]
+    outerCV = crv.cv[allCVs.index(min(allCVs, key=lambda x: x[2]))]
+    lowerCV = crv.cv[allCVs.index(min(allCVs, key=lambda x: x[1]))]
+    # find out which side is outer on
+    if outerCV.getPosition().x > upperCV.getPosition().x:
+        # inner should be on min x
+        innerCV = crv.cv[allCVs.index(min(allCVs, key=lambda x: x[0]))]
+    else:
+        # inner should be on max x
+        innerCV = crv.cv[allCVs.index(max(allCVs, key=lambda x: x[0]))]
+        
+    return innerCV, upperCV, outerCV, lowerCV
 
 def buildEyeRig(name, eyePivot, edgeLoop, loops):
     '''
