@@ -5,6 +5,7 @@ Created on 20/09/2013
 '''
 
 import maya.cmds as mc
+import pymel.core as pm
 from lsWireOffset import create
 reload(create)
 
@@ -48,15 +49,31 @@ def createNew(txtFld):
     '''
     '''
     # hard-coded variables
-    deformGeo = 'CRIG:TGUE:CT_tongueJaw_geo_0'
-    attachGeo = 'CT_dynTongue_dyn_wireDfm.outputGeometry[0]'
+    # deformGeo = 'geoShape'
+    # attachGeo = 'skinCluster1.outputGeometry[0]'
     # deformGeo = 'MOD:CT_body_geo_0'
     # attachGeo = 'MOD:CT_body_bsp_0.outputGeometry[0]'
+    
+    # get the inputs to the deformed shape (if it is being driven by a deformer)
+    selComponents = pm.ls(sl=True)
+    deformGeo = selComponents[0].node()
+    
+    meshInputs = deformGeo.inMesh.inputs(s=True, p=True)
+    if meshInputs:
+        attachGeo = meshInputs[0] # wire deformer to be attached to this shape
+    else:
+        # not deformed
+        attachGeo = None
+    
     ctlNum = 10
     size = 1
     form = 0 # 0 is open, 1 is periodic
     
     nodeName = mc.textFieldGrp(txtFld, q=True, text=True)
+    
+    deformGeo = deformGeo.name()
+    if attachGeo:
+        attachGeo = attachGeo.name()
     create.createWireOffsetCtl(nodeName, deformGeo, attachGeo=attachGeo, ctlNum=ctlNum, size=size, form=form)
     
     # hard-coded post process

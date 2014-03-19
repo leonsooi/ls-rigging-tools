@@ -100,6 +100,9 @@ class FaceJointPlacementContext():
         else:
             self.nextJoint()
         
+        if not self.ui.btn_jntScrollLt.getEnable():
+            self.ui.btn_jntScrollLt.setEnable(True)
+        
     def nextJoint(self):
         '''
         Calls UI to show the next joint's reference
@@ -116,7 +119,7 @@ class FaceJointPlacementContext():
         '''
         pm.select(cl=True)
         pm.setToolTo('polySelectContext')
-        fullRefPath = r"C:\Users\Leon\Pictures\FRS\Images\FRSRef_mouthLoop.jpg"
+        fullRefPath = r"C:\Users\Leon\Pictures\FRS\Images\FRSRef_CT_mouthLipLoop.jpg"
         pm.image(self.ui.img_jntReference, image=fullRefPath, e=True)
         self.ui.txt_jntCurrent.setLabel('Select mouth lips loop')
         

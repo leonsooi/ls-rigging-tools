@@ -37,7 +37,7 @@ def setMeshWeights(root, aimJnts, generationWeights):
     allJnts = mll.listLayerInfluences(layerId, False)   
     
     firstVertsTrees = root.children
-    
+    print firstVertsTrees
     # create progress window
     pm.progressWindow(title='Assign weights', progress=0, max=len(bndJnts))
 
@@ -45,8 +45,11 @@ def setMeshWeights(root, aimJnts, generationWeights):
     for jntName, jntId in allJnts:
         # check if this joint is a bndJnt
         if jntName in bndJnts:
+            print jntName
+            print jntId
             # search for vert that corresponds to this joint
             closestTree = findClosestVertToJoint(pm.PyNode(jntName), firstVertsTrees)
+            print closestTree
             vertsToWeight = closestTree.getAllDescendentsData()
             vertsToWeightIds = [vert.index() for vert in vertsToWeight]
             vertsToWeightIds.append(closestTree.data.index())

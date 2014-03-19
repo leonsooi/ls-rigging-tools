@@ -7,6 +7,7 @@ from maya.mel import eval as meval
 
 import abRiggingTools as abRT
 import lsRigTools as rt
+reload(rt)
 
 def createWireOffsetCtl(nodeName, dfmGeo, attachGeo=None, ctlNum=1, size=1, addGrp=1, form=0):
     '''

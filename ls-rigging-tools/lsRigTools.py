@@ -591,6 +591,8 @@ def connectVisibilityToggle(targets, control, name, default=True):
     
     # connect visibilities
     for eachTarget in targets:
+        # mc.connectAttr(control+'.'+name, eachTarget+'.lodv', f=True)
+        #"""
         shapes = mc.listRelatives(eachTarget, s=True)
         if not shapes:
             # this is just a transform, so just connect it
@@ -599,6 +601,7 @@ def connectVisibilityToggle(targets, control, name, default=True):
             # connect all the shape nodes instead of the transform
             for eachShape in shapes:
                 mc.connectAttr(control+'.'+name, eachShape+'.lodv', f=True)
+        #"""
         
 
 def parentSnap(child, parent):
