@@ -1,7 +1,5 @@
 '''
-Created on Mar 17, 2014
-
-@author: Leon
+Class definitions for genes to build bind joints
 '''
 
 class Gene():
