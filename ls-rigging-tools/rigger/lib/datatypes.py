@@ -15,7 +15,7 @@ class Tree():
 	def getDescendents(self, generation=1):
 		'''
 		Recursive function to traverse and return descendents
-		There is probably is better way to do this without recursion???
+		There is probably a better way to do this without recursion???
 		Returns list of descendents
 		'''
 		if generation == 1:

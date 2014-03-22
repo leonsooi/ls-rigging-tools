@@ -227,6 +227,8 @@ def createPtDriverSys(nodeName, attachGeo=None):
 def createCrvDriverSys(nodeName, ctlNum, form=0, attachGeo=None):
     '''
     Create driver system based on edge loop selection in viewport
+    nodeName [string]
+    ctlNum [int] - number of controls to add along curve
     form - [int] 0 = open, 1 = periodic
     Returns drvSysGrp, and a list of locators that can be used to drive offset controls
     '''

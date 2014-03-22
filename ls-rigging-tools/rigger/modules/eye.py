@@ -3,7 +3,7 @@ import time
 import pymel.core as pm
 from maya.mel import eval as meval
 import maya.cmds as mc
-from cgm.lib import curves 
+from cgm.lib import curves
 
 import utils.rigging as rt
 import rigger.lib.mesh as mesh
@@ -18,16 +18,21 @@ from ngSkinTools.mllInterface import MllInterface
 
 def setMeshWeights(root, aimJnts, generationWeights):
     '''
+    root [Tree] of vertices around the eye
+    aimJnts [list of nt.Joints] 
+    generationWeights [list of floats]
+    
     Example weights with linear falloff
     generationWeights = [1,.9,.8,.7,.6,.5,.4,.3,.2,.1]
     '''
-    mesh = root.children[0].data.split('.')[0]
-    skn = pm.PyNode(meval('findRelatedSkinCluster("%s")' % mesh))
+    mesh = root.children[0].data.node()
+    sknStr = pm.mel.findRelatedSkinCluster(mesh.name())
+    skn = pm.PyNode(sknStr)
     
     # add layer for eye weights
     # assuming it does not yet exist...
     mll = MllInterface()
-    mll.setCurrentMesh(mesh)
+    mll.setCurrentMesh(mesh.name())
     layerId = mll.createLayer('Eye', True)
     
     # filter bind joints from aimJnts
@@ -37,7 +42,7 @@ def setMeshWeights(root, aimJnts, generationWeights):
     allJnts = mll.listLayerInfluences(layerId, False)   
     
     firstVertsTrees = root.children
-    print firstVertsTrees
+    
     # create progress window
     pm.progressWindow(title='Assign weights', progress=0, max=len(bndJnts))
 
@@ -48,7 +53,8 @@ def setMeshWeights(root, aimJnts, generationWeights):
             print jntName
             print jntId
             # search for vert that corresponds to this joint
-            closestTree = findClosestVertToJoint(pm.PyNode(jntName), firstVertsTrees)
+            closestTree = findClosestVertToJoint(pm.PyNode(jntName), 
+                                                 firstVertsTrees)
             print closestTree
             vertsToWeight = closestTree.getAllDescendentsData()
             vertsToWeightIds = [vert.index() for vert in vertsToWeight]
@@ -59,7 +65,8 @@ def setMeshWeights(root, aimJnts, generationWeights):
                 weights[eachId] = 1
             mll.setInfluenceWeights(layerId, jntId, weights)
             # update progress window
-            pm.progressWindow(e=True, step=1, status='\nAssigning to %s' % jntName)
+            pm.progressWindow(e=True, step=1, 
+                              status='\nAssigning to %s' % jntName)
             
     pm.progressWindow(e=True, endProgress=True)  
     
