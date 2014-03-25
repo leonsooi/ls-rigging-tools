@@ -4,16 +4,87 @@ Created on Feb 14, 2014
 @author: Leon
 '''
 
+import cgm.lib.curves as curves
+import cgm.lib.rigging as cgmrigging
+import maya.cmds as mc
 import pymel.core as pm
 import pymel.core.nodetypes as nt
-import maya.cmds as mc
 import rigger.modules.eye as eye
-reload(eye)
 import utils.rigging as rt
+reload(eye)
 reload(rt)
 
-import cgm.lib.rigging as cgmrigging
-import cgm.lib.curves as curves
+from ngSkinTools.mllInterface import MllInterface
+
+
+mel = pm.language.Mel()
+
+def addPerimeterBndSystem(mesh):
+    '''
+    '''
+    
+    periBnds = []
+
+    periBnds += addPerimeterBnd(nt.Joint('LT_in_forehead_bnd'), nt.Joint('RT_in_forehead_bnd'), nt.Joint('LT_out_forehead_bnd'), mesh, True, vecMult=0.2)
+    periBnds += addPerimeterBnd(nt.Joint('LT_out_forehead_bnd'), nt.Joint('LT_in_forehead_bnd'), nt.Joint('LT_temple_bnd'), mesh, True, vecMult=0.2)
+    periBnds += addPerimeterBnd(nt.Joint('LT_temple_bnd'), nt.Joint('LT_out_forehead_bnd'), nt.Joint('LT_low_temple_bnd'), mesh, True, vecMult=0.2)
+    periBnds += addPerimeterBnd(nt.Joint('LT_low_temple_bnd'), nt.Joint('LT_temple_bnd'), nt.Joint('LT_out_cheek_bnd'), mesh, True, vecMult=0.2)
+    periBnds += addPerimeterBnd(nt.Joint('LT_out_cheek_bnd'), nt.Joint('LT_low_temple_bnd'), nt.Joint('LT_up_jaw_bnd'), mesh, True, vecMult=0.2)
+    periBnds += addPerimeterBnd(nt.Joint('LT_up_jaw_bnd'), nt.Joint('LT_out_cheek_bnd'), nt.Joint('LT_corner_jaw_bnd'), mesh, True, vecMult=0.2)
+    periBnds += addPerimeterBnd(nt.Joint('LT_corner_jaw_bnd'), nt.Joint('LT_up_jaw_bnd'), nt.Joint('LT_neck_bnd'), mesh, True, vecMult=0.2)
+    periBnds += addPerimeterBnd(nt.Joint('LT_neck_bnd'), nt.Joint('LT_corner_jaw_bnd'), nt.Joint('CT_neck_bnd'), mesh, True, vecMult=0.2)
+    periBnds += addPerimeterBnd(nt.Joint('CT_neck_bnd'), nt.Joint('LT_neck_bnd'), nt.Joint('RT_neck_bnd'), mesh, False, vecMult=0.2)
+    
+    periGrp = pm.group(periBnds, n='CT_perimeterBnds_grp')
+    return periGrp
+
+def addPerimeterBnd(currBnd, prevBnd, nextBnd, mesh, mirror, vecMult=1.0):
+    """
+    make facePerimeterBnd
+    currBnd = pm.PyNode('LT_up_jaw_bnd')
+    prevBnd = pm.PyNode('LT_out_cheek_bnd')
+    nextBnd = pm.PyNode('LT_corner_jaw_bnd')
+    mesh = pm.PyNode('body_geo')
+    """
+    
+    currPos = currBnd.getTranslation(space='world')
+    prevPos = prevBnd.getTranslation(space='world')
+    nextPos = nextBnd.getTranslation(space='world')
+    
+    prevVec = currPos - prevPos
+    prevVec.normalize()
+    nextVec = nextPos - currPos
+    nextVec.normalize()
+    
+    tangVec = (prevVec + nextVec) / 2.0
+    tangVec.normalize()
+    
+    normVec = mesh.getClosestNormal(currPos)[0]
+    
+    outVec = normVec.cross(tangVec)
+    
+    outPos = currPos + outVec * vecMult
+    
+    # snap back to mesh surface
+    outPos = mesh.getClosestPoint(outPos)[0]
+    
+    pm.select(cl=True)
+    periJnt = pm.joint(n=currBnd.name() + '_perimeter_bnd')
+    periJnt.radius.set(0.1)
+    periJnt.setTranslation(outPos, space='world')
+    
+    
+    
+    if mirror:
+        pm.select(cl=True)
+        mirrorOutPos = outPos * (-1, 1, 1)
+        mirrorPeriJnt = pm.joint(n=currBnd.name().replace('LT_', 'RT_') + '_perimeter_bnd')
+        mirrorPeriJnt.radius.set(0.1)
+        mirrorPeriJnt.setTranslation(mirrorOutPos, space='world')
+        return [periJnt, mirrorPeriJnt]
+    else:
+        return [periJnt]
+
 def patchToFixScale(bnd):
     '''
     # PATCH TO PRIMARY DRIVERS BW IN V39
@@ -31,7 +102,7 @@ def patchToFixScale(bnd):
     
     # ITER through bwNds to fix each one
     for bwNd in bwNds:
-        ###bwNd = bwNds[0]
+        # ##bwNd = bwNds[0]
         
         inputAttrs = bwNd.input.inputs(p=True, s=True)
         inputNds = [attr.node() for attr in inputAttrs]
@@ -39,8 +110,8 @@ def patchToFixScale(bnd):
         # ITER through each input to remove BTA,
         # and subtract 1
         for attr, nd in zip(inputAttrs, inputNds):
-            ###attr = inputAttrs[0]
-            ###nd = inputNds[0]
+            # ##attr = inputAttrs[0]
+            # ##nd = inputNds[0]
             adl = pm.createNode('addDoubleLinear', n=nd.replace('_bta', '_adl'))
             # get bta's input
             btaInput = nd.input[1].inputs(s=True, p=True)[0]
@@ -75,8 +146,8 @@ def addMotionSystemToBnd(bnd):
     
     # build motion system - SDK
     sdkDag = pm.group(n=bnd.name().replace('_bnd', '_sdk'), em=True)
-    sdkGrp = pm.group(sdkDag, n=sdkDag.name()+'_priDrv')
-    sdkHm = pm.group(sdkGrp, n=sdkDag.name()+'_hm')
+    sdkGrp = pm.group(sdkDag, n=sdkDag.name() + '_priDrv')
+    sdkHm = pm.group(sdkGrp, n=sdkDag.name() + '_hm')
     bnd.addAttr('sdkMsg', at='message')
     sdkDag.message >> bnd.sdkMsg
     
@@ -85,17 +156,17 @@ def addMotionSystemToBnd(bnd):
     
     # build motion system - weightedConnections
     # we need 9 bw nodes, one for each channel
-    channels = ['tx','ty','tz','rx','ry','rz','sx','sy','sz']
+    channels = ['tx', 'ty', 'tz', 'rx', 'ry', 'rz', 'sx', 'sy', 'sz']
     bwNodes = {}
     for eachChannel in channels:
-        bwNd = pm.createNode('blendWeighted', n=bnd.name().replace('_bnd', '_%s_bw'%eachChannel))
+        bwNd = pm.createNode('blendWeighted', n=bnd.name().replace('_bnd', '_%s_bw' % eachChannel))
         bwNodes[eachChannel] = bwNd
-        bnd.addAttr(eachChannel+'_bwMsg', at='message')
-        bwNd.message >> bnd.attr(eachChannel+'_bwMsg')
+        bnd.addAttr(eachChannel + '_bwMsg', at='message')
+        bwNd.message >> bnd.attr(eachChannel + '_bwMsg')
         # connect bw output to sdk's priDrv
         # if scale, need to add 1 (normalize to 1)
         if eachChannel in ['sx', 'sy', 'sz']:
-            adl = pm.createNode('addDoubleLinear', n=bnd.name().replace('_bnd', '_%s_add1_adl'%eachChannel))
+            adl = pm.createNode('addDoubleLinear', n=bnd.name().replace('_bnd', '_%s_add1_adl' % eachChannel))
             bwNd.output >> adl.input1
             adl.input2.set(1)
             adl.output >> sdkGrp.attr(eachChannel)
@@ -132,8 +203,8 @@ def addMotionSystemToBndGo():
 def addPrimaryCtlToBnd(bnd):
     # create ctl
     ctl = pm.circle(n=bnd.name().replace('_bnd', '_pri_ctrl'))
-    ctg = pm.group(ctl, n=ctl[0].name()+'_ctg')
-    cth = pm.group(ctg, n=ctg.name()+'_cth')
+    ctg = pm.group(ctl, n=ctl[0].name() + '_ctg')
+    cth = pm.group(ctg, n=ctg.name() + '_cth')
     
     # position ctl
     cons = pm.parentConstraint(bnd, cth)
@@ -173,13 +244,13 @@ def connectBndToPriCtl(bnd, priCtl):
     bnd_wMat = bnd.getMatrix(ws=True)
     priCtl_wMat = priCtl.getMatrix(ws=True)
     bnd_lMat = bnd_wMat * priCtl_wMat.inverse()
-    lMatNd = pm.createNode('fourByFourMatrix', n=bnd.replace('_bnd', '_lMat_in_'+priCtl.nodeName()))
+    lMatNd = pm.createNode('fourByFourMatrix', n=bnd.replace('_bnd', '_lMat_in_' + priCtl.nodeName()))
     # populate "local" matrix
     for i in range(4):
         for j in range(4):
-            lMatNd.attr('in%d%d'%(i,j)).set(bnd_lMat[i][j])
+            lMatNd.attr('in%d%d' % (i, j)).set(bnd_lMat[i][j])
     # bnd's "local-inverse" matrix
-    lInvMatNd = pm.createNode('inverseMatrix', n=bnd.replace('_bnd', '_lInvMat_in_'+priCtl.nodeName()))
+    lInvMatNd = pm.createNode('inverseMatrix', n=bnd.replace('_bnd', '_lInvMat_in_' + priCtl.nodeName()))
     lMatNd.output >> lInvMatNd.inputMatrix
     # for bnd to pivot around priCtl,
     # the matrix is lMat * priCtlMat * lInvMat
@@ -191,10 +262,10 @@ def connectBndToPriCtl(bnd, priCtl):
     dmNd = pm.createNode('decomposeMatrix', n=bnd.replace('_bnd', '_calc_dm'))
     mmNd.o >> dmNd.inputMatrix
     # get bw nodes to connect to
-    channels = ['tx','ty','tz','rx','ry','rz','sx','sy','sz']
+    channels = ['tx', 'ty', 'tz', 'rx', 'ry', 'rz', 'sx', 'sy', 'sz']
     bwNodes = {}
     for eachChannel in channels:
-        bwNodes[eachChannel] = bnd.attr(eachChannel+'_bwMsg').get()
+        bwNodes[eachChannel] = bnd.attr(eachChannel + '_bwMsg').get()
     # get index to connect to
     existingInputs = bwNodes['tx'].i.inputs()
     nextIndex = len(existingInputs)
@@ -209,20 +280,20 @@ def connectBndToPriCtl(bnd, priCtl):
     dmNd.osy >> bwNodes['sy'].i[nextIndex]
     dmNd.osz >> bwNodes['sz'].i[nextIndex]
     # channel box separator
-    bnd.addAttr(priCtl.nodeName()+'_weights', at='double', k=True, dv=0)
-    bnd.setAttr(priCtl.nodeName()+'_weights', lock=True)
+    bnd.addAttr(priCtl.nodeName() + '_weights', at='double', k=True, dv=0)
+    bnd.setAttr(priCtl.nodeName() + '_weights', lock=True)
     # connect weight to be blended to 0
-    for eachChannel in ['tx','ty','tz','rx','ry','rz']:
-        bnd.addAttr(priCtl.nodeName()+'_weight_'+eachChannel, at='double', k=True, min=-1, max=2, dv=1)
-        bnd.attr(priCtl.nodeName()+'_weight_'+eachChannel) >> bwNodes[eachChannel].weight[nextIndex]
+    for eachChannel in ['tx', 'ty', 'tz', 'rx', 'ry', 'rz']:
+        bnd.addAttr(priCtl.nodeName() + '_weight_' + eachChannel, at='double', k=True, min=-1, max=2, dv=1)
+        bnd.attr(priCtl.nodeName() + '_weight_' + eachChannel) >> bwNodes[eachChannel].weight[nextIndex]
     # scales need a minus 1, to be normalized to 0 for blending
-    for eachChannel in ['sx','sy','sz']:
-        adl = pm.createNode('addDoubleLinear', n=bnd.replace('_bnd', '_%s_adl'%eachChannel))
+    for eachChannel in ['sx', 'sy', 'sz']:
+        adl = pm.createNode('addDoubleLinear', n=bnd.replace('_bnd', '_%s_adl' % eachChannel))
         adl.input2.set(-1)
-        dmNd.attr('o%s'%eachChannel) >> adl.input1
+        dmNd.attr('o%s' % eachChannel) >> adl.input1
         adl.output >> bwNodes[eachChannel].i[nextIndex]
-        bnd.addAttr(priCtl.nodeName()+'_weight_'+eachChannel, at='double', k=True, min=-1, max=2, dv=1)
-        bnd.attr(priCtl.nodeName()+'_weight_'+eachChannel) >> bwNodes[eachChannel].weight[nextIndex]
+        bnd.addAttr(priCtl.nodeName() + '_weight_' + eachChannel, at='double', k=True, min=-1, max=2, dv=1)
+        bnd.attr(priCtl.nodeName() + '_weight_' + eachChannel) >> bwNodes[eachChannel].weight[nextIndex]
         
     # if this bnd already has it's own attached priCtl
     # we need to drive that too
@@ -237,19 +308,19 @@ def connectBndToPriCtl(bnd, priCtl):
             # add zero grp to take in connections
             zeroGrp = pm.PyNode(cgmrigging.groupMeObject(attachedCtg.nodeName(), True, True))
             for eachChannel in channels:
-                mdl = pm.createNode('multDoubleLinear', n=bnd.replace('_bnd', '_%s_%s_mdl'%(eachChannel, priCtl)))
-                if eachChannel in ['sx','sy','sz']:
-                    adl = pm.createNode('addDoubleLinear', n=bnd.replace('_bnd', '_%s_%s_adl'%(eachChannel, priCtl)))
-                    dmNd.attr('o'+eachChannel) >> adl.input1
+                mdl = pm.createNode('multDoubleLinear', n=bnd.replace('_bnd', '_%s_%s_mdl' % (eachChannel, priCtl)))
+                if eachChannel in ['sx', 'sy', 'sz']:
+                    adl = pm.createNode('addDoubleLinear', n=bnd.replace('_bnd', '_%s_%s_adl' % (eachChannel, priCtl)))
+                    dmNd.attr('o' + eachChannel) >> adl.input1
                     adl.input2.set(-1)
                     adl.output >> mdl.input1
                 else:
-                    dmNd.attr('o'+eachChannel) >> mdl.input1
+                    dmNd.attr('o' + eachChannel) >> mdl.input1
                     
-                bnd.attr(priCtl.nodeName()+'_weight_'+eachChannel) >> mdl.input2
+                bnd.attr(priCtl.nodeName() + '_weight_' + eachChannel) >> mdl.input2
                 
-                if eachChannel in ['sx','sy','sz']:
-                    adl = pm.createNode('addDoubleLinear', n=bnd.replace('_bnd', '_%s_%s_adl'%(eachChannel, priCtl)))
+                if eachChannel in ['sx', 'sy', 'sz']:
+                    adl = pm.createNode('addDoubleLinear', n=bnd.replace('_bnd', '_%s_%s_adl' % (eachChannel, priCtl)))
                     mdl.output >> adl.input1
                     adl.input2.set(1)
                     adl.output >> zeroGrp.attr(eachChannel)
@@ -262,8 +333,8 @@ def addSecondaryCtlToBnd(bnd):
     # add secondary control to bnd
     # create ctl
     ctl = pm.circle(n=bnd.name().replace('_bnd', '_ctrl'))
-    ctg = pm.group(ctl, n=ctl[0].name()+'_ctg')
-    cth = pm.group(ctg, n=ctg.name()+'_cth')
+    ctg = pm.group(ctl, n=ctl[0].name() + '_ctg')
+    cth = pm.group(ctg, n=ctg.name() + '_cth')
     
     # position ctl
     cons = pm.parentConstraint(bnd, cth)
@@ -282,6 +353,7 @@ def addSecondaryCtlToBnd(bnd):
     ctl[0].s >> secDrv.s
     
     return cth
+
     
 def addSecondaryCtls():
     bnds = pm.ls(sl=True)
@@ -317,7 +389,7 @@ def createBndsFromPlacement(placementGrp, mesh, overrideCornerCVs=None):
         if 'CT_' not in str(eachLoc):
             # make for the other side too
             pm.select(cl=True)
-            pos = pos * (-1,1,1)
+            pos = pos * (-1, 1, 1)
             jnt = pm.joint(n=jnt.replace('LT_', 'RT_'))
             jnt.t.set(pos)
             bndGrp | jnt
@@ -330,7 +402,7 @@ def createBndsFromPlacement(placementGrp, mesh, overrideCornerCVs=None):
     pm.select(loop, r=True)
     crv = pm.PyNode(pm.polyToCurve(form=1, degree=3, ch=False)[0])
     
-    cornerCVs = eye.returnInUpOutLowCVsOnCurve(crv) # in, up, out, low
+    cornerCVs = eye.returnInUpOutLowCVsOnCurve(crv)  # in, up, out, low
     # override cornerCVs if eyeshape is weird and does not calc properly
     if overrideCornerCVs:
         cornerCVs = [crv.cv[index] for index in overrideCornerCVs]
@@ -343,7 +415,7 @@ def createBndsFromPlacement(placementGrp, mesh, overrideCornerCVs=None):
         jnt.t.set(pos)
         bndGrp | jnt
         # right side
-        pos = pos * (-1,1,1)
+        pos = pos * (-1, 1, 1)
         pm.select(cl=True)
         jnt = pm.joint(n='RT_eyelid_' + corner + '_bnd')
         jnt.t.set(pos)
@@ -355,7 +427,7 @@ def createBndsFromPlacement(placementGrp, mesh, overrideCornerCVs=None):
     eachSectionParam = totalParam / 8.0
     
     # inner corner
-    params = [cornerParams[0]+eachSectionParam, cornerParams[0]-eachSectionParam]
+    params = [cornerParams[0] + eachSectionParam, cornerParams[0] - eachSectionParam]
     for _ in range(len(params)):
         if params[_] < 0:
             params[_] = totalParam + params[_]
@@ -381,8 +453,8 @@ def createBndsFromPlacement(placementGrp, mesh, overrideCornerCVs=None):
     
     # right side
     
-    upperPos = upperPos * (-1,1,1)
-    lowerPos = lowerPos * (-1,1,1)
+    upperPos = upperPos * (-1, 1, 1)
+    lowerPos = lowerPos * (-1, 1, 1)
     
     pm.select(cl=True)
     jnt = pm.joint(n='RT_eyelid_inner_upper_bnd')
@@ -395,7 +467,7 @@ def createBndsFromPlacement(placementGrp, mesh, overrideCornerCVs=None):
     bndGrp | jnt
     
     # outer corner
-    params = [cornerParams[2]+eachSectionParam, cornerParams[2]-eachSectionParam]
+    params = [cornerParams[2] + eachSectionParam, cornerParams[2] - eachSectionParam]
     for _ in range(len(params)):
         if params[_] < 0:
             params[_] = totalParam + params[_]
@@ -421,8 +493,8 @@ def createBndsFromPlacement(placementGrp, mesh, overrideCornerCVs=None):
     
     # right side
     
-    upperPos = upperPos * (-1,1,1)
-    lowerPos = lowerPos * (-1,1,1)
+    upperPos = upperPos * (-1, 1, 1)
+    lowerPos = lowerPos * (-1, 1, 1)
     
     pm.select(cl=True)
     jnt = pm.joint(n='RT_eyelid_outer_upper_bnd')
@@ -441,7 +513,8 @@ def createBndsFromPlacement(placementGrp, mesh, overrideCornerCVs=None):
     #===========================================================================
     loop = [pm.PyNode(node) for node in placementGrp.mouthLipsLoop.get()]
     pm.select(loop, r=True)
-    pm.mel.ConvertSelectionToVertices()
+    mel.ConvertSelectionToVertices()
+    
     lipVerts = pm.ls(sl=True, fl=True)
     
     # lips center
@@ -474,7 +547,7 @@ def createBndsFromPlacement(placementGrp, mesh, overrideCornerCVs=None):
     jnt.t.set(pos)
     bndGrp | jnt
     # right side
-    rtpos = pos * (-1,1,1)
+    rtpos = pos * (-1, 1, 1)
     pm.select(cl=True)
     jnt = pm.joint(n='RT_corner_lip_bnd')
     jnt.t.set(rtpos)
@@ -518,8 +591,8 @@ def createBndsFromPlacement(placementGrp, mesh, overrideCornerCVs=None):
     bndGrp | jnt
     
     # right side
-    upperPos = upperPos * (-1,1,1)
-    lowerPos = lowerPos * (-1,1,1)
+    upperPos = upperPos * (-1, 1, 1)
+    lowerPos = lowerPos * (-1, 1, 1)
     
     pm.select(cl=True)
     jnt = pm.joint(n='RT_upper_pinch_lip_bnd')
@@ -557,8 +630,8 @@ def createBndsFromPlacement(placementGrp, mesh, overrideCornerCVs=None):
     bndGrp | jnt
     
     # right side
-    upperPos = upperPos * (-1,1,1)
-    lowerPos = lowerPos * (-1,1,1)
+    upperPos = upperPos * (-1, 1, 1)
+    lowerPos = lowerPos * (-1, 1, 1)
     
     pm.select(cl=True)
     jnt = pm.joint(n='RT_upper_sneer_lip_bnd')
@@ -577,7 +650,7 @@ def createBndsFromPlacement(placementGrp, mesh, overrideCornerCVs=None):
     #===========================================================================
     # CT_brow
     pos = pm.PyNode('LT_in_brow_pLoc').t.get()
-    jnt = placeBndBetweenLocs('CT_brow_bnd', {pos:0.5, pos*(-1,1,1):0.5}, mesh, bndGrp)
+    jnt = placeBndBetweenLocs('CT_brow_bnd', {pos:0.5, pos * (-1, 1, 1):0.5}, mesh, bndGrp)
     
     # LT_in_low_forehead
     pos1 = pm.PyNode('LT_in_brow_pLoc').t.get()
@@ -668,9 +741,9 @@ def placeBndBetweenLocs(name, ptWeights, mesh, bndGrp, mirror=False):
     bndGrp | jnt
     
     if mirror:
-        finalPt = finalPt * (-1,1,1)
+        finalPt = finalPt * (-1, 1, 1)
         pm.select(cl=True)
-        jnt = pm.joint(n=name.replace('LT','RT'))
+        jnt = pm.joint(n=name.replace('LT', 'RT'))
         jnt.t.set(finalPt)
         bndGrp | jnt
     
@@ -693,39 +766,40 @@ def buildSecondaryControlSystem(placementGrp, bndGrp, mesh):
     
     # Orient loops
     # LT Eye
-    orientLoopTransforms([nt.Joint(u'LT_eyelid_outer_bnd'), nt.Joint(u'LT_eyelid_outer_upper_bnd'), nt.Joint(u'LT_eyelid_upper_bnd')], (-1,0,0))
-    orientLoopTransforms([nt.Joint(u'LT_eyelid_inner_bnd'), nt.Joint(u'LT_eyelid_inner_upper_bnd'), nt.Joint(u'LT_eyelid_upper_bnd')], (1,0,0))
-    orientLoopTransforms([nt.Joint(u'LT_eyelid_outer_bnd'), nt.Joint(u'LT_eyelid_outer_lower_bnd'), nt.Joint(u'LT_eyelid_lower_bnd')], (-1,0,0))
-    orientLoopTransforms([nt.Joint(u'LT_eyelid_inner_bnd'), nt.Joint(u'LT_eyelid_inner_lower_bnd'), nt.Joint(u'LT_eyelid_lower_bnd')], (1,0,0))
+    orientLoopTransforms([nt.Joint(u'LT_eyelid_outer_bnd'), nt.Joint(u'LT_eyelid_outer_upper_bnd'), nt.Joint(u'LT_eyelid_upper_bnd')], (-1, 0, 0))
+    orientLoopTransforms([nt.Joint(u'LT_eyelid_inner_bnd'), nt.Joint(u'LT_eyelid_inner_upper_bnd'), nt.Joint(u'LT_eyelid_upper_bnd')], (1, 0, 0))
+    orientLoopTransforms([nt.Joint(u'LT_eyelid_outer_bnd'), nt.Joint(u'LT_eyelid_outer_lower_bnd'), nt.Joint(u'LT_eyelid_lower_bnd')], (-1, 0, 0))
+    orientLoopTransforms([nt.Joint(u'LT_eyelid_inner_bnd'), nt.Joint(u'LT_eyelid_inner_lower_bnd'), nt.Joint(u'LT_eyelid_lower_bnd')], (1, 0, 0))
     # RT Eye
-    orientLoopTransforms([nt.Joint(u'RT_eyelid_inner_bnd'), nt.Joint(u'RT_eyelid_inner_upper_bnd'), nt.Joint(u'RT_eyelid_upper_bnd')], (-1,0,0))
-    orientLoopTransforms([nt.Joint(u'RT_eyelid_outer_bnd'), nt.Joint(u'RT_eyelid_outer_upper_bnd'), nt.Joint(u'RT_eyelid_upper_bnd')], (1,0,0))
-    orientLoopTransforms([nt.Joint(u'RT_eyelid_inner_bnd'), nt.Joint(u'RT_eyelid_inner_lower_bnd'), nt.Joint(u'RT_eyelid_lower_bnd')], (-1,0,0))
-    orientLoopTransforms([nt.Joint(u'RT_eyelid_outer_bnd'), nt.Joint(u'RT_eyelid_outer_lower_bnd'), nt.Joint(u'RT_eyelid_lower_bnd')], (1,0,0))
+    orientLoopTransforms([nt.Joint(u'RT_eyelid_inner_bnd'), nt.Joint(u'RT_eyelid_inner_upper_bnd'), nt.Joint(u'RT_eyelid_upper_bnd')], (-1, 0, 0))
+    orientLoopTransforms([nt.Joint(u'RT_eyelid_outer_bnd'), nt.Joint(u'RT_eyelid_outer_upper_bnd'), nt.Joint(u'RT_eyelid_upper_bnd')], (1, 0, 0))
+    orientLoopTransforms([nt.Joint(u'RT_eyelid_inner_bnd'), nt.Joint(u'RT_eyelid_inner_lower_bnd'), nt.Joint(u'RT_eyelid_lower_bnd')], (-1, 0, 0))
+    orientLoopTransforms([nt.Joint(u'RT_eyelid_outer_bnd'), nt.Joint(u'RT_eyelid_outer_lower_bnd'), nt.Joint(u'RT_eyelid_lower_bnd')], (1, 0, 0))
     # Mouth lips
-    orientLoopTransforms([nt.Joint(u'LT_corner_lip_bnd'), nt.Joint(u'LT_upper_pinch_lip_bnd'), nt.Joint(u'LT_upper_sneer_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd')], (-1,0,0))
-    orientLoopTransforms([nt.Joint(u'LT_corner_lip_bnd'), nt.Joint(u'LT_lower_pinch_lip_bnd'), nt.Joint(u'LT_lower_sneer_lip_bnd'), nt.Joint(u'CT_lower_lip_bnd')], (-1,0,0))
-    orientLoopTransforms([nt.Joint(u'RT_corner_lip_bnd'), nt.Joint(u'RT_upper_pinch_lip_bnd'), nt.Joint(u'RT_upper_sneer_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd')], (1,0,0))
-    orientLoopTransforms([nt.Joint(u'RT_corner_lip_bnd'), nt.Joint(u'RT_lower_pinch_lip_bnd'), nt.Joint(u'RT_lower_sneer_lip_bnd'), nt.Joint(u'CT_lower_lip_bnd')], (1,0,0))
+    orientLoopTransforms([nt.Joint(u'LT_corner_lip_bnd'), nt.Joint(u'LT_upper_pinch_lip_bnd'), nt.Joint(u'LT_upper_sneer_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd')], (-1, 0, 0))
+    orientLoopTransforms([nt.Joint(u'LT_corner_lip_bnd'), nt.Joint(u'LT_lower_pinch_lip_bnd'), nt.Joint(u'LT_lower_sneer_lip_bnd'), nt.Joint(u'CT_lower_lip_bnd')], (-1, 0, 0))
+    orientLoopTransforms([nt.Joint(u'RT_corner_lip_bnd'), nt.Joint(u'RT_upper_pinch_lip_bnd'), nt.Joint(u'RT_upper_sneer_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd')], (1, 0, 0))
+    orientLoopTransforms([nt.Joint(u'RT_corner_lip_bnd'), nt.Joint(u'RT_lower_pinch_lip_bnd'), nt.Joint(u'RT_lower_sneer_lip_bnd'), nt.Joint(u'CT_lower_lip_bnd')], (1, 0, 0))
     
     # Align for sliding
-    slidingBnds = [nt.Joint(u'LT_in_forehead_bnd'), nt.Joint(u'RT_in_forehead_bnd'), nt.Joint(u'LT_out_forehead_bnd'), nt.Joint(u'RT_out_forehead_bnd'), nt.Joint(u'LT_in_low_forehead_bnd'), 
-                   nt.Joint(u'RT_in_low_forehead_bnd'), nt.Joint(u'LT_out_low_forehead_bnd'), nt.Joint(u'RT_out_low_forehead_bnd'), nt.Joint(u'LT_in_brow_bnd'), nt.Joint(u'RT_in_brow_bnd'), 
-                   nt.Joint(u'LT_mid_brow_bnd'), nt.Joint(u'RT_mid_brow_bnd'), nt.Joint(u'LT_out_brow_bnd'), nt.Joint(u'RT_out_brow_bnd'), nt.Joint(u'LT_temple_bnd'), nt.Joint(u'RT_temple_bnd'), 
-                   nt.Joint(u'CT_brow_bnd'), nt.Joint(u'LT_up_jaw_bnd'), nt.Joint(u'LT_low_temple_bnd'), nt.Joint(u'LT_out_cheek_bnd'), nt.Joint(u'LT_low_cheek_bnd'), nt.Joint(u'LT_squint_bnd'), 
-                   nt.Joint(u'LT_low_crease_bnd'), nt.Joint(u'LT_cheek_bnd'), nt.Joint(u'LT_corner_jaw_bnd'), nt.Joint(u'LT_low_jaw_bnd'), nt.Joint(u'LT_mid_crease_bnd'), nt.Joint(u'LT_up_cheek_bnd'), 
-                   nt.Joint(u'LT_sneer_bnd'), nt.Joint(u'LT_philtrum_bnd'), nt.Joint(u'RT_philtrum_bnd'), nt.Joint(u'LT_in_philtrum_bnd'), nt.Joint(u'RT_in_philtrum_bnd'), nt.Joint(u'LT_up_crease_bnd'), 
-                   nt.Joint(u'LT_in_cheek_bnd'), nt.Joint(u'RT_up_crease_bnd'), nt.Joint(u'RT_in_cheek_bnd'), nt.Joint(u'RT_mid_crease_bnd'), nt.Joint(u'RT_cheek_bnd'), nt.Joint(u'RT_up_cheek_bnd'), 
-                   nt.Joint(u'RT_sneer_bnd'), nt.Joint(u'RT_low_temple_bnd'), nt.Joint(u'RT_out_cheek_bnd'), nt.Joint(u'RT_low_crease_bnd'), nt.Joint(u'RT_up_jaw_bnd'), nt.Joint(u'RT_corner_jaw_bnd'), 
-                   nt.Joint(u'RT_low_jaw_bnd'), nt.Joint(u'RT_low_cheek_bnd'), nt.Joint(u'LT_chin_bnd'), nt.Joint(u'RT_chin_bnd'), nt.Joint(u'CT_chin_bnd'), nt.Joint(u'CT_mid_chin_bnd'), 
-                   nt.Joint(u'LT_mid_chin_bnd'), nt.Joint(u'RT_mid_chin_bnd')]
+    slidingBnds = [nt.Joint(u'LT_in_forehead_bnd'), nt.Joint(u'RT_in_forehead_bnd'), nt.Joint(u'LT_out_forehead_bnd'), nt.Joint(u'RT_out_forehead_bnd'), nt.Joint(u'LT_in_low_forehead_bnd'),
+                   nt.Joint(u'RT_in_low_forehead_bnd'), nt.Joint(u'LT_out_low_forehead_bnd'), nt.Joint(u'RT_out_low_forehead_bnd'), nt.Joint(u'LT_in_brow_bnd'), nt.Joint(u'RT_in_brow_bnd'),
+                   nt.Joint(u'LT_mid_brow_bnd'), nt.Joint(u'RT_mid_brow_bnd'), nt.Joint(u'LT_out_brow_bnd'), nt.Joint(u'RT_out_brow_bnd'), nt.Joint(u'LT_temple_bnd'), nt.Joint(u'RT_temple_bnd'),
+                   nt.Joint(u'CT_brow_bnd'), nt.Joint(u'LT_up_jaw_bnd'), nt.Joint(u'LT_low_temple_bnd'), nt.Joint(u'LT_out_cheek_bnd'), nt.Joint(u'LT_low_cheek_bnd'), nt.Joint(u'LT_squint_bnd'),
+                   nt.Joint(u'LT_low_crease_bnd'), nt.Joint(u'LT_cheek_bnd'), nt.Joint(u'LT_corner_jaw_bnd'), nt.Joint(u'LT_low_jaw_bnd'), nt.Joint(u'LT_mid_crease_bnd'), nt.Joint(u'LT_up_cheek_bnd'),
+                   nt.Joint(u'LT_sneer_bnd'), nt.Joint(u'LT_philtrum_bnd'), nt.Joint(u'RT_philtrum_bnd'), nt.Joint(u'LT_in_philtrum_bnd'), nt.Joint(u'RT_in_philtrum_bnd'), nt.Joint(u'LT_up_crease_bnd'),
+                   nt.Joint(u'LT_in_cheek_bnd'), nt.Joint(u'RT_up_crease_bnd'), nt.Joint(u'RT_in_cheek_bnd'), nt.Joint(u'RT_mid_crease_bnd'), nt.Joint(u'RT_cheek_bnd'), nt.Joint(u'RT_up_cheek_bnd'),
+                   nt.Joint(u'RT_sneer_bnd'), nt.Joint(u'RT_low_temple_bnd'), nt.Joint(u'RT_out_cheek_bnd'), nt.Joint(u'RT_low_crease_bnd'), nt.Joint(u'RT_up_jaw_bnd'), nt.Joint(u'RT_corner_jaw_bnd'),
+                   nt.Joint(u'RT_low_jaw_bnd'), nt.Joint(u'RT_low_cheek_bnd'), nt.Joint(u'LT_chin_bnd'), nt.Joint(u'RT_chin_bnd'), nt.Joint(u'CT_chin_bnd'), nt.Joint(u'CT_mid_chin_bnd'),
+                   nt.Joint(u'LT_mid_chin_bnd'), nt.Joint(u'RT_mid_chin_bnd'),
+                   nt.Joint(u'CT_neck_bnd'), nt.Joint(u'LT_neck_bnd'), nt.Joint(u'RT_neck_bnd')
+                   ]
     
     for eachBnd in slidingBnds:
         rt.alignTransformToMesh(eachBnd, mesh, method='sliding')
     
     # Align for normal
     normalBnds = [nt.Joint(u'LT_corner_jaw_bnd'), nt.Joint(u'LT_low_jaw_bnd'), nt.Joint(u'LT_chin_bnd'), nt.Joint(u'CT_chin_bnd'), nt.Joint(u'RT_chin_bnd'), nt.Joint(u'RT_low_jaw_bnd'), nt.Joint(u'RT_corner_jaw_bnd')]
-    
     for eachBnd in normalBnds:
         rt.alignTransformToMesh(eachBnd, mesh, method='normal')
     
@@ -738,15 +812,15 @@ def buildSecondaryControlSystem(placementGrp, bndGrp, mesh):
     mss = []
     for eachBnd in bnds:
         # add hierarchy for secDrv and priDrv
-        bndHm = pm.PyNode(cgmrigging.groupMeObject(str(eachBnd),parent=True,maintainParent=True))
+        bndHm = pm.PyNode(cgmrigging.groupMeObject(str(eachBnd), parent=True, maintainParent=True))
         bndHm.rename(eachBnd.replace('_bnd', '_bnd_hm'))
-        priDrv = pm.PyNode(cgmrigging.groupMeObject(str(eachBnd),parent=True,maintainParent=True))
+        priDrv = pm.PyNode(cgmrigging.groupMeObject(str(eachBnd), parent=True, maintainParent=True))
         priDrv.rename(eachBnd.replace('_bnd', '_priDrv_bnd'))
-        secDrv = pm.PyNode(cgmrigging.groupMeObject(str(eachBnd),parent=True,maintainParent=True))
+        secDrv = pm.PyNode(cgmrigging.groupMeObject(str(eachBnd), parent=True, maintainParent=True))
         secDrv.rename(eachBnd.replace('_bnd', '_secDrv_bnd'))  
         # reset joint orient
-        eachBnd.r.set(0,0,0)
-        eachBnd.jointOrient.set(0,0,0)
+        eachBnd.r.set(0, 0, 0)
+        eachBnd.jointOrient.set(0, 0, 0)
         
         cth = addSecondaryCtlToBnd(eachBnd)
         cths.append(cth)
@@ -862,10 +936,10 @@ def buildPrimaryControlSystem():
     jawJne = pm.joint(n='CT_jaw_jne')
     jawJne.setTranslation(jawVector)
     jawJnt.orientJoint('zyx')
-    jawJne.jointOrient.set(0,0,0)
-    jawHm = pm.PyNode(cgmrigging.groupMeObject(str(jawJnt),parent=True,maintainParent=True))
+    jawJne.jointOrient.set(0, 0, 0)
+    jawHm = pm.PyNode(cgmrigging.groupMeObject(str(jawJnt), parent=True, maintainParent=True))
     jawHm.rename(jawJnt.replace('_bnd', '_jnt_hm'))
-    jawGrp = pm.PyNode(cgmrigging.groupMeObject(str(jawJnt),parent=True,maintainParent=True))
+    jawGrp = pm.PyNode(cgmrigging.groupMeObject(str(jawJnt), parent=True, maintainParent=True))
     jawGrp.rename(jawJnt.replace('_bnd', '_grp_hm'))
     pm.group(jawHm, n='CT_jnts_grp')
     
@@ -932,7 +1006,7 @@ def cleanFaceRig():
     # eye
     upLidPos = pm.PyNode('LT_eyelid_upper_pri_ctrl').getTranslation(space='world')
     lowLidPos = pm.PyNode('LT_eyelid_lower_pri_ctrl').getTranslation(space='world')
-    midPos = (upLidPos + lowLidPos)/2
+    midPos = (upLidPos + lowLidPos) / 2
     eyeCtl = pm.group(em=True, n='LT_eye_ctl')
     eyeCtg = pm.group(eyeCtl, n='LT_eye_ctg')
     eyeCth = pm.group(eyeCtg, n='LT_eye_hm')
@@ -943,7 +1017,7 @@ def cleanFaceRig():
     faceCtl | eyeCth
     upLidPos = pm.PyNode('RT_eyelid_upper_pri_ctrl').getTranslation(space='world')
     lowLidPos = pm.PyNode('RT_eyelid_lower_pri_ctrl').getTranslation(space='world')
-    midPos = (upLidPos + lowLidPos)/2
+    midPos = (upLidPos + lowLidPos) / 2
     eyeCtl = pm.group(em=True, n='RT_eye_ctl')
     eyeCtg = pm.group(eyeCtl, n='RT_eye_ctg')
     eyeCth = pm.group(eyeCtg, n='RT_eye_hm')
@@ -963,18 +1037,18 @@ def cleanFaceRig():
     terCtls = [u'LT_in_forehead_ctrl', u'RT_in_forehead_ctrl', u'LT_out_forehead_ctrl', u'RT_out_forehead_ctrl', u'LT_temple_ctrl', u'RT_temple_ctrl', u'LT_squint_ctrl', u'RT_squint_ctrl', u'LT_philtrum_ctrl', u'RT_philtrum_ctrl', u'LT_up_crease_ctrl', u'RT_up_crease_ctrl', u'LT_mid_crease_ctrl', u'RT_mid_crease_ctrl', u'LT_low_crease_ctrl', u'RT_low_crease_ctrl', u'LT_cheek_ctrl', u'RT_cheek_ctrl', u'LT_up_jaw_ctrl', u'RT_up_jaw_ctrl', u'LT_corner_jaw_ctrl', u'RT_corner_jaw_ctrl', u'LT_low_jaw_ctrl', u'RT_low_jaw_ctrl', u'LT_chin_ctrl', u'RT_chin_ctrl', u'CT_chin_ctrl', u'LT_in_low_forehead_ctrl', u'RT_in_low_forehead_ctrl', u'LT_out_low_forehead_ctrl', u'RT_out_low_forehead_ctrl', u'LT_low_temple_ctrl', u'RT_low_temple_ctrl', u'LT_out_cheek_ctrl', u'RT_out_cheek_ctrl', u'LT_in_philtrum_ctrl', u'RT_in_philtrum_ctrl', u'LT_low_cheek_ctrl', u'RT_low_cheek_ctrl', u'LT_in_cheek_ctrl', u'RT_in_cheek_ctrl', u'LT_up_cheek_ctrl', u'RT_up_cheek_ctrl', u'LT_sneer_ctrl', u'RT_sneer_ctrl', u'CT_mid_chin_ctrl', u'LT_mid_chin_ctrl', u'RT_mid_chin_ctrl']
     rt.connectVisibilityToggle(terCtls, faceCtl.name(), 'tertiaryControlsVis', False)
     rt.connectVisibilityToggle(['CT_bnd_grp', 'CT_jnts_grp', 'CT_placement_grp'], faceCtl.name(), 'jointsVis', False)
-    
+    """
     # lock geometry
     geoGrp = pm.PyNode('CT_geo_grp')
     geoGrp.overrideEnabled.set(True)
-    geoGrp.overrideDisplayType.set(2)
+    geoGrp.overrideDisplayType.set(2)"""
     
     
 def createControlShape(shape=''):
     createdCurves = []
     if shape == 'eye':
-        createdCurves.append(mc.curve( d = 2,p = [[-0.048, -1.7763568394002505e-15, 0.04], [-0.024, -0.024000000000001777, 0.04], [0.024, -0.024000000000001777, 0.04], [0.048, -1.7763568394002505e-15, 0.04]],k = (0.0, 0.0, 1.0, 2.0, 2.0)))
-        createdCurves.append(mc.curve( d = 2,p = [[-0.048, -1.7763568394002505e-15, 0.04], [-0.024, 0.023999999999998224, 0.04], [0.024, 0.023999999999998224, 0.04], [0.048, -1.7763568394002505e-15, 0.04]],k = (0.0, 0.0, 1.0, 2.0, 2.0)))
+        createdCurves.append(mc.curve(d=2, p=[[-0.048, -1.7763568394002505e-15, 0.04], [-0.024, -0.024000000000001777, 0.04], [0.024, -0.024000000000001777, 0.04], [0.048, -1.7763568394002505e-15, 0.04]], k=(0.0, 0.0, 1.0, 2.0, 2.0)))
+        createdCurves.append(mc.curve(d=2, p=[[-0.048, -1.7763568394002505e-15, 0.04], [-0.024, 0.023999999999998224, 0.04], [0.024, 0.023999999999998224, 0.04], [0.048, -1.7763568394002505e-15, 0.04]], k=(0.0, 0.0, 1.0, 2.0, 2.0)))
     print createdCurves
     newCurve = curves.combineCurves(createdCurves)
     print newCurve
@@ -985,13 +1059,13 @@ def createControlShape(shape=''):
 def replaceControlCurve(ctl, shape=''):
     '''
     '''
-    curvesDict = {'rightArrow': lambda: mc.curve( d = 1,p = [[0.0, 0.04, 0.04], [0.0, -0.04, 0.04], [0.04, 0.0, 0.04], [0.0, 0.04, 0.04]],k = (0.0, 1.0, 2.0, 3.0)),
-                  'upArrow': lambda: mc.curve( d = 1,p = [[0.04, 0.0, 0.04], [-0.04, 0.0, 0.04], [0.0, 0.04, 0.04], [0.04, 0.0, 0.04]],k = (0.0, 1.0, 2.0, 3.0)),
-                  'leftArrow': lambda: mc.curve( d = 1,p = [[-0.04, 0.04, 0.04], [-0.04, -0.04, 0.04], [-0.08, 0.0, 0.04], [-0.04, 0.04, 0.04]],k = (0.0, 1.0, 2.0, 3.0)),
-                  'downArrow': lambda: mc.curve( d = 1,p = [[-0.04, 0.0, 0.04], [0.04, 0.0, 0.04], [0.0, -0.04, 0.04], [-0.04, 0.0, 0.04]],k = (0.0, 1.0, 2.0, 3.0)),
-                  'mouth': lambda: mc.curve( d = 3,p = [[-0.22980900108794244, -0.04759124309943556, 0.8429444356540107], [-0.22393926054492552, -0.045358199737086075, 0.8647067285245191], [-0.20852009672903912, -0.04176876798173142, 0.899687807001127], [-0.1694033035434707, -0.036679282264361804, 0.9492877747432129], [-0.11939699288958709, -0.03296208453991381, 0.9855140061233637], [-0.06160267190726286, -0.030623318742626176, 1.0083066249634127], [-2.8182109062622687e-12, -0.029838670626822782, 1.0159534724654171], [0.06160267191659459, -0.030623318741553832, 1.0083066249315928], [0.1193969928552489, -0.032962084518374, 0.9855140062483384], [0.1694033036644256, -0.03667928229732598, 0.9492877742950683], [0.20852009629750132, -0.041768767799972184, 0.8996878086018357], [0.22393926144193482, -0.04535820005803114, 0.864706725199887], [0.22980900108832408, -0.04759124307766545, 0.8429444356536281]],k = (0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 10.0, 10.0)),
-                  'head': lambda: mc.curve( d = 2,p = [[0.0, 14.358673055621011, 1.10344962833128], [0.15379506219426828, 14.362009719493294, 1.0863042317391376], [0.3301906251659591, 14.342176313710215, 1.0317727106764392], [0.5087998930920709, 14.291190639461561, 0.8933862817398125], [0.628051540474641, 14.190348943476284, 0.7489579394542033], [0.7024233884711769, 14.02683907825714, 0.556278023113925], [0.7209493893796295, 13.850023525115141, 0.44682372821044736], [0.7364653413044864, 13.645210860977455, 0.4219578117904953], [0.7181463751524083, 13.436420819879839, 0.43189490919924256], [0.6825554719317545, 13.22232990693574, 0.43710072694680624], [0.6270590613694109, 13.01053495376001, 0.44968216281084405], [0.5590453047139784, 12.853440105391334, 0.4722969054878311], [0.5086107554059927, 12.761094548447085, 0.5059732290813456], [0.3910188928665723, 12.602183700068066, 0.6655503142631394], [0.2771674900973296, 12.531488612210927, 0.7951098233694205], [0.14545823839333608, 12.47409746574503, 0.9146613280034224], [0.0, 12.446886380475599, 0.9395865888006854], [-0.2771674900973296, 12.531488612210927, 0.7951098233694205], [-0.3910188928665723, 12.602183700068066, 0.6655503142631394], [-0.5086107554059927, 12.761094548447085, 0.5059732290813456], [-0.5590453047139784, 12.853440105391334, 0.4722969054878311], [-0.6270590613694109, 13.01053495376001, 0.44968216281084405], [-0.6825554719317545, 13.22232990693574, 0.43710072694680624], [-0.7181463751524083, 13.436420819879839, 0.43189490919924256], [-0.7364653413044864, 13.645210860977455, 0.4219578117904953], [-0.7209493893796295, 13.850023525115141, 0.44682372821044736], [-0.7024233884711769, 14.02683907825714, 0.556278023113925], [-0.628051540474641, 14.190348943476284, 0.7489579394542033], [-0.5087998930920709, 14.291190639461561, 0.8933862817398125], [-0.3301906251659591, 14.342176313710215, 1.0317727106764392], [-0.15379506219426828, 14.362009719493294, 1.0863042317391376], [0.0, 14.358673055621011, 1.10344962833128]],k = (0.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 30.0)),
-                  'gear': lambda: mc.curve( d = 3,p = [[-1.0346866027558053, 13.457507258111141, 0.5293530632957757], [-1.0346865591390677, 13.45976282613017, 0.5293530632957757], [-1.0346658866747478, 13.46738512807856, 0.5293530632957757], [-1.033738502084286, 13.47664930666317, 0.5293530632957757], [-1.0320097820128493, 13.485826153616653, 0.5293530632957757], [-1.0280961757802605, 13.486592296841287, 0.5293530632957757], [-1.0007005800111255, 13.491955368210883, 0.5293530632957757], [-0.9967869737785368, 13.492721511435516, 0.5293530632957757], [-0.9937495944497668, 13.503907631066115, 0.5293530632957757], [-0.989298266433645, 13.51450259476271, 0.5293530632957757], [-0.9836429104539566, 13.524324119675564, 0.5293530632957757], [-0.9858549890119881, 13.527651767458222, 0.5293530632957757], [-1.0013397380341136, 13.550945598329056, 0.5293530632957757], [-1.0035518166287978, 13.554273246130041, 0.5293530632957757], [-0.9983443792352564, 13.561849913791852, 0.5293530632957757], [-0.9924128579988777, 13.569079565736578, 0.5293530632957757], [-0.9856802600314055, 13.575818524912004, 0.5293530632957757], [-0.9788318437184025, 13.58266474737641, 0.5293530632957757], [-0.9714736513054606, 13.58868422895903, 0.5293530632957757], [-0.963762081417692, 13.59395155008437, 0.5293530632957757], [-0.9604511046302086, 13.591724482482363, 0.5293530632957757], [-0.9372739692961425, 13.576134809063827, 0.5293530632957757], [-0.933962992508659, 13.57390774181552, 0.5293530632957757], [-0.9241307189838853, 13.579545768608803, 0.5293530632957757], [-0.9135272007072278, 13.583978013184328, 0.5293530632957757], [-0.9023347199603085, 13.586994115333868, 0.5293530632957757], [-0.9015464223285533, 13.590908915620464, 0.5293530632957757], [-0.8960282680015798, 13.618312871286902, 0.5293530632957757], [-0.8952399703698246, 13.622227671941857, 0.5293530632957757], [-0.8862002187761662, 13.62390265049311, 0.5293530632957757], [-0.8768926373336056, 13.624821739161758, 0.5293530632957757], [-0.8673667997643262, 13.624825906997602, 0.5293530632957757], [-0.8576843442230144, 13.624823713478882, 0.5293530632957757], [-0.8482225576777268, 13.623876986239784, 0.5293530632957757], [-0.8390457105409798, 13.62214826605839, 0.5293530632957757], [-0.8382797867195315, 13.618234416400423, 0.5293530632957757], [-0.8329182507507303, 13.590837114364673, 0.5293530632957757], [-0.832152326929282, 13.58692326433468, 0.5293530632957757], [-0.8209662073719891, 13.583885884958262, 0.5293530632957757], [-0.8103714631885375, 13.579436531369222, 0.5293530632957757], [-0.8005497186159288, 13.573779200944125, 0.5293530632957757], [-0.7997327619286777, 13.574437504020931, 0.5293530632957757], [-0.7700592253931351, 13.594971187404694, 0.5293530632957757], [-0.7705986181375497, 13.593690300498405, 0.5293530632957757], [-0.7630219501092126, 13.588482863500714, 0.5293530632957757], [-0.7557922986409711, 13.58255134193446, 0.5293530632957757], [-0.7490533395388514, 13.575818524912004, 0.5293530632957757], [-0.7422090907318178, 13.568970327763942, 0.5293530632957757], [-0.7361876348430705, 13.561612135314348, 0.5293530632957757], [-0.7309203142528614, 13.55390034584013, 0.5293530632957757], [-0.7331473573470262, 13.550589393866538, 0.5293530632957757], [-0.7487368600463525, 13.527412428967624, 0.5293530632957757], [-0.7509639031405174, 13.524101476627505, 0.5293530632957757], [-0.7453280694627747, 13.51426920295612, 0.5293530632957757], [-0.7408938511199149, 13.503665684752768, 0.5293530632957757], [-0.7378777489337236, 13.49247298456601, 0.5293530632957757], [-0.7372570310960833, 13.491684711399946, 0.5293530632957757], [-0.702890672562298, 13.487214607954368, 0.5293530632957757], [-0.7028598012035626, 13.486942283591253, 0.5293530632957757], [-0.7009692137378295, 13.47633870285836, 0.5293530632957757], [-0.7003011397787526, 13.469573137931175, 0.5293530632957757], [-0.7001175214504842, 13.462692138082572, 0.5293530632957757], [-0.700073975434338, 13.457507258111141, 0.5293530632957757], [-0.7001175214504842, 13.452322378121384, 0.5293530632957757], [-0.7003011397787526, 13.445441377924578, 0.5293530632957757], [-0.7009692137378295, 13.438675812997394, 0.5293530632957757], [-0.7026441922890811, 13.429636061422062, 0.5293530632957757], [-0.7065589926489821, 13.428847788255998, 0.5293530632957757], [-0.7339629485371697, 13.423329804455808, 0.5293530632957757], [-0.7378777489337236, 13.422541531289744, 0.5293530632957757], [-0.7408938511199149, 13.41134883108466, 0.5293530632957757], [-0.7453280694627747, 13.400745312991265, 0.5293530632957757], [-0.7509639031405174, 13.390913039613102, 0.5293530632957757], [-0.7487368600463525, 13.38760208683315, 0.5293530632957757], [-0.7331473573470262, 13.364425121952562, 0.5293530632957757], [-0.7309203142528614, 13.361114170088928, 0.5293530632957757], [-0.7361876348430705, 13.353402380852954, 0.5293530632957757], [-0.7422090907318178, 13.346044188476665, 0.5293530632957757], [-0.7490533395388514, 13.33919599140191, 0.5293530632957757], [-0.7557922986409711, 13.332463173976272, 0.5293530632957757], [-0.7630219501092126, 13.326531652648262, 0.5293530632957757], [-0.7705986181375497, 13.321324215346353, 0.5293530632957757], [-0.773926485030172, 13.323536537644976, 0.5293530632957757], [-0.7972218517233065, 13.33902299294288, 0.5293530632957757], [-0.8005497186159288, 13.341235314874977, 0.5293530632957757], [-0.8103714631885375, 13.335577984853058, 0.5293530632957757], [-0.8209662073719891, 13.331128630824187, 0.5293530632957757], [-0.832152326929282, 13.32809125193525, 0.5293530632957757], [-0.8329182507507303, 13.324177401485583, 0.5293530632957757], [-0.8382797867195315, 13.296780099770544, 0.5293530632957757], [-0.8390457105409798, 13.292866250237196, 0.5293530632957757], [-0.8482225576777268, 13.291137529982496, 0.5293530632957757], [-0.8576843442230144, 13.290190802670093, 0.5293530632957757], [-0.8673667997643262, 13.290188609188027, 0.5293530632957757], [-0.8768926373336056, 13.29019277696889, 0.5293530632957757], [-0.8862002187761662, 13.291111865380971, 0.5293530632957757], [-0.8952399703698246, 13.29278684395055, 0.5293530632957757], [-0.8960282680015798, 13.296701644988525, 0.5293530632957757], [-0.9015464223285533, 13.324105600271944, 0.5293530632957757], [-0.9023347199603085, 13.328020400576865, 0.5293530632957757], [-0.9135272007072278, 13.33103650274473, 0.5293530632957757], [-0.9241307189838853, 13.335468747283604, 0.5293530632957757], [-0.933962992508659, 13.341106773966928, 0.5293530632957757], [-0.9372739692961425, 13.338879706828578, 0.5293530632957757], [-0.9604511046302086, 13.323290033437532, 0.5293530632957757], [-0.963762081417692, 13.32106296611592, 0.5293530632957757], [-0.9714736513054606, 13.326330286816086, 0.5293530632957757], [-0.9788318437184025, 13.33234976844269, 0.5293530632957757], [-0.9856802600314055, 13.33919599140191, 0.5293530632957757], [-0.9924128579988777, 13.345934950540682, 0.5293530632957757], [-0.9983443792352564, 13.353164602008924, 0.5293530632957757], [-1.0035518166287978, 13.360741269707386, 0.5293530632957757], [-1.0013397380341136, 13.364068917435066, 0.5293530632957757], [-0.9858549890119881, 13.387362748782385, 0.5293530632957757], [-0.9836429104539566, 13.390690396510063, 0.5293530632957757], [-0.989298266433645, 13.400511921477896, 0.5293530632957757], [-0.9937495944497668, 13.411106885192819, 0.5293530632957757], [-0.9967869737785368, 13.42229300440191, 0.5293530632957757], [-1.0007005800111255, 13.42305914764487, 0.5293530632957757], [-1.0280961757802605, 13.42842221899614, 0.5293530632957757], [-1.0320097820128493, 13.4291883622391, 0.5293530632957757], [-1.033738502084286, 13.43836520955911, 0.5293530632957757], [-1.0346658866747478, 13.447629388143723, 0.5293530632957757], [-1.0346865591390677, 13.455251689725584, 0.5293530632957757], [-1.0346866027558053, 13.457507258111141, 0.5293530632957757]],k = (0.0, 0.0, 0.0, 1.0, 4.0, 4.0, 4.0, 7.0, 7.0, 7.0, 10.0, 10.0, 10.0, 13.0, 13.0, 13.0, 14.0, 15.0, 16.0, 19.0, 19.0, 19.0, 22.0, 22.0, 22.0, 25.0, 25.0, 25.0, 28.0, 28.0, 28.0, 29.0, 30.0, 31.0, 34.0, 34.0, 34.0, 37.0, 37.0, 37.0, 38.0, 41.0, 41.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 49.0, 49.0, 49.0, 52.0, 52.0, 52.0, 53.0, 56.0, 56.0, 56.0, 57.0, 58.0, 59.0, 60.0, 61.0, 62.0, 63.0, 66.0, 66.0, 66.0, 69.0, 69.0, 69.0, 72.0, 72.0, 72.0, 75.0, 75.0, 75.0, 76.0, 77.0, 78.0, 81.0, 81.0, 81.0, 84.0, 84.0, 84.0, 87.0, 87.0, 87.0, 90.0, 90.0, 90.0, 91.0, 92.0, 93.0, 96.0, 96.0, 96.0, 99.0, 99.0, 99.0, 102.0, 102.0, 102.0, 105.0, 105.0, 105.0, 106.0, 107.0, 108.0, 111.0, 111.0, 111.0, 114.0, 114.0, 114.0, 117.0, 117.0, 117.0, 120.0, 120.0, 120.0, 121.0, 122.0, 122.0, 122.0)),
+    curvesDict = {'rightArrow': lambda: mc.curve(d=1, p=[[0.0, 0.04, 0.04], [0.0, -0.04, 0.04], [0.04, 0.0, 0.04], [0.0, 0.04, 0.04]], k=(0.0, 1.0, 2.0, 3.0)),
+                  'upArrow': lambda: mc.curve(d=1, p=[[0.04, 0.0, 0.04], [-0.04, 0.0, 0.04], [0.0, 0.04, 0.04], [0.04, 0.0, 0.04]], k=(0.0, 1.0, 2.0, 3.0)),
+                  'leftArrow': lambda: mc.curve(d=1, p=[[-0.04, 0.04, 0.04], [-0.04, -0.04, 0.04], [-0.08, 0.0, 0.04], [-0.04, 0.04, 0.04]], k=(0.0, 1.0, 2.0, 3.0)),
+                  'downArrow': lambda: mc.curve(d=1, p=[[-0.04, 0.0, 0.04], [0.04, 0.0, 0.04], [0.0, -0.04, 0.04], [-0.04, 0.0, 0.04]], k=(0.0, 1.0, 2.0, 3.0)),
+                  'mouth': lambda: mc.curve(d=3, p=[[-0.22980900108794244, -0.04759124309943556, 0.8429444356540107], [-0.22393926054492552, -0.045358199737086075, 0.8647067285245191], [-0.20852009672903912, -0.04176876798173142, 0.899687807001127], [-0.1694033035434707, -0.036679282264361804, 0.9492877747432129], [-0.11939699288958709, -0.03296208453991381, 0.9855140061233637], [-0.06160267190726286, -0.030623318742626176, 1.0083066249634127], [-2.8182109062622687e-12, -0.029838670626822782, 1.0159534724654171], [0.06160267191659459, -0.030623318741553832, 1.0083066249315928], [0.1193969928552489, -0.032962084518374, 0.9855140062483384], [0.1694033036644256, -0.03667928229732598, 0.9492877742950683], [0.20852009629750132, -0.041768767799972184, 0.8996878086018357], [0.22393926144193482, -0.04535820005803114, 0.864706725199887], [0.22980900108832408, -0.04759124307766545, 0.8429444356536281]], k=(0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 10.0, 10.0)),
+                  'head': lambda: mc.curve(d=2, p=[[0.0, 14.358673055621011, 1.10344962833128], [0.15379506219426828, 14.362009719493294, 1.0863042317391376], [0.3301906251659591, 14.342176313710215, 1.0317727106764392], [0.5087998930920709, 14.291190639461561, 0.8933862817398125], [0.628051540474641, 14.190348943476284, 0.7489579394542033], [0.7024233884711769, 14.02683907825714, 0.556278023113925], [0.7209493893796295, 13.850023525115141, 0.44682372821044736], [0.7364653413044864, 13.645210860977455, 0.4219578117904953], [0.7181463751524083, 13.436420819879839, 0.43189490919924256], [0.6825554719317545, 13.22232990693574, 0.43710072694680624], [0.6270590613694109, 13.01053495376001, 0.44968216281084405], [0.5590453047139784, 12.853440105391334, 0.4722969054878311], [0.5086107554059927, 12.761094548447085, 0.5059732290813456], [0.3910188928665723, 12.602183700068066, 0.6655503142631394], [0.2771674900973296, 12.531488612210927, 0.7951098233694205], [0.14545823839333608, 12.47409746574503, 0.9146613280034224], [0.0, 12.446886380475599, 0.9395865888006854], [-0.2771674900973296, 12.531488612210927, 0.7951098233694205], [-0.3910188928665723, 12.602183700068066, 0.6655503142631394], [-0.5086107554059927, 12.761094548447085, 0.5059732290813456], [-0.5590453047139784, 12.853440105391334, 0.4722969054878311], [-0.6270590613694109, 13.01053495376001, 0.44968216281084405], [-0.6825554719317545, 13.22232990693574, 0.43710072694680624], [-0.7181463751524083, 13.436420819879839, 0.43189490919924256], [-0.7364653413044864, 13.645210860977455, 0.4219578117904953], [-0.7209493893796295, 13.850023525115141, 0.44682372821044736], [-0.7024233884711769, 14.02683907825714, 0.556278023113925], [-0.628051540474641, 14.190348943476284, 0.7489579394542033], [-0.5087998930920709, 14.291190639461561, 0.8933862817398125], [-0.3301906251659591, 14.342176313710215, 1.0317727106764392], [-0.15379506219426828, 14.362009719493294, 1.0863042317391376], [0.0, 14.358673055621011, 1.10344962833128]], k=(0.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 30.0)),
+                  'gear': lambda: mc.curve(d=3, p=[[-1.0346866027558053, 13.457507258111141, 0.5293530632957757], [-1.0346865591390677, 13.45976282613017, 0.5293530632957757], [-1.0346658866747478, 13.46738512807856, 0.5293530632957757], [-1.033738502084286, 13.47664930666317, 0.5293530632957757], [-1.0320097820128493, 13.485826153616653, 0.5293530632957757], [-1.0280961757802605, 13.486592296841287, 0.5293530632957757], [-1.0007005800111255, 13.491955368210883, 0.5293530632957757], [-0.9967869737785368, 13.492721511435516, 0.5293530632957757], [-0.9937495944497668, 13.503907631066115, 0.5293530632957757], [-0.989298266433645, 13.51450259476271, 0.5293530632957757], [-0.9836429104539566, 13.524324119675564, 0.5293530632957757], [-0.9858549890119881, 13.527651767458222, 0.5293530632957757], [-1.0013397380341136, 13.550945598329056, 0.5293530632957757], [-1.0035518166287978, 13.554273246130041, 0.5293530632957757], [-0.9983443792352564, 13.561849913791852, 0.5293530632957757], [-0.9924128579988777, 13.569079565736578, 0.5293530632957757], [-0.9856802600314055, 13.575818524912004, 0.5293530632957757], [-0.9788318437184025, 13.58266474737641, 0.5293530632957757], [-0.9714736513054606, 13.58868422895903, 0.5293530632957757], [-0.963762081417692, 13.59395155008437, 0.5293530632957757], [-0.9604511046302086, 13.591724482482363, 0.5293530632957757], [-0.9372739692961425, 13.576134809063827, 0.5293530632957757], [-0.933962992508659, 13.57390774181552, 0.5293530632957757], [-0.9241307189838853, 13.579545768608803, 0.5293530632957757], [-0.9135272007072278, 13.583978013184328, 0.5293530632957757], [-0.9023347199603085, 13.586994115333868, 0.5293530632957757], [-0.9015464223285533, 13.590908915620464, 0.5293530632957757], [-0.8960282680015798, 13.618312871286902, 0.5293530632957757], [-0.8952399703698246, 13.622227671941857, 0.5293530632957757], [-0.8862002187761662, 13.62390265049311, 0.5293530632957757], [-0.8768926373336056, 13.624821739161758, 0.5293530632957757], [-0.8673667997643262, 13.624825906997602, 0.5293530632957757], [-0.8576843442230144, 13.624823713478882, 0.5293530632957757], [-0.8482225576777268, 13.623876986239784, 0.5293530632957757], [-0.8390457105409798, 13.62214826605839, 0.5293530632957757], [-0.8382797867195315, 13.618234416400423, 0.5293530632957757], [-0.8329182507507303, 13.590837114364673, 0.5293530632957757], [-0.832152326929282, 13.58692326433468, 0.5293530632957757], [-0.8209662073719891, 13.583885884958262, 0.5293530632957757], [-0.8103714631885375, 13.579436531369222, 0.5293530632957757], [-0.8005497186159288, 13.573779200944125, 0.5293530632957757], [-0.7997327619286777, 13.574437504020931, 0.5293530632957757], [-0.7700592253931351, 13.594971187404694, 0.5293530632957757], [-0.7705986181375497, 13.593690300498405, 0.5293530632957757], [-0.7630219501092126, 13.588482863500714, 0.5293530632957757], [-0.7557922986409711, 13.58255134193446, 0.5293530632957757], [-0.7490533395388514, 13.575818524912004, 0.5293530632957757], [-0.7422090907318178, 13.568970327763942, 0.5293530632957757], [-0.7361876348430705, 13.561612135314348, 0.5293530632957757], [-0.7309203142528614, 13.55390034584013, 0.5293530632957757], [-0.7331473573470262, 13.550589393866538, 0.5293530632957757], [-0.7487368600463525, 13.527412428967624, 0.5293530632957757], [-0.7509639031405174, 13.524101476627505, 0.5293530632957757], [-0.7453280694627747, 13.51426920295612, 0.5293530632957757], [-0.7408938511199149, 13.503665684752768, 0.5293530632957757], [-0.7378777489337236, 13.49247298456601, 0.5293530632957757], [-0.7372570310960833, 13.491684711399946, 0.5293530632957757], [-0.702890672562298, 13.487214607954368, 0.5293530632957757], [-0.7028598012035626, 13.486942283591253, 0.5293530632957757], [-0.7009692137378295, 13.47633870285836, 0.5293530632957757], [-0.7003011397787526, 13.469573137931175, 0.5293530632957757], [-0.7001175214504842, 13.462692138082572, 0.5293530632957757], [-0.700073975434338, 13.457507258111141, 0.5293530632957757], [-0.7001175214504842, 13.452322378121384, 0.5293530632957757], [-0.7003011397787526, 13.445441377924578, 0.5293530632957757], [-0.7009692137378295, 13.438675812997394, 0.5293530632957757], [-0.7026441922890811, 13.429636061422062, 0.5293530632957757], [-0.7065589926489821, 13.428847788255998, 0.5293530632957757], [-0.7339629485371697, 13.423329804455808, 0.5293530632957757], [-0.7378777489337236, 13.422541531289744, 0.5293530632957757], [-0.7408938511199149, 13.41134883108466, 0.5293530632957757], [-0.7453280694627747, 13.400745312991265, 0.5293530632957757], [-0.7509639031405174, 13.390913039613102, 0.5293530632957757], [-0.7487368600463525, 13.38760208683315, 0.5293530632957757], [-0.7331473573470262, 13.364425121952562, 0.5293530632957757], [-0.7309203142528614, 13.361114170088928, 0.5293530632957757], [-0.7361876348430705, 13.353402380852954, 0.5293530632957757], [-0.7422090907318178, 13.346044188476665, 0.5293530632957757], [-0.7490533395388514, 13.33919599140191, 0.5293530632957757], [-0.7557922986409711, 13.332463173976272, 0.5293530632957757], [-0.7630219501092126, 13.326531652648262, 0.5293530632957757], [-0.7705986181375497, 13.321324215346353, 0.5293530632957757], [-0.773926485030172, 13.323536537644976, 0.5293530632957757], [-0.7972218517233065, 13.33902299294288, 0.5293530632957757], [-0.8005497186159288, 13.341235314874977, 0.5293530632957757], [-0.8103714631885375, 13.335577984853058, 0.5293530632957757], [-0.8209662073719891, 13.331128630824187, 0.5293530632957757], [-0.832152326929282, 13.32809125193525, 0.5293530632957757], [-0.8329182507507303, 13.324177401485583, 0.5293530632957757], [-0.8382797867195315, 13.296780099770544, 0.5293530632957757], [-0.8390457105409798, 13.292866250237196, 0.5293530632957757], [-0.8482225576777268, 13.291137529982496, 0.5293530632957757], [-0.8576843442230144, 13.290190802670093, 0.5293530632957757], [-0.8673667997643262, 13.290188609188027, 0.5293530632957757], [-0.8768926373336056, 13.29019277696889, 0.5293530632957757], [-0.8862002187761662, 13.291111865380971, 0.5293530632957757], [-0.8952399703698246, 13.29278684395055, 0.5293530632957757], [-0.8960282680015798, 13.296701644988525, 0.5293530632957757], [-0.9015464223285533, 13.324105600271944, 0.5293530632957757], [-0.9023347199603085, 13.328020400576865, 0.5293530632957757], [-0.9135272007072278, 13.33103650274473, 0.5293530632957757], [-0.9241307189838853, 13.335468747283604, 0.5293530632957757], [-0.933962992508659, 13.341106773966928, 0.5293530632957757], [-0.9372739692961425, 13.338879706828578, 0.5293530632957757], [-0.9604511046302086, 13.323290033437532, 0.5293530632957757], [-0.963762081417692, 13.32106296611592, 0.5293530632957757], [-0.9714736513054606, 13.326330286816086, 0.5293530632957757], [-0.9788318437184025, 13.33234976844269, 0.5293530632957757], [-0.9856802600314055, 13.33919599140191, 0.5293530632957757], [-0.9924128579988777, 13.345934950540682, 0.5293530632957757], [-0.9983443792352564, 13.353164602008924, 0.5293530632957757], [-1.0035518166287978, 13.360741269707386, 0.5293530632957757], [-1.0013397380341136, 13.364068917435066, 0.5293530632957757], [-0.9858549890119881, 13.387362748782385, 0.5293530632957757], [-0.9836429104539566, 13.390690396510063, 0.5293530632957757], [-0.989298266433645, 13.400511921477896, 0.5293530632957757], [-0.9937495944497668, 13.411106885192819, 0.5293530632957757], [-0.9967869737785368, 13.42229300440191, 0.5293530632957757], [-1.0007005800111255, 13.42305914764487, 0.5293530632957757], [-1.0280961757802605, 13.42842221899614, 0.5293530632957757], [-1.0320097820128493, 13.4291883622391, 0.5293530632957757], [-1.033738502084286, 13.43836520955911, 0.5293530632957757], [-1.0346658866747478, 13.447629388143723, 0.5293530632957757], [-1.0346865591390677, 13.455251689725584, 0.5293530632957757], [-1.0346866027558053, 13.457507258111141, 0.5293530632957757]], k=(0.0, 0.0, 0.0, 1.0, 4.0, 4.0, 4.0, 7.0, 7.0, 7.0, 10.0, 10.0, 10.0, 13.0, 13.0, 13.0, 14.0, 15.0, 16.0, 19.0, 19.0, 19.0, 22.0, 22.0, 22.0, 25.0, 25.0, 25.0, 28.0, 28.0, 28.0, 29.0, 30.0, 31.0, 34.0, 34.0, 34.0, 37.0, 37.0, 37.0, 38.0, 41.0, 41.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 49.0, 49.0, 49.0, 52.0, 52.0, 52.0, 53.0, 56.0, 56.0, 56.0, 57.0, 58.0, 59.0, 60.0, 61.0, 62.0, 63.0, 66.0, 66.0, 66.0, 69.0, 69.0, 69.0, 72.0, 72.0, 72.0, 75.0, 75.0, 75.0, 76.0, 77.0, 78.0, 81.0, 81.0, 81.0, 84.0, 84.0, 84.0, 87.0, 87.0, 87.0, 90.0, 90.0, 90.0, 91.0, 92.0, 93.0, 96.0, 96.0, 96.0, 99.0, 99.0, 99.0, 102.0, 102.0, 102.0, 105.0, 105.0, 105.0, 106.0, 107.0, 108.0, 111.0, 111.0, 111.0, 114.0, 114.0, 114.0, 117.0, 117.0, 117.0, 120.0, 120.0, 120.0, 121.0, 122.0, 122.0, 122.0)),
                   'eye': lambda: createControlShape('eye')
                   }
     
@@ -1004,19 +1078,106 @@ def replaceControlCurve(ctl, shape=''):
     new = pm.PyNode(curvesDict[shape]())
     
     # replace shape
-    newShape = new.getChildren()
-    pm.parent(newShape, ctl, r=True, s=True)
+    newShapes = new.getChildren()
+    # rename new shapes properly
+    for eachShape in newShapes:
+        eachShape.rename(ctl.name() + 'Shape')
+    pm.parent(newShapes, ctl, r=True, s=True)
+    
+    # delete the new transform since we only wanted the shapes
     pm.delete(new)
 
 def orientLoopTransforms(transforms, secAxis):
     '''
     bnds [list of PyNode.transform]
     '''
-    for _ in range(len(transforms)-1):
+    for _ in range(len(transforms) - 1):
         currTransform = transforms[_]
-        nextTransform = transforms[_+1]
+        nextTransform = transforms[_ + 1]
         # orient curr using next as reference
         currPos = currTransform.getRotatePivot(space='world')
         nextPos = nextTransform.getRotatePivot(space='world')
         secVec = nextPos - currPos
-        rt.orientToVector(currTransform, (0,1,0), (0,1,0), secAxis, secVec)
+        rt.orientToVector(currTransform, (0, 1, 0), (0, 1, 0), secAxis, secVec)
+
+def getBindDict(mesh, skn):
+    """
+    create a dictionary with influences as keys,
+    list of vertIds as values
+    * assumes that this is a rigid bind - all weights are either 1 or 0
+    mesh = pm.PyNode('body_geo')
+    skn = pm.PyNode('skinCluster1')
+    """
+    bindDict = {}
+    
+    for infId, inf in enumerate(skn.influenceObjects()):
+        print infId, inf
+        weightsIter = skn.getWeights(mesh, infId)
+        vertsList = list()
+        for vertId, vertWeight in enumerate(weightsIter):
+            if vertWeight == 1.0:
+                vertsList.append(vertId)
+        bindDict[inf] = vertsList
+        
+    return bindDict
+
+def getMaskFromBindDict(bindDict, jnts, mesh):
+    """
+    returns mask as a list
+    jnts = jnts to use in opaque region
+    """
+    numOfVerts = mesh.numVertices()
+    maskList = [0] * numOfVerts
+    for eachJnt in jnts:
+        for eachVertId in bindDict[eachJnt]:
+            maskList[eachVertId] = 1
+            
+    return maskList
+
+def createSkinLayers(mesh):
+    # select bnd jnts
+    jnts = pm.ls('*_bnd', type='joint')
+    jnts.remove(pm.PyNode('CT_jaw_bnd'))
+    
+    # remove loop jnts
+    lipJnts = [jnt for jnt in jnts if '_lip_' in jnt.name()]
+    eyelidJnts = [jnt for jnt in jnts if '_eyelid_' in jnt.name()]
+    baseJnts = [jnt for jnt in jnts if jnt not in lipJnts and jnt not in eyelidJnts]
+    
+    pm.select(cl=True)
+    
+    # rigid bnd to mesh
+    skn = pm.skinCluster(baseJnts, mesh, bindMethod=0, maximumInfluences=1, omi=False)
+
+    # use this data for masking
+    bindDict = getBindDict(mesh, skn)
+    
+    """
+    # bnd lowerjaw
+    mc.skinCluster('CT_jaw_bnd', 'lowerTeeth_geo')
+    mc.skinCluster('CT_jaw_bnd', 'lowerGum_geo')
+    mc.skinCluster('CT_jaw_bnd', 'tongue_geo')
+    """
+    
+    # init skin layers
+    mll = MllInterface()
+    mll.setCurrentMesh(mesh.name())
+    mll.initLayers()
+    
+    # create base layer for CT_base_bnd
+    mll.createLayer('Base', False)
+    # pm.select(mesh)
+    mll.setCurrentLayer(1)
+    mel.ngAssignWeights(mesh.name(), bnj=True, ij='CT_base_bnd', intensity=1.0)
+    
+    # create face layer
+    mll.createLayer('Face', False)
+    faceJnts = [jnt for jnt in baseJnts if '_perimeter_' not in jnt.name()]
+    faceJntsName = [jnt.name() for jnt in faceJnts]
+    mll.setCurrentLayer(2)
+    mc.ngAssignWeights(mesh.name(), bnj=True, ij='/'.join(faceJntsName), intensity=1.0)
+    # mask for face layer
+    maskList = getMaskFromBindDict(bindDict, faceJnts, mesh)
+    mll.setLayerMask(2, maskList)
+
+

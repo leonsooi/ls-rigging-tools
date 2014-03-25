@@ -582,6 +582,7 @@ def connectVisibilityToggle(targets, control, name, default=True):
     
     Uses visibility of shape nodes (when available) so children can still be visible
     '''
+    
     # convert string into tuple if necessary
     if isinstance(targets, basestring):
         targets = [targets]

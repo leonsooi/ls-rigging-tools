@@ -48,7 +48,9 @@ class FaceJointPlacementContext():
                            ['Left Jaw Corner', 'LT_corner_jaw'],
                            ['Left Lower Jaw', 'LT_low_jaw'],
                            ['Left Chin', 'LT_chin'],
-                           ['Center Chin', 'CT_chin']]
+                           ['Center Chin', 'CT_chin'],
+                           ['Center Neck', 'CT_neck'],
+                           ['Left Neck', 'LT_neck']]
         
         self.jointIndex = 0
         self.ui = ui

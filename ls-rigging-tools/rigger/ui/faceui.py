@@ -167,47 +167,12 @@ class newUI(pm.uitypes.Window):
         
         priCtls = face.buildPrimaryControlSystem()
         
+        perimeterGrp = face.addPerimeterBndSystem(self.mesh)
+        
         pm.progressWindow(title='Build Deformation System', progress=0, max=4)
         pm.progressWindow(e=True, step=1, status='Bind skinClusters...') # 1
-        # select bnd jnts
-        jnts = pm.ls('*_bnd', type='joint')
-        jnts.remove(pm.PyNode('CT_jaw_bnd'))
         
-        # remove loop jnts
-        lipJnts = [jnt for jnt in jnts if '_lip_' in jnt.name()]
-        eyelidJnts = [jnt for jnt in jnts if '_eyelid_' in jnt.name()]
-        
-        baseJnts = [jnt for jnt in jnts if jnt not in lipJnts and jnt not in eyelidJnts]
-        
-        pm.select(cl=True)
-        
-        # bnd to mesh
-        pm.skinCluster(baseJnts, self.mesh)
-        """
-        # bnd lowerjaw
-        mc.skinCluster('CT_jaw_bnd', 'lowerTeeth_geo')
-        mc.skinCluster('CT_jaw_bnd', 'lowerGum_geo')
-        mc.skinCluster('CT_jaw_bnd', 'tongue_geo')
-        """
-        # import weights...
-        pm.progressWindow(e=True, step=1, status='Import skin layers...') # 5
-        mll = MllInterface()
-        
-        mll.setCurrentMesh(self.mesh.name())
-        mll.initLayers()
-        
-        # temporary remove weights import so we can test on other meshes
-        """
-        importer = XmlImporter()
-        fileName = "C:\Users\Leon\Documents\maya\projects\Ritual\scenes\FRS\Test.xml"
-        f = open(fileName,'r')
-        contents = ''.join(f.readlines())
-        f.close();
-        
-        data = importer.process(contents)
-        # set that into given mesh
-        data.saveTo(self.mesh.name())
-        """
+        face.createSkinLayers(self.mesh)
         
         pm.progressWindow(e=True, step=1, status='Adapt motion systems...') # 6
         # set primary ctl weights
