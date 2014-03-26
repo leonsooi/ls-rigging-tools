@@ -161,7 +161,8 @@ class newUI(pm.uitypes.Window):
         
         # build controls
         # [2,9,16,21] is a hard-coded override for badly topologized Sorceress char
-        bndGrp = face.createBndsFromPlacement(self.placementGrp, self.mesh, [2,9,16,21])
+        # bndGrp = face.createBndsFromPlacement(self.placementGrp, self.mesh, [2,9,16,21])
+        bndGrp = face.createBndsFromPlacement(self.placementGrp, self.mesh)
         
         face.buildSecondaryControlSystem(self.placementGrp, bndGrp, self.mesh)
         

@@ -14,6 +14,9 @@ import utils.rigging as rt
 reload(eye)
 reload(rt)
 
+import ngSkinToolsPlus.lib.weights as ngWeights
+reload(ngWeights)
+
 from ngSkinTools.mllInterface import MllInterface
 
 
@@ -1134,20 +1137,45 @@ def getMaskFromBindDict(bindDict, jnts, mesh):
             
     return maskList
 
+
+
+    
+def arbitraryWeightsCorrection(char=None):
+    '''
+    used to correct weights where needed
+    '''
+    if char is 'sorceress':
+        mel.ngAssignWeights('body_geo.vtx[3006]', bnj=True, ij='RT_upper_pinch_lip_bnd', intensity=1.0)
+        mel.ngAssignWeights('body_geo.vtx[2984]', bnj=True, ij='LT_upper_pinch_lip_bnd', intensity=1.0)
+
 def createSkinLayers(mesh):
     # select bnd jnts
     jnts = pm.ls('*_bnd', type='joint')
     jnts.remove(pm.PyNode('CT_jaw_bnd'))
     
-    # remove loop jnts
+    # group bind jnts for layering
+    # jnts within the same group are smoothed out
+    # layers allow distinct creases by masking
     lipJnts = [jnt for jnt in jnts if '_lip_' in jnt.name()]
     eyelidJnts = [jnt for jnt in jnts if '_eyelid_' in jnt.name()]
-    baseJnts = [jnt for jnt in jnts if jnt not in lipJnts and jnt not in eyelidJnts]
+    noseJnts = [pm.PyNode(jnt) for jnt in ['CT_noseTip_bnd',
+                                           'LT_nostril_bnd',
+                                           'RT_nostril_bnd']]
+    centerBrowJnt = [pm.PyNode('CT_brow_bnd')]
+    sideBrowJnts = [jnt for jnt in jnts if '_brow_' in jnt.name()
+                    and jnt not in centerBrowJnt]
+    foreheadJnts = [jnt for jnt in jnts if '_forehead_' in jnt.name()
+                    and '_perimeter_' not in jnt.name()] 
+    '''
+    baseJnts = [jnt for jnt in jnts if jnt not in lipJnts 
+                and jnt not in eyelidJnts
+                and jnt not in noseJnts]
+                '''
     
     pm.select(cl=True)
     
     # rigid bnd to mesh
-    skn = pm.skinCluster(baseJnts, mesh, bindMethod=0, maximumInfluences=1, omi=False)
+    skn = pm.skinCluster(jnts, mesh, bindMethod=0, maximumInfluences=1, omi=False)
 
     # use this data for masking
     bindDict = getBindDict(mesh, skn)
@@ -1164,20 +1192,110 @@ def createSkinLayers(mesh):
     mll.setCurrentMesh(mesh.name())
     mll.initLayers()
     
+    #===========================================================================
+    # base layer
+    #===========================================================================
     # create base layer for CT_base_bnd
     mll.createLayer('Base', False)
     # pm.select(mesh)
     mll.setCurrentLayer(1)
     mel.ngAssignWeights(mesh.name(), bnj=True, ij='CT_base_bnd', intensity=1.0)
     
+    #===========================================================================
+    # face layer
+    #===========================================================================
     # create face layer
     mll.createLayer('Face', False)
-    faceJnts = [jnt for jnt in baseJnts if '_perimeter_' not in jnt.name()]
+    faceJnts = [jnt for jnt in jnts if '_perimeter_' not in jnt.name()
+                and jnt not in lipJnts
+                and jnt not in noseJnts
+                and jnt not in eyelidJnts
+                and jnt not in centerBrowJnt
+                and jnt not in sideBrowJnts
+                and jnt not in foreheadJnts]
     faceJntsName = [jnt.name() for jnt in faceJnts]
     mll.setCurrentLayer(2)
     mc.ngAssignWeights(mesh.name(), bnj=True, ij='/'.join(faceJntsName), intensity=1.0)
     # mask for face layer
-    maskList = getMaskFromBindDict(bindDict, faceJnts, mesh)
+    faceMaskJnts = [jnt for jnt in jnts if '_perimeter_' not in jnt.name()
+                    and jnt not in noseJnts
+                    and jnt not in eyelidJnts
+                    and jnt not in centerBrowJnt
+                    and jnt not in sideBrowJnts
+                    and jnt not in foreheadJnts]
+    maskList = getMaskFromBindDict(bindDict, faceMaskJnts, mesh)
     mll.setLayerMask(2, maskList)
-
-
+    
+    #===========================================================================
+    # lips layer
+    #===========================================================================
+    # create lips layer
+    mll.createLayer('Lips', False)
+    lipJntsName = [jnt.name() for jnt in lipJnts]
+    mll.setCurrentLayer(3)
+    # skn.addInfluence(lipJnts, lw=True, wt=0)
+    mc.ngAssignWeights(mesh.name(), bnj=True, ij='/'.join(lipJntsName), intensity=1.0)
+    arbitraryWeightsCorrection(char='sorceress')
+    """
+    # mask for lips layer
+    # lists below should be externalized
+    innerXfos = [u'CT_upper_lip_bnd',
+                 u'LT_upper_sneer_lip_bnd',
+                 u'LT_upper_pinch_lip_bnd',
+                 u'LT_corner_lip_bnd',
+                 u'LT_lower_pinch_lip_bnd',
+                 u'LT_lower_sneer_lip_bnd',
+                 u'CT_lower_lip_bnd',
+                 u'RT_lower_sneer_lip_bnd',
+                 u'RT_lower_pinch_lip_bnd',
+                 u'RT_corner_lip_bnd',
+                 u'RT_upper_pinch_lip_bnd',
+                 u'RT_upper_sneer_lip_bnd']
+             
+    outerXfos = [u'LT_in_philtrum_bnd',
+                 u'LT_philtrum_bnd',
+                 u'LT_sneer_bnd',
+                 u'LT_low_crease_bnd',
+                 u'LT_mid_chin_bnd',
+                 u'CT_mid_chin_bnd',
+                 u'RT_mid_chin_bnd',
+                 u'RT_low_crease_bnd',
+                 u'RT_sneer_bnd',
+                 u'RT_philtrum_bnd',
+                 u'RT_in_philtrum_bnd']
+    """
+    # maskList = ngWeights.createWeightsListByPolyStrip(outerXfos, innerXfos, mesh, 1)
+    maskList = getMaskFromBindDict(bindDict, lipJnts, mesh)
+    mll.setLayerMask(3, maskList)
+    
+    #===========================================================================
+    # nose layer
+    #===========================================================================
+    mll.createLayer('Nose', False)
+    noseJntsName = [jnt.name() for jnt in noseJnts]
+    mll.setCurrentLayer(4)
+    mc.ngAssignWeights(mesh.name(), bnj=True, ij='/'.join(noseJntsName), intensity=1.0)
+    # mask for face layer
+    maskList = getMaskFromBindDict(bindDict, noseJnts, mesh)
+    mll.setLayerMask(4, maskList)
+    
+    #===========================================================================
+    # brows layer
+    #===========================================================================
+    mll.createLayer('Brows', False)
+    # include forehead in the same layer too
+    browsJntsName = [jnt.name() for jnt in sideBrowJnts + foreheadJnts]
+    mll.setCurrentLayer(5)
+    mc.ngAssignWeights(mesh.name(), bnj=True, ij='/'.join(browsJntsName), intensity=1.0)
+    maskList = getMaskFromBindDict(bindDict, centerBrowJnt + sideBrowJnts + foreheadJnts, mesh)
+    mll.setLayerMask(5, maskList)
+    
+    #===========================================================================
+    # center brow layer (to get brow furrow crease)
+    #===========================================================================
+    mll.createLayer('MidBrow', False)
+    centerBrowJntName = [jnt.name() for jnt in centerBrowJnt]
+    mll.setCurrentLayer(6)
+    mc.ngAssignWeights(mesh.name(), bnj=True, ij='/'.join(centerBrowJntName), intensity=1.0)
+    maskList = getMaskFromBindDict(bindDict, centerBrowJnt, mesh)
+    mll.setLayerMask(6, maskList)
