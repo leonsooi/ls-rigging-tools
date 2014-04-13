@@ -5,6 +5,7 @@
 	<projects>
 		<project>cgm</project>
 		<project>ngSkinTools</project>
+		<project>ngSkinToolsPlus</project>
 		<project>pymel</project>
 	</projects>
 	<buildSpec>
