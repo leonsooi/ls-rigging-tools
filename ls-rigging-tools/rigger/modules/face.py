@@ -1215,7 +1215,7 @@ def createSkinLayers(mesh):
                 and jnt not in foreheadJnts]
     faceJntsName = [jnt.name() for jnt in faceJnts]
     mll.setCurrentLayer(2)
-    mc.ngAssignWeights(mesh.name(), bnj=True, ij='/'.join(faceJntsName), intensity=1.0)
+    mel.ngAssignWeights(mesh.name(), bnj=True, ij='/'.join(faceJntsName), intensity=1.0)
     # mask for face layer
     faceMaskJnts = [jnt for jnt in jnts if '_perimeter_' not in jnt.name()
                     and jnt not in noseJnts
@@ -1234,7 +1234,7 @@ def createSkinLayers(mesh):
     lipJntsName = [jnt.name() for jnt in lipJnts]
     mll.setCurrentLayer(3)
     # skn.addInfluence(lipJnts, lw=True, wt=0)
-    mc.ngAssignWeights(mesh.name(), bnj=True, ij='/'.join(lipJntsName), intensity=1.0)
+    mel.ngAssignWeights(mesh.name(), bnj=True, ij='/'.join(lipJntsName), intensity=1.0)
     arbitraryWeightsCorrection(char='sorceress')
     """
     # mask for lips layer
@@ -1274,7 +1274,7 @@ def createSkinLayers(mesh):
     mll.createLayer('Nose', False)
     noseJntsName = [jnt.name() for jnt in noseJnts]
     mll.setCurrentLayer(4)
-    mc.ngAssignWeights(mesh.name(), bnj=True, ij='/'.join(noseJntsName), intensity=1.0)
+    mel.ngAssignWeights(mesh.name(), bnj=True, ij='/'.join(noseJntsName), intensity=1.0)
     # mask for face layer
     maskList = getMaskFromBindDict(bindDict, noseJnts, mesh)
     mll.setLayerMask(4, maskList)
@@ -1286,7 +1286,7 @@ def createSkinLayers(mesh):
     # include forehead in the same layer too
     browsJntsName = [jnt.name() for jnt in sideBrowJnts + foreheadJnts]
     mll.setCurrentLayer(5)
-    mc.ngAssignWeights(mesh.name(), bnj=True, ij='/'.join(browsJntsName), intensity=1.0)
+    mel.ngAssignWeights(mesh.name(), bnj=True, ij='/'.join(browsJntsName), intensity=1.0)
     maskList = getMaskFromBindDict(bindDict, centerBrowJnt + sideBrowJnts + foreheadJnts, mesh)
     mll.setLayerMask(5, maskList)
     
@@ -1296,6 +1296,27 @@ def createSkinLayers(mesh):
     mll.createLayer('MidBrow', False)
     centerBrowJntName = [jnt.name() for jnt in centerBrowJnt]
     mll.setCurrentLayer(6)
-    mc.ngAssignWeights(mesh.name(), bnj=True, ij='/'.join(centerBrowJntName), intensity=1.0)
+    mel.ngAssignWeights(mesh.name(), bnj=True, ij='/'.join(centerBrowJntName), intensity=1.0)
     maskList = getMaskFromBindDict(bindDict, centerBrowJnt, mesh)
     mll.setLayerMask(6, maskList)
+    
+    return mll
+    
+def smoothSkinLayers(mll):
+    '''
+    '''
+    # 2 - face
+    ngWeights.relaxLayerWeights(mll, 2)
+    ngWeights.smoothLayerMask(mll, 2, 1.0)
+    # 3 - lips
+    ngWeights.relaxLayerWeights(mll, 3)
+    ngWeights.smoothLayerMask(mll, 3, 2.5)
+    # 4 - nose
+    ngWeights.relaxLayerWeights(mll, 4)
+    ngWeights.smoothLayerMask(mll, 4, 1.0)
+    # 5 - brows
+    ngWeights.relaxLayerWeights(mll, 5)
+    ngWeights.smoothLayerMask(mll, 5, 1.5)
+    # 6 - midbrows
+    ngWeights.relaxLayerWeights(mll, 6)
+    ngWeights.smoothLayerMask(mll, 6, 1.0)

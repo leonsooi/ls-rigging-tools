@@ -173,6 +173,16 @@ class newUI(pm.uitypes.Window):
         pm.progressWindow(title='Build Deformation System', progress=0, max=4)
         pm.progressWindow(e=True, step=1, status='Bind skinClusters...') # 1
         
+        # add eye deformer
+        eyePivot = pm.PyNode('l_eyeball_geo')
+        placementGrp = pm.PyNode('CT_placement_grp')
+        edgeLoop = [pm.PyNode(edge) for edge in placementGrp.leftEyelidLoop.get()]
+        cornerCVs = [2, 9, 16, 23]
+        blinkLine = 0.3
+        rigidLoops = 2
+        falloffLoops = 4
+        eye.buildEyeRigCmd('LT_eye', eyePivot, edgeLoop, cornerCVs, blinkLine, rigidLoops, falloffLoops)
+        
         face.createSkinLayers(self.mesh)
         
         pm.progressWindow(e=True, step=1, status='Adapt motion systems...') # 6

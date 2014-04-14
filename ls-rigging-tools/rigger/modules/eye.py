@@ -16,6 +16,8 @@ reload(ctls)
 
 from ngSkinTools.mllInterface import MllInterface
 
+mel = pm.language.Mel()
+
 def setMeshWeights(root, aimJnts, generationWeights):
     '''
     root [Tree] of vertices around the eye
@@ -26,7 +28,7 @@ def setMeshWeights(root, aimJnts, generationWeights):
     generationWeights = [1,.9,.8,.7,.6,.5,.4,.3,.2,.1]
     '''
     mesh = root.children[0].data.node()
-    sknStr = pm.mel.findRelatedSkinCluster(mesh.name())
+    sknStr = mel.findRelatedSkinCluster(mesh.name())
     skn = pm.PyNode(sknStr)
     
     # add layer for eye weights
@@ -628,9 +630,39 @@ def returnInUpOutLowCVsOnCurve(crv):
         
     return innerCV, upperCV, outerCV, lowerCV
 
+
+def buildEyeRigCmd(name, eyePivot, edgeLoop, cornerCVs, blinkLine, rigidLoops, falloffLoops):
+    '''
+    '''
+    
+    influenceLoops = rigidLoops + falloffLoops
+    
+    pm.progressWindow(title='Rigging '+name, max=3, status='\nCreate bind joints...')
+    # first run will mess up UI, refresh to redraw window properly
+    pm.refresh()
+    
+    aimLocs, aimJnts, drvCrv = constructEyelidsDeformer(name, eyePivot, edgeLoop)
+    
+    # get vertex loops
+    pm.select(edgeLoop, r=True)
+    meval('ConvertSelectionToVertices')
+    root = constructVertexLoops(influenceLoops)
+    pm.select(cl=True)
+    
+    # calculate generation weights (for layer mask)
+    generationWeights = [1] * rigidLoops
+    linearFalloff = [float(index)/(falloffLoops+1) for index in range(falloffLoops,0,-1)]
+    smoothFalloff = pm.dt.smoothmap(0, 1, linearFalloff)
+    generationWeights += smoothFalloff
+    
+    # assume that skn weights are already set up
+    setMeshWeights(root, aimJnts, generationWeights)
+
+
+
 def buildEyeRig(name, eyePivot, edgeLoop, loops):
     '''
-    DEPRECATED - USE FACEUI
+    DEPRECATED - USE buildEyeRigCmd
     INTERFACE TO FUNCTION DEFS HAVE CHANGED
     example use:
     (assume that skin cluster and layers are already set up)
