@@ -390,15 +390,14 @@ def viewVertexLoops(root):
         pm.refresh()
         time.sleep(0.5)
 
-def rigCleanup(name, aimJnts, drvJnts, aimLocs, drvSkn, targetCrv):
+def rigCleanup(name, aimJnts, aimLocs, drvCrv):
+    # child grps
     aimBaseJnts = aimJnts[::2]
     aimJntsGrp = pm.group(aimBaseJnts, n=name+'_aimJnts_grp_0')
-    drvStartJnts = [jnt.firstParent() for jnt in drvJnts.values()]
-    drvJntsGrp = pm.group(drvStartJnts, n=name+'_drvJnts_grp_0')
     aimLocsGrp = pm.group(aimLocs, n=name+'_aimLocs_grp_0')
-    drvCrv = drvSkn.getGeometry()
-    curvesGrp = pm.group(drvCrv, targetCrv, n=name+'_curves_grp_0')
-    masterGrp = pm.group(aimJntsGrp, drvJntsGrp, aimLocsGrp, curvesGrp, n=name+'_master_grp_0')
+    curvesGrp = pm.group(drvCrv, n=name+'_curves_grp_0')
+    # master grp
+    masterGrp = pm.group(aimJntsGrp, aimLocsGrp, curvesGrp, n=name+'_master_grp_0')
     masterGrp.addAttr('lsModuleName', dt='string')
     masterGrp.lsModuleName.set(name)
     masterGrp.addAttr('curvesViz', at='bool', k=True, dv=False)
@@ -407,8 +406,7 @@ def rigCleanup(name, aimJnts, drvJnts, aimLocs, drvSkn, targetCrv):
     masterGrp.attr('aimJntsViz') >> aimJntsGrp.visibility
     masterGrp.addAttr('aimLocsViz', at='bool', k=True, dv=False)
     masterGrp.attr('aimLocsViz') >> aimLocsGrp.visibility
-    masterGrp.addAttr('drvJntsViz', at='bool', k=True, dv=False)
-    masterGrp.attr('drvJntsViz') >> drvJntsGrp.visibility
+
     return masterGrp
 
 def setConnections(masterGrp, drvJnts, upperAngle, lowerAngle, blinkLine):
@@ -631,7 +629,7 @@ def returnInUpOutLowCVsOnCurve(crv):
     return innerCV, upperCV, outerCV, lowerCV
 
 
-def buildEyeRigCmd(name, eyePivot, edgeLoop, cornerCVs, blinkLine, rigidLoops, falloffLoops):
+def buildEyeRigCmd(name, eyePivot, edgeLoop, rigidLoops, falloffLoops):
     '''
     '''
     
@@ -657,7 +655,9 @@ def buildEyeRigCmd(name, eyePivot, edgeLoop, cornerCVs, blinkLine, rigidLoops, f
     
     # assume that skn weights are already set up
     setMeshWeights(root, aimJnts, generationWeights)
-
+    
+    # cleanup
+    rigCleanup(name, aimJnts, aimLocs, drvCrv)
 
 
 def buildEyeRig(name, eyePivot, edgeLoop, loops):
@@ -763,7 +763,44 @@ def updateConnections(masterGrp, upperAngle, lowerAngle):
     masterGrp.lowerMiddle.set(midLowerAngle)
     masterGrp.lowerClosed.set(midLowerAngle-midUpperAngle)
     masterGrp.lowerOverclosed.set(midLowerAngle-(3.0*midUpperAngle/2.0))
+
+def buildEyeballRig():
+    '''
+    '''
+    eyeball_grp = pm.group(em=True, n='CT_eyeball_rig_grp')
     
+    # left eyeball
+    pm.select(cl=True)
+    eyeball = pm.PyNode('l_eyeball_geo')
+    bnd = pm.joint(n='LT_eyeball_bnd')
+    bndGrp = pm.group(n='LT_eyeball_grp')
+    bndHm = pm.group(n='LT_eyeball_hm')
+    eyeball_grp | bndHm
+    
+    pos = eyeball.getTranslation(space='world')
+    bndHm.setTranslation(pos, space='world')
+    pm.skinCluster(bnd, eyeball)
+    
+    ctl = pm.PyNode('LT_eye_ctl')
+    pm.aimConstraint(ctl, bndGrp, aim=(0,0,1), mo=True)
+    
+    # right eyeball
+    pm.select(cl=True)
+    eyeball = pm.PyNode('r_eyeball_geo')
+    bnd = pm.joint(n='RT_eyeball_bnd')
+    bndGrp = pm.group(n='RT_eyeball_grp')
+    bndHm = pm.group(n='RT_eyeball_hm')
+    eyeball_grp | bndHm
+    
+    pos = eyeball.getTranslation(space='world')
+    bndHm.setTranslation(pos, space='world')
+    pm.skinCluster(bnd, eyeball)
+    
+    ctl = pm.PyNode('RT_eye_ctl')
+    pm.aimConstraint(ctl, bndGrp, aim=(0,0,1), mo=True)
+    
+
+"""    
 def buildEyeballRig(name, eyePivot, masterGrp, cornerCVs):
     '''
     name = 'LT_eye'
@@ -829,9 +866,8 @@ def buildEyeballRig(name, eyePivot, masterGrp, cornerCVs):
     
     rt.connectSDK(masterGrp.eyeDartY.name(), grp_sdkEye.rx.name(), {-1:lowerAngle, 0:0, 1:upperAngle}) # .name() is required because rt does not accept pynodes yet
     
-
-    
     return grp_eye, grp_aimEyeTgt
+"""
 
 def addAutoEyelids(name, masterGrp):
     '''

@@ -9,15 +9,21 @@ import maya.cmds as mc
 import pymel.core as pm
 from maya.mel import eval as meval
 
+mel = pm.language.mel
+
 import uitypes
 import rigger.modules.eye as eye
 reload(uitypes)
 reload(eye)
 import rigger.modules.face as face
 reload(face)
+import utils.symmetry as sym
+reload(sym)
 
 import rigger.lib.context as context
 reload(context)
+import rigger.utils.weights as weights
+reload(weights)
 
 from ngSkinTools.mllInterface import MllInterface
 from ngSkinTools.importExport import XmlImporter
@@ -158,11 +164,10 @@ class newUI(pm.uitypes.Window):
         '''
         # create progress window
         
-        
         # build controls
         # [2,9,16,21] is a hard-coded override for badly topologized Sorceress char
-        # bndGrp = face.createBndsFromPlacement(self.placementGrp, self.mesh, [2,9,16,21])
-        bndGrp = face.createBndsFromPlacement(self.placementGrp, self.mesh)
+        bndGrp = face.createBndsFromPlacement(self.placementGrp, self.mesh, [2,9,16,21])
+        # bndGrp = face.createBndsFromPlacement(self.placementGrp, self.mesh)
         
         face.buildSecondaryControlSystem(self.placementGrp, bndGrp, self.mesh)
         
@@ -173,17 +178,8 @@ class newUI(pm.uitypes.Window):
         pm.progressWindow(title='Build Deformation System', progress=0, max=4)
         pm.progressWindow(e=True, step=1, status='Bind skinClusters...') # 1
         
-        # add eye deformer
-        eyePivot = pm.PyNode('l_eyeball_geo')
-        placementGrp = pm.PyNode('CT_placement_grp')
-        edgeLoop = [pm.PyNode(edge) for edge in placementGrp.leftEyelidLoop.get()]
-        cornerCVs = [2, 9, 16, 23]
-        blinkLine = 0.3
-        rigidLoops = 2
-        falloffLoops = 4
-        eye.buildEyeRigCmd('LT_eye', eyePivot, edgeLoop, cornerCVs, blinkLine, rigidLoops, falloffLoops)
-        
-        face.createSkinLayers(self.mesh)
+        mll = face.createSkinLayers(self.mesh)
+        face.smoothSkinLayers(mll)
         
         pm.progressWindow(e=True, step=1, status='Adapt motion systems...') # 6
         # set primary ctl weights
@@ -194,6 +190,31 @@ class newUI(pm.uitypes.Window):
         pm.progressWindow(e=True, step=1, status='Rig cleanup...') # 7
         # rig cleanup
         face.cleanFaceRig()
+        
+        # add left eye deformer
+        placementGrp = pm.PyNode('CT_placement_grp')
+        edgeLoop = [pm.PyNode(edge) for edge in placementGrp.leftEyelidLoop.get()]
+        eyePivot = pm.PyNode('l_eyeball_geo')
+        rigidLoops = 2
+        falloffLoops = 4
+        eye.buildEyeRigCmd('LT_eye', eyePivot, edgeLoop, rigidLoops, falloffLoops)
+        
+        # right eye deformer
+        symTable = sym.buildSymTable('body_geo')
+        pm.select(edgeLoop)
+        mel.ConvertSelectionToVertices()
+        vertsLoop = mc.ls(sl=True, fl=True)
+        sym.flipSelection(vertsLoop, symTable)
+        mel.ConvertSelectionToContainedEdges()
+        edgeLoop = pm.ls(sl=True)
+        eyePivot = pm.PyNode('r_eyeball_geo')
+        eye.buildEyeRigCmd('RT_eye', eyePivot, edgeLoop, rigidLoops, falloffLoops)
+        
+        weights.setEyelidLoopWeights('LT')
+        weights.setEyelidLoopWeights('RT')
+        
+        # eyeball rig (simple aim constraints)
+        eye.buildEyeballRig()
         
         pm.progressWindow(e=True, endProgress=True) 
         
