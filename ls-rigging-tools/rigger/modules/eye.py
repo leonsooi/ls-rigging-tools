@@ -396,6 +396,9 @@ def rigCleanup(name, aimJnts, aimLocs, drvCrv):
     aimJntsGrp = pm.group(aimBaseJnts, n=name+'_aimJnts_grp_0')
     aimLocsGrp = pm.group(aimLocs, n=name+'_aimLocs_grp_0')
     curvesGrp = pm.group(drvCrv, n=name+'_curves_grp_0')
+    # set aimJnt pivot so that we can drive this with direct connection
+    basePivot = aimBaseJnts[0].getRotatePivot(space='world')
+    aimJntsGrp.setRotatePivot(basePivot, space='world')
     # master grp
     masterGrp = pm.group(aimJntsGrp, aimLocsGrp, curvesGrp, n=name+'_master_grp_0')
     masterGrp.addAttr('lsModuleName', dt='string')

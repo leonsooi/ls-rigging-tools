@@ -11,6 +11,8 @@ from maya.mel import eval as meval
 
 mel = pm.language.mel
 
+import cgm.lib.position as cgmPos
+
 import uitypes
 import rigger.modules.eye as eye
 reload(uitypes)
@@ -41,7 +43,9 @@ class newUI(pm.uitypes.Window):
     
     imageRefPath = 'C:/Users/Leon/Pictures/FRS/Images/'
     
-    mesh = pm.PyNode('body_geo')
+    mesh = pm.PyNode('CT_face_geo')
+    lf_eye = pm.PyNode('LT_eyeball_geo')
+    rt_eye = pm.PyNode('RT_eyeball_geo')
     
     def __new__(cls):
         '''
@@ -145,6 +149,7 @@ class newUI(pm.uitypes.Window):
             pm.select(cl=True)
             
         elif self.txt_jntCurrent.getLabel() == 'Select left eyelid loop':
+            # READY!
             self.txt_jntCurrent.setLabel('Ready to Build!')
             fullRefPath = r"C:\Users\Leon\Pictures\FRS\Images\FRSRef_default.jpg"
             pm.image(self.img_jntReference, image=fullRefPath, e=True)
@@ -159,15 +164,67 @@ class newUI(pm.uitypes.Window):
             
             pm.select(cl=True)
             
+            # create independent locs that can be adjusted
+            # JAW
+            pos = pm.PyNode('LT_up_jaw_pLoc').getRotatePivot(space='world')
+            pos.x = 0
+            placementLoc = pm.spaceLocator(n='CT_jaw_pLoc')   
+            placementLoc.t.set(pos)
+            # create attribute to tell FRS what type of bind this will be
+            placementLoc.addAttr('bindType', k=True, at='enum', en='direct=0:indirect=1:independent=2', dv=2)
+            self.placementGrp | placementLoc
+            
+            # NOSE
+            pos = pm.PyNode('LT_up_crease_pLoc').getRotatePivot(space='world')
+            pos.x = 0
+            placementLoc = pm.spaceLocator(n='CT_noseMover_pLoc')   
+            placementLoc.t.set(pos)
+            # create attribute to tell FRS what type of bind this will be
+            placementLoc.addAttr('bindType', k=True, at='enum', en='direct=0:indirect=1:independent=2', dv=2)
+            self.placementGrp | placementLoc
+            
+            # MOUTH
+            pos = (pm.PyNode('CT_philtrum_pLoc').getRotatePivot(space='world') +
+                   pm.PyNode('CT_chin_pLoc').getRotatePivot(space='world')) / 2.0
+            pos.x = 0
+            placementLoc = pm.spaceLocator(n='CT_mouthMover_pLoc')   
+            placementLoc.t.set(pos)
+            # create attribute to tell FRS what type of bind this will be
+            placementLoc.addAttr('bindType', k=True, at='enum', en='direct=0:indirect=1:independent=2', dv=2)
+            self.placementGrp | placementLoc
+            
+            # EYE
+            placementLoc = pm.spaceLocator(n='LT_eyeMover_pLoc')
+            cgmPos.moveParentSnap(placementLoc.name(), self.lf_eye.name())
+            placementLoc.addAttr('bindType', k=True, at='enum', en='direct=0:indirect=1:independent=2', dv=2)
+            self.placementGrp | placementLoc
+            
+            placementLoc = pm.spaceLocator(n='RT_eyeMover_pLoc')
+            cgmPos.moveParentSnap(placementLoc.name(), self.rt_eye.name())
+            placementLoc.addAttr('bindType', k=True, at='enum', en='direct=0:indirect=1:independent=2', dv=2)
+            self.placementGrp | placementLoc
+            
+            
+            pm.select(cl=True)
+            
+            
     def buildRig(self):
         '''
         '''
         # create progress window
         
         # build controls
+        
         # [2,9,16,21] is a hard-coded override for badly topologized Sorceress char
-        bndGrp = face.createBndsFromPlacement(self.placementGrp, self.mesh, [2,9,16,21])
-        # bndGrp = face.createBndsFromPlacement(self.placementGrp, self.mesh)
+        # bndGrp = face.createBndsFromPlacement(self.placementGrp, self.mesh, [2,9,16,21])
+        
+        # [8,12,0,4] is the override for dachshund
+        # bndGrp = face.createBndsFromPlacement(self.placementGrp, self.mesh, [8,12,0,4])
+        
+        # [5,21,16,11] is the override for junnie
+        # bndGrp = face.createBndsFromPlacement(self.placementGrp, self.mesh, [5,21,16,11])
+        
+        bndGrp = face.createBndsFromPlacement(self.placementGrp, self.mesh)
         
         face.buildSecondaryControlSystem(self.placementGrp, bndGrp, self.mesh)
         

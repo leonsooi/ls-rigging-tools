@@ -6,6 +6,7 @@ Created on Feb 14, 2014
 
 import cgm.lib.curves as curves
 import cgm.lib.rigging as cgmrigging
+import cgm.lib.position as cgmPos
 import maya.cmds as mc
 import pymel.core as pm
 import pymel.core.nodetypes as nt
@@ -214,9 +215,10 @@ def addPrimaryCtlToBnd(bnd):
     pm.delete(cons)
     
     # shape ctl
-    ctl[1].radius.set(0.05)
+    ctl_radius = bnd.radius.get()
+    ctl[1].radius.set(ctl_radius * 2.0)
     ctl[1].sweep.set(359)
-    ctl[1].centerZ.set(0.04)
+    ctl[1].centerZ.set(ctl_radius)
     pm.delete(ctl, ch=True)
     
     # attach message to bnd
@@ -344,9 +346,10 @@ def addSecondaryCtlToBnd(bnd):
     pm.delete(cons)
     
     # shape ctl
-    ctl[1].radius.set(0.02)
+    ctl_radius = bnd.radius.get()
+    ctl[1].radius.set(ctl_radius)
     ctl[1].sweep.set(359)
-    ctl[1].centerZ.set(0.02)
+    ctl[1].centerZ.set(ctl_radius)
     pm.delete(ctl, ch=True)
     
     # get secondaryDrv
@@ -382,7 +385,7 @@ def createBndsFromPlacement(placementGrp, mesh, overrideCornerCVs=None):
     #===========================================================================
     directPLoc = placementGrp.getChildren()
     # not needed for CT_chin and CT_philtrum
-    directPLoc = [loc for loc in directPLoc if str(loc) not in ['CT_philtrum_pLoc']]
+    directPLoc = [loc for loc in directPLoc if loc.bindType.get() == 0]
     for eachLoc in directPLoc:
         pm.select(cl=True)
         pos = eachLoc.t.get()
@@ -434,6 +437,8 @@ def createBndsFromPlacement(placementGrp, mesh, overrideCornerCVs=None):
     for _ in range(len(params)):
         if params[_] < 0:
             params[_] = totalParam + params[_]
+        if params[_] > totalParam:
+            params[_] = params[_] - totalParam
     print params
     positions = [crv.getPointAtParam(p) for p in params]
     # see which position-y is higher
@@ -474,6 +479,8 @@ def createBndsFromPlacement(placementGrp, mesh, overrideCornerCVs=None):
     for _ in range(len(params)):
         if params[_] < 0:
             params[_] = totalParam + params[_]
+        if params[_] > totalParam:
+            params[_] = params[_] - totalParam
     print params
     positions = [crv.getPointAtParam(p) for p in params]
     # see which position-y is higher
@@ -566,7 +573,7 @@ def createBndsFromPlacement(placementGrp, mesh, overrideCornerCVs=None):
     cornerParam = crv.getParamAtPoint(cPt)
     
     totalParam = crv.spans.get()
-    sectionParam = totalParam / 8.0
+    sectionParam = totalParam / 12.0
     
     # get pinch params by +/- sectionParam
     params = [cornerParam + sectionParam, cornerParam - sectionParam]
@@ -607,8 +614,8 @@ def createBndsFromPlacement(placementGrp, mesh, overrideCornerCVs=None):
     jnt.t.set(lowerPos)
     bndGrp | jnt
     
-    # get sneer params by +/- 1.5 * sectionParam
-    params = [cornerParam + 1.5 * sectionParam, cornerParam - 1.5 * sectionParam]
+    # get sneer params by +/- 2 * sectionParam
+    params = [cornerParam + 2 * sectionParam, cornerParam - 2 * sectionParam]
     for _ in range(len(params)):
         if params[_] < 0:
             params[_] = totalParam + params[_]
@@ -838,6 +845,29 @@ def buildSecondaryControlSystem(placementGrp, bndGrp, mesh):
     pm.group(cths, n='face_ctrls_grp')
     pm.group(mss, n='face_motion_grp')
 
+
+def createMover(pLoc):
+    '''
+    pLoc - [string]
+    '''
+    pm.select(cl=True)
+    jnt = pm.joint(n=pLoc.replace('_pLoc', '_bnd'))
+    
+    ctl_radius = pm.PyNode(pLoc).localScale.get()
+    jnt.radius.set(ctl_radius[0])
+    
+    cgmPos.moveParentSnap(jnt.name(), pLoc)
+
+    hm = pm.PyNode(cgmrigging.groupMeObject(str(jnt), parent=True, maintainParent=True))
+    hm.rename(jnt.replace('_bnd', '_jnt_hm'))
+    grp = pm.PyNode(cgmrigging.groupMeObject(str(jnt), parent=True, maintainParent=True))
+    grp.rename(jnt.replace('_bnd', '_grp_hm'))
+    priCtl = addPrimaryCtlToBnd(jnt)
+    priCtl.t >> jnt.t
+    priCtl.r >> jnt.r
+    priCtl.s >> jnt.s
+    return priCtl, hm
+
 def buildPrimaryControlSystem():
     #===========================================================================
     # Add Primary controls
@@ -926,35 +956,94 @@ def buildPrimaryControlSystem():
     connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_corner_lip_bnd'), nt.Joint(u'RT_upper_pinch_lip_bnd'), nt.Joint(u'RT_upper_sneer_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd'), nt.Joint(u'CT_lower_lip_bnd'), nt.Joint(u'RT_lower_sneer_lip_bnd'), nt.Joint(u'RT_lower_pinch_lip_bnd'), nt.Joint(u'CT_mid_chin_bnd'), nt.Joint(u'RT_mid_chin_bnd'), nt.Joint(u'RT_in_philtrum_bnd'), nt.Joint(u'RT_philtrum_bnd'), nt.Joint(u'RT_sneer_bnd'), nt.Joint(u'RT_low_crease_bnd'), nt.Joint(u'RT_mid_crease_bnd')])
     allPriCtls.append(priCtl)
     
-    pm.progressWindow(e=True, step=1, status='Create driver for CT_jaw_bnd')
-    # jaw
-    # make jaw joint first
-    jawPos = pm.PyNode('LT_up_jaw_bnd').getRotatePivot(space='world')
-    jawPos.x = 0
-    jawPos.z -= 0.1
-    jawJnt = pm.joint(n='CT_jaw_bnd')
-    jawJnt.t.set(jawPos)
-    jawEndPos = pm.PyNode('CT_lower_lip_bnd').getRotatePivot(space='world')
-    jawVector = (jawEndPos - jawPos) * 1.1
-    jawJne = pm.joint(n='CT_jaw_jne')
-    jawJne.setTranslation(jawVector)
-    jawJnt.orientJoint('zyx')
-    jawJne.jointOrient.set(0, 0, 0)
-    jawHm = pm.PyNode(cgmrigging.groupMeObject(str(jawJnt), parent=True, maintainParent=True))
-    jawHm.rename(jawJnt.replace('_bnd', '_jnt_hm'))
-    jawGrp = pm.PyNode(cgmrigging.groupMeObject(str(jawJnt), parent=True, maintainParent=True))
-    jawGrp.rename(jawJnt.replace('_bnd', '_grp_hm'))
-    pm.group(jawHm, n='CT_jnts_grp')
     
-    priCtl = addPrimaryCtlToBnd(pm.PyNode('CT_jaw_bnd'))
-    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'CT_lower_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd'), nt.Joint(u'LT_upper_sneer_lip_bnd'), nt.Joint(u'LT_upper_pinch_lip_bnd'), nt.Joint(u'LT_corner_lip_bnd'), nt.Joint(u'LT_lower_pinch_lip_bnd'), nt.Joint(u'LT_lower_sneer_lip_bnd'), nt.Joint(u'RT_lower_sneer_lip_bnd'), nt.Joint(u'RT_lower_pinch_lip_bnd'), nt.Joint(u'RT_corner_lip_bnd'), nt.Joint(u'RT_upper_pinch_lip_bnd'), nt.Joint(u'RT_upper_sneer_lip_bnd'), nt.Joint(u'CT_mid_chin_bnd'), nt.Joint(u'RT_mid_chin_bnd'), nt.Joint(u'LT_mid_chin_bnd'), nt.Joint(u'LT_chin_bnd'), nt.Joint(u'CT_chin_bnd'), nt.Joint(u'RT_chin_bnd'), nt.Joint(u'LT_sneer_bnd'), nt.Joint(u'LT_mid_crease_bnd'), nt.Joint(u'LT_low_crease_bnd'), nt.Joint(u'LT_low_jaw_bnd'), nt.Joint(u'LT_cheek_bnd'), nt.Joint(u'LT_low_cheek_bnd'), nt.Joint(u'LT_corner_jaw_bnd'), nt.Joint(u'LT_up_jaw_bnd'), nt.Joint(u'RT_philtrum_bnd'), nt.Joint(u'RT_in_philtrum_bnd'), nt.Joint(u'LT_in_philtrum_bnd'), nt.Joint(u'LT_philtrum_bnd'), nt.Joint(u'LT_out_cheek_bnd'), nt.Joint(u'LT_up_cheek_bnd'), nt.Joint(u'RT_sneer_bnd'), nt.Joint(u'RT_mid_crease_bnd'), nt.Joint(u'RT_low_crease_bnd'), nt.Joint(u'RT_low_jaw_bnd'), nt.Joint(u'RT_corner_jaw_bnd'), nt.Joint(u'RT_low_cheek_bnd'), nt.Joint(u'RT_up_jaw_bnd'), nt.Joint(u'RT_cheek_bnd'), nt.Joint(u'RT_up_cheek_bnd'), nt.Joint(u'RT_out_cheek_bnd')])
+    pm.progressWindow(e=True, step=1, status='Create driver for nose_mover')
+    # NOSE_MOVER
+    priCtl, noseHm = createMover('CT_noseMover_pLoc')
     allPriCtls.append(priCtl)
-    priCtl.t >> jawJnt.t
-    priCtl.r >> jawJnt.r
-    priCtl.s >> jawJnt.s
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_nostril_bnd'),
+                                     nt.Joint(u'CT_noseTip_bnd'),
+                                     nt.Joint(u'LT_nostril_bnd')])
+    
+    pm.progressWindow(e=True, step=1, status='Create driver for mouth_mover')
+    # MOUTH_MOVER
+    priCtl, mouthHm = createMover('CT_mouthMover_pLoc')
+    allPriCtls.append(priCtl)
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_corner_lip_bnd'),
+                                     nt.Joint(u'RT_upper_pinch_lip_bnd'),
+                                     nt.Joint(u'RT_upper_sneer_lip_bnd'),
+                                     nt.Joint(u'CT_upper_lip_bnd'),
+                                     nt.Joint(u'LT_upper_sneer_lip_bnd'),
+                                     nt.Joint(u'LT_upper_pinch_lip_bnd'),
+                                     nt.Joint(u'LT_corner_lip_bnd'),
+                                     nt.Joint(u'LT_lower_pinch_lip_bnd'),
+                                     nt.Joint(u'LT_lower_sneer_lip_bnd'),
+                                     nt.Joint(u'CT_lower_lip_bnd'),
+                                     nt.Joint(u'RT_lower_sneer_lip_bnd'),
+                                     nt.Joint(u'RT_lower_pinch_lip_bnd'),
+                                     nt.Joint(u'RT_low_crease_bnd'),
+                                     nt.Joint(u'RT_sneer_bnd'),
+                                     nt.Joint(u'RT_philtrum_bnd'),
+                                     nt.Joint(u'RT_in_philtrum_bnd'),
+                                     nt.Joint(u'LT_in_philtrum_bnd'),
+                                     nt.Joint(u'LT_philtrum_bnd'),
+                                     nt.Joint(u'LT_sneer_bnd'),
+                                     nt.Joint(u'LT_low_crease_bnd'),
+                                     nt.Joint(u'LT_mid_chin_bnd'),
+                                     nt.Joint(u'CT_mid_chin_bnd'),
+                                     nt.Joint(u'RT_mid_chin_bnd')])
+    
+    pm.progressWindow(e=True, step=1, status='Create driver for eye movers')
+    # EYE
+    priCtl, lfEyeHm = createMover('LT_eyeMover_pLoc')
+    allPriCtls.append(priCtl)
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'LT_eyelid_inner_bnd'),
+                                     nt.Joint(u'LT_eyelid_inner_upper_bnd'),
+                                     nt.Joint(u'LT_eyelid_upper_bnd'),
+                                     nt.Joint(u'LT_eyelid_outer_upper_bnd'),
+                                     nt.Joint(u'LT_eyelid_outer_bnd'),
+                                     nt.Joint(u'LT_eyelid_outer_lower_bnd'),
+                                     nt.Joint(u'LT_eyelid_lower_bnd'),
+                                     nt.Joint(u'LT_eyelid_inner_lower_bnd')])
+    
+    priCtl, rtEyeHm = createMover('RT_eyeMover_pLoc')
+    allPriCtls.append(priCtl)
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_eyelid_inner_bnd'),
+                                     nt.Joint(u'RT_eyelid_inner_upper_bnd'),
+                                     nt.Joint(u'RT_eyelid_upper_bnd'),
+                                     nt.Joint(u'RT_eyelid_outer_upper_bnd'),
+                                     nt.Joint(u'RT_eyelid_outer_bnd'),
+                                     nt.Joint(u'RT_eyelid_outer_lower_bnd'),
+                                     nt.Joint(u'RT_eyelid_lower_bnd'),
+                                     nt.Joint(u'RT_eyelid_inner_lower_bnd')])
+
+    pm.progressWindow(e=True, step=1, status='Create driver for CT_jaw_bnd')
+    # JAW
+    priCtl, jawHm = createMover('CT_jaw_pLoc')
+    allPriCtls.append(priCtl)
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'CT_lower_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd'), 
+                                    nt.Joint(u'LT_upper_sneer_lip_bnd'), nt.Joint(u'LT_upper_pinch_lip_bnd'), 
+                                    nt.Joint(u'LT_corner_lip_bnd'), nt.Joint(u'LT_lower_pinch_lip_bnd'), 
+                                    nt.Joint(u'LT_lower_sneer_lip_bnd'), nt.Joint(u'RT_lower_sneer_lip_bnd'), 
+                                    nt.Joint(u'RT_lower_pinch_lip_bnd'), nt.Joint(u'RT_corner_lip_bnd'), 
+                                    nt.Joint(u'RT_upper_pinch_lip_bnd'), nt.Joint(u'RT_upper_sneer_lip_bnd'), 
+                                    nt.Joint(u'CT_mid_chin_bnd'), nt.Joint(u'RT_mid_chin_bnd'), nt.Joint(u'LT_mid_chin_bnd'), 
+                                    nt.Joint(u'LT_chin_bnd'), nt.Joint(u'CT_chin_bnd'), nt.Joint(u'RT_chin_bnd'), 
+                                    nt.Joint(u'LT_sneer_bnd'), nt.Joint(u'LT_mid_crease_bnd'), nt.Joint(u'LT_low_crease_bnd'), 
+                                    nt.Joint(u'LT_low_jaw_bnd'), nt.Joint(u'LT_cheek_bnd'), nt.Joint(u'LT_low_cheek_bnd'), 
+                                    nt.Joint(u'LT_corner_jaw_bnd'), nt.Joint(u'LT_up_jaw_bnd'), nt.Joint(u'RT_philtrum_bnd'), 
+                                    nt.Joint(u'RT_in_philtrum_bnd'), nt.Joint(u'LT_in_philtrum_bnd'), 
+                                    nt.Joint(u'LT_philtrum_bnd'), nt.Joint(u'LT_out_cheek_bnd'), nt.Joint(u'LT_up_cheek_bnd'), 
+                                    nt.Joint(u'RT_sneer_bnd'), nt.Joint(u'RT_mid_crease_bnd'), nt.Joint(u'RT_low_crease_bnd'), 
+                                    nt.Joint(u'RT_low_jaw_bnd'), nt.Joint(u'RT_corner_jaw_bnd'), nt.Joint(u'RT_low_cheek_bnd'), 
+                                    nt.Joint(u'RT_up_jaw_bnd'), nt.Joint(u'RT_cheek_bnd'), nt.Joint(u'RT_up_cheek_bnd'), 
+                                    nt.Joint(u'RT_out_cheek_bnd'), nt.Joint(u'LT_neck_bnd'), nt.Joint(u'RT_neck_bnd'),
+                                    nt.Joint(u'CT_neck_bnd')])
     
     allPriCtlHms = [ctl.getParent(-1) for ctl in allPriCtls]
     pm.group(allPriCtlHms, n='CT_face_primary_ctls_grp') 
+    
+    pm.group(jawHm, mouthHm, noseHm, lfEyeHm, rtEyeHm, n='CT_jnts_grp')
     
     pm.progressWindow(e=True, endProgress=True)  
     
@@ -1147,7 +1236,13 @@ def arbitraryWeightsCorrection(char=None):
     if char is 'sorceress':
         mel.ngAssignWeights('body_geo.vtx[3006]', bnj=True, ij='RT_upper_pinch_lip_bnd', intensity=1.0)
         mel.ngAssignWeights('body_geo.vtx[2984]', bnj=True, ij='LT_upper_pinch_lip_bnd', intensity=1.0)
-
+    elif char is 'pharaoh':
+        mel.ngAssignWeights('body_geo.vtx[2681]', bnj=True, ij='RT_upper_pinch_lip_bnd', intensity=1.0)
+        mel.ngAssignWeights('body_geo.vtx[1177]', bnj=True, ij='LT_upper_pinch_lip_bnd', intensity=1.0)
+    else:
+        pm.warning('No correction data for ' + char)
+            
+    
 def createSkinLayers(mesh):
     # select bnd jnts
     jnts = pm.ls('*_bnd', type='joint')
@@ -1160,7 +1255,11 @@ def createSkinLayers(mesh):
     eyelidJnts = [jnt for jnt in jnts if '_eyelid_' in jnt.name()]
     noseJnts = [pm.PyNode(jnt) for jnt in ['CT_noseTip_bnd',
                                            'LT_nostril_bnd',
-                                           'RT_nostril_bnd']]
+                                           'RT_nostril_bnd',
+                                           'CT_noseMover_bnd']]
+    neckJnts = [pm.PyNode(jnt) for jnt in ['CT_neck_bnd',
+                                           'LT_neck_bnd',
+                                           'RT_neck_bnd']]
     centerBrowJnt = [pm.PyNode('CT_brow_bnd')]
     sideBrowJnts = [jnt for jnt in jnts if '_brow_' in jnt.name()
                     and jnt not in centerBrowJnt]
@@ -1218,8 +1317,6 @@ def createSkinLayers(mesh):
     mel.ngAssignWeights(mesh.name(), bnj=True, ij='/'.join(faceJntsName), intensity=1.0)
     # mask for face layer
     faceMaskJnts = [jnt for jnt in jnts if '_perimeter_' not in jnt.name()
-                    and jnt not in noseJnts
-                    and jnt not in eyelidJnts
                     and jnt not in centerBrowJnt
                     and jnt not in sideBrowJnts
                     and jnt not in foreheadJnts]
@@ -1235,7 +1332,7 @@ def createSkinLayers(mesh):
     mll.setCurrentLayer(3)
     # skn.addInfluence(lipJnts, lw=True, wt=0)
     mel.ngAssignWeights(mesh.name(), bnj=True, ij='/'.join(lipJntsName), intensity=1.0)
-    arbitraryWeightsCorrection(char='sorceress')
+    # arbitraryWeightsCorrection(char='pharaoh')
     """
     # mask for lips layer
     # lists below should be externalized
@@ -1265,6 +1362,7 @@ def createSkinLayers(mesh):
                  u'RT_in_philtrum_bnd']
     """
     # maskList = ngWeights.createWeightsListByPolyStrip(outerXfos, innerXfos, mesh, 1)
+    lipMaskJnts = lipJnts.append(pm.PyNode('CT_mouthMover_bnd'))
     maskList = getMaskFromBindDict(bindDict, lipJnts, mesh)
     mll.setLayerMask(3, maskList)
     

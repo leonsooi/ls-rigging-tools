@@ -89,7 +89,12 @@ class FaceJointPlacementContext():
         
         placementLoc = pm.spaceLocator(n=jntName+'_pLoc')   
         placementLoc.t.set(position)
-        placementLoc.localScale.set(0.05, 0.05, 0.05)
+        # placementLoc.localScale.set(0.05, 0.05, 0.05)
+        # create attribute to tell FRS what type of bind this will be
+        if 'CT_philtrum' not in jntName:
+            placementLoc.addAttr('bindType', k=True, at='enum', en='direct=0:indirect=1:independent=2', dv=0)
+        else:
+            placementLoc.addAttr('bindType', k=True, at='enum', en='direct=0:indirect=1:independent=2', dv=1)
         self.grp | placementLoc
         
         # set camera to focus on new placementLoc

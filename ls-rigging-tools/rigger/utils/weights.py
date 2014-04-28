@@ -115,6 +115,7 @@ def setEyelidControlsWeights(prefix):
     targetInPos = upperBnds[0].getTranslation(space='world')
     targetOutPos = upperBnds[-1].getTranslation(space='world')
     targetCrv = pm.curve(ep=(targetInPos, targetOutPos), d=1, n='target_crv')
+    lcrv.extendCrv(targetCrv)
     
     # weight ctls
     # get Y-height from curve
