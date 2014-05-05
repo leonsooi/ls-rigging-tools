@@ -29,15 +29,15 @@ def addPerimeterBndSystem(mesh):
     
     periBnds = []
 
-    periBnds += addPerimeterBnd(nt.Joint('LT_in_forehead_bnd'), nt.Joint('RT_in_forehead_bnd'), nt.Joint('LT_out_forehead_bnd'), mesh, True, vecMult=0.2)
-    periBnds += addPerimeterBnd(nt.Joint('LT_out_forehead_bnd'), nt.Joint('LT_in_forehead_bnd'), nt.Joint('LT_temple_bnd'), mesh, True, vecMult=0.2)
-    periBnds += addPerimeterBnd(nt.Joint('LT_temple_bnd'), nt.Joint('LT_out_forehead_bnd'), nt.Joint('LT_low_temple_bnd'), mesh, True, vecMult=0.2)
-    periBnds += addPerimeterBnd(nt.Joint('LT_low_temple_bnd'), nt.Joint('LT_temple_bnd'), nt.Joint('LT_out_cheek_bnd'), mesh, True, vecMult=0.2)
-    periBnds += addPerimeterBnd(nt.Joint('LT_out_cheek_bnd'), nt.Joint('LT_low_temple_bnd'), nt.Joint('LT_up_jaw_bnd'), mesh, True, vecMult=0.2)
-    periBnds += addPerimeterBnd(nt.Joint('LT_up_jaw_bnd'), nt.Joint('LT_out_cheek_bnd'), nt.Joint('LT_corner_jaw_bnd'), mesh, True, vecMult=0.2)
-    periBnds += addPerimeterBnd(nt.Joint('LT_corner_jaw_bnd'), nt.Joint('LT_up_jaw_bnd'), nt.Joint('LT_neck_bnd'), mesh, True, vecMult=0.2)
-    periBnds += addPerimeterBnd(nt.Joint('LT_neck_bnd'), nt.Joint('LT_corner_jaw_bnd'), nt.Joint('CT_neck_bnd'), mesh, True, vecMult=0.2)
-    periBnds += addPerimeterBnd(nt.Joint('CT_neck_bnd'), nt.Joint('LT_neck_bnd'), nt.Joint('RT_neck_bnd'), mesh, False, vecMult=0.2)
+    periBnds += addPerimeterBnd(nt.Joint('LT_in_forehead_bnd'), nt.Joint('RT_in_forehead_bnd'), nt.Joint('LT_out_forehead_bnd'), mesh, True, vecMult=1)
+    periBnds += addPerimeterBnd(nt.Joint('LT_out_forehead_bnd'), nt.Joint('LT_in_forehead_bnd'), nt.Joint('LT_temple_bnd'), mesh, True, vecMult=1)
+    periBnds += addPerimeterBnd(nt.Joint('LT_temple_bnd'), nt.Joint('LT_out_forehead_bnd'), nt.Joint('LT_low_temple_bnd'), mesh, True, vecMult=1)
+    periBnds += addPerimeterBnd(nt.Joint('LT_low_temple_bnd'), nt.Joint('LT_temple_bnd'), nt.Joint('LT_out_cheek_bnd'), mesh, True, vecMult=1)
+    periBnds += addPerimeterBnd(nt.Joint('LT_out_cheek_bnd'), nt.Joint('LT_low_temple_bnd'), nt.Joint('LT_up_jaw_bnd'), mesh, True, vecMult=1)
+    periBnds += addPerimeterBnd(nt.Joint('LT_up_jaw_bnd'), nt.Joint('LT_out_cheek_bnd'), nt.Joint('LT_corner_jaw_bnd'), mesh, True, vecMult=1)
+    periBnds += addPerimeterBnd(nt.Joint('LT_corner_jaw_bnd'), nt.Joint('LT_up_jaw_bnd'), nt.Joint('LT_neck_bnd'), mesh, True, vecMult=1)
+    periBnds += addPerimeterBnd(nt.Joint('LT_neck_bnd'), nt.Joint('LT_corner_jaw_bnd'), nt.Joint('CT_neck_bnd'), mesh, True, vecMult=1)
+    periBnds += addPerimeterBnd(nt.Joint('CT_neck_bnd'), nt.Joint('LT_neck_bnd'), nt.Joint('RT_neck_bnd'), mesh, False, vecMult=1)
     
     periGrp = pm.group(periBnds, n='CT_perimeterBnds_grp')
     return periGrp
@@ -1120,6 +1120,11 @@ def cleanFaceRig():
     faceCtl | eyeCth
     
     # visibilities
+    moverCtls = [u'CT_mouthMover_pri_ctrl',
+                 u'CT_noseMover_pri_ctrl',
+                 u'LT_eyeMover_pri_ctrl',
+                 u'RT_eyeMover_pri_ctrl']
+    rt.connectVisibilityToggle(moverCtls, faceCtl.name(), 'moverControlsVis', True)
     priCtls = [u'RT_mid_brow_pri_ctrl', u'RT_eyelid_upper_pri_ctrl', u'RT_eyelid_lower_pri_ctrl', u'LT_mid_brow_pri_ctrl', u'LT_eyelid_upper_pri_ctrl', u'LT_eyelid_lower_pri_ctrl', u'CT_noseTip_pri_ctrl', u'CT_jaw_pri_ctrl', u'RT_cheek_pri_ctrl', u'LT_cheek_pri_ctrl', u'LT_upper_sneer_lip_pri_ctrl', u'RT_upper_sneer_lip_pri_ctrl', u'RT_lower_sneer_lip_pri_ctrl', u'LT_lower_sneer_lip_pri_ctrl', u'LT_corner_lip_pri_ctrl', u'RT_corner_lip_pri_ctrl']
     priCtls.append('LT_eye_ctl')
     priCtls.append('RT_eye_ctl')
@@ -1127,6 +1132,7 @@ def cleanFaceRig():
     secCtls = [u'LT_eyelid_inner_ctrl', u'LT_eyelid_upper_ctrl', u'LT_eyelid_outer_ctrl', u'LT_eyelid_lower_ctrl', u'LT_eyelid_inner_upper_ctrl', u'LT_eyelid_inner_lower_ctrl', u'LT_eyelid_outer_upper_ctrl', u'LT_eyelid_outer_lower_ctrl', u'RT_eyelid_inner_ctrl', u'RT_eyelid_upper_ctrl', u'RT_eyelid_outer_ctrl', u'RT_eyelid_lower_ctrl', u'RT_eyelid_inner_upper_ctrl', u'RT_eyelid_inner_lower_ctrl', u'RT_eyelid_outer_upper_ctrl', u'RT_eyelid_outer_lower_ctrl', u'RT_nostril_ctrl', u'CT_noseTip_ctrl', u'LT_nostril_ctrl', u'CT_upper_lip_ctrl', u'CT_lower_lip_ctrl', u'LT_upper_sneer_lip_ctrl', u'LT_lower_sneer_lip_ctrl', u'RT_upper_sneer_lip_ctrl', u'RT_lower_sneer_lip_ctrl', u'LT_corner_lip_ctrl', u'LT_upper_pinch_lip_ctrl', u'RT_corner_lip_ctrl', u'RT_upper_pinch_lip_ctrl', u'RT_lower_pinch_lip_ctrl', u'LT_lower_pinch_lip_ctrl', u'LT_in_brow_ctrl', u'LT_mid_brow_ctrl', u'LT_out_brow_ctrl', u'RT_in_brow_ctrl', u'CT_brow_ctrl', u'RT_mid_brow_ctrl', u'RT_out_brow_ctrl']
     rt.connectVisibilityToggle(secCtls, faceCtl.name(), 'secondaryControlsVis', False)
     terCtls = [u'LT_in_forehead_ctrl', u'RT_in_forehead_ctrl', u'LT_out_forehead_ctrl', u'RT_out_forehead_ctrl', u'LT_temple_ctrl', u'RT_temple_ctrl', u'LT_squint_ctrl', u'RT_squint_ctrl', u'LT_philtrum_ctrl', u'RT_philtrum_ctrl', u'LT_up_crease_ctrl', u'RT_up_crease_ctrl', u'LT_mid_crease_ctrl', u'RT_mid_crease_ctrl', u'LT_low_crease_ctrl', u'RT_low_crease_ctrl', u'LT_cheek_ctrl', u'RT_cheek_ctrl', u'LT_up_jaw_ctrl', u'RT_up_jaw_ctrl', u'LT_corner_jaw_ctrl', u'RT_corner_jaw_ctrl', u'LT_low_jaw_ctrl', u'RT_low_jaw_ctrl', u'LT_chin_ctrl', u'RT_chin_ctrl', u'CT_chin_ctrl', u'LT_in_low_forehead_ctrl', u'RT_in_low_forehead_ctrl', u'LT_out_low_forehead_ctrl', u'RT_out_low_forehead_ctrl', u'LT_low_temple_ctrl', u'RT_low_temple_ctrl', u'LT_out_cheek_ctrl', u'RT_out_cheek_ctrl', u'LT_in_philtrum_ctrl', u'RT_in_philtrum_ctrl', u'LT_low_cheek_ctrl', u'RT_low_cheek_ctrl', u'LT_in_cheek_ctrl', u'RT_in_cheek_ctrl', u'LT_up_cheek_ctrl', u'RT_up_cheek_ctrl', u'LT_sneer_ctrl', u'RT_sneer_ctrl', u'CT_mid_chin_ctrl', u'LT_mid_chin_ctrl', u'RT_mid_chin_ctrl']
+    terCtls += ['LT_neck_ctrl', 'CT_neck_ctrl', 'RT_neck_ctrl']
     rt.connectVisibilityToggle(terCtls, faceCtl.name(), 'tertiaryControlsVis', False)
     rt.connectVisibilityToggle(['CT_bnd_grp', 'CT_jnts_grp', 'CT_placement_grp'], faceCtl.name(), 'jointsVis', False)
     """
@@ -1148,7 +1154,7 @@ def createControlShape(shape=''):
     
 
 
-def replaceControlCurve(ctl, shape=''):
+def replaceControlCurve(ctl, shape='', scale=10.0):
     '''
     '''
     curvesDict = {'rightArrow': lambda: mc.curve(d=1, p=[[0.0, 0.04, 0.04], [0.0, -0.04, 0.04], [0.04, 0.0, 0.04], [0.0, 0.04, 0.04]], k=(0.0, 1.0, 2.0, 3.0)),
@@ -1168,6 +1174,10 @@ def replaceControlCurve(ctl, shape=''):
     
     # create new shape
     new = pm.PyNode(curvesDict[shape]())
+    
+    # scale shape
+    new.scale.set(scale,scale,scale)
+    pm.makeIdentity(new, s=True, a=True)
     
     # replace shape
     newShapes = new.getChildren()
