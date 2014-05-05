@@ -774,13 +774,13 @@ def buildEyeballRig():
     
     # left eyeball
     pm.select(cl=True)
-    eyeball = pm.PyNode('l_eyeball_geo')
+    eyeball = pm.PyNode('LT_eyeball_geo')
     bnd = pm.joint(n='LT_eyeball_bnd')
     bndGrp = pm.group(n='LT_eyeball_grp')
     bndHm = pm.group(n='LT_eyeball_hm')
     eyeball_grp | bndHm
     
-    pos = eyeball.getTranslation(space='world')
+    pos = eyeball.getRotatePivot(space='world')
     bndHm.setTranslation(pos, space='world')
     pm.skinCluster(bnd, eyeball)
     
@@ -789,13 +789,13 @@ def buildEyeballRig():
     
     # right eyeball
     pm.select(cl=True)
-    eyeball = pm.PyNode('r_eyeball_geo')
+    eyeball = pm.PyNode('RT_eyeball_geo')
     bnd = pm.joint(n='RT_eyeball_bnd')
     bndGrp = pm.group(n='RT_eyeball_grp')
     bndHm = pm.group(n='RT_eyeball_hm')
     eyeball_grp | bndHm
     
-    pos = eyeball.getTranslation(space='world')
+    pos = eyeball.getRotatePivot(space='world')
     bndHm.setTranslation(pos, space='world')
     pm.skinCluster(bnd, eyeball)
     
