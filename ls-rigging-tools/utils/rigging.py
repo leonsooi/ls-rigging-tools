@@ -321,6 +321,8 @@ def connectSDK(inPlug, outPlug, keys, name=''):
     
     return AnimCurveUU node
     '''
+    inPlug = str(inPlug)
+    outPlug= str(outPlug)
     
     if not name:
         name = outPlug.replace('.', '_') + '_SDK_0'
