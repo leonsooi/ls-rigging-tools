@@ -6,6 +6,7 @@ import maya.cmds as mc
 from cgm.lib import curves
 
 import utils.rigging as rt
+reload(rt)
 import rigger.lib.mesh as mesh
 reload(mesh)
 import rigger.lib.datatypes as data
@@ -1128,6 +1129,164 @@ def mirrorJnts(jnts, search, replace):
         newJnt =  pm.duplicate(eachJnt, n=eachJnt.name().replace(search, replace))[0]
         oldPos = eachJnt.tx.get()
         newJnt.tx.set(-oldPos)
+        
+def addEyeAim(prefix='LT_', distance=1):
+    '''
+    add locator for aim
+    inserts above eye ctl
+    '''
+    eye_hm = pm.PyNode(prefix+'eye_hm')
+    eye_geo = pm.PyNode(prefix+'eyeball_geo')
+    
+    eye_aim_hm = pm.group(em=True, n=prefix+'eye_aim_hm')
+    eye_aim_grp = pm.group(em=True, n=prefix+'eye_aim_grp')
+    eye_aim_loc = pm.spaceLocator(n=prefix+'eye_aim_loc')
+    
+    eye_aim_hm | eye_aim_grp
+    eye_aim_hm | eye_aim_loc
+    eye_aim_loc.tz.set(distance)
+    
+    cons = pm.parentConstraint(eye_geo, eye_aim_hm)
+    pm.delete(cons)
+    
+    eye_parent = eye_hm.getParent()
+    eye_parent | eye_aim_hm
+    eye_aim_grp | eye_hm
+    
+    pm.aimConstraint(eye_aim_loc, eye_aim_grp, aim=(0,0,1), mo=True, wut=2, wu=(0,1,0), wuo=eye_aim_loc)
+
+def addFleshyEye():
+    '''
+    assume that radialPoseReader has been set up:
+    eye_pivot = pm.PyNode('RT_eyeball_bnd')
+    import rigger.modules.poseReader as preader
+    reload(preader)
+    preader.radial_pose_reader(eye_pivot)
+    '''
+    #===========================================================================
+    # Left side
+    #===========================================================================
+    eye_pivot = pm.PyNode('LT_eyeball_bnd')
+    eye_ctl = pm.PyNode('LT_eye_ctl')
+    eye_ctl.addAttr('autoFleshy', at='float', k=True, min=0, max=1)
+
+    # upper
+    ctl = pm.PyNode('LT_eyelid_upper_ctrl')
+    attr_keys = {'ty': {0:0.05, 0.25:0, 0.8:0, 1:0.05}}
+    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    
+    # lower
+    ctl = pm.PyNode('LT_eyelid_lower_ctrl')
+    attr_keys = {'ty': {0.35:0, 0.5:-0.05, 0.75:0}}
+    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    
+    # upper inner
+    ctl = pm.PyNode('LT_eyelid_inner_upper_ctrl')
+    attr_keys = {'ty': {0:0,0.2:0.012, 0.3:0},
+                'tx': {0:0,0.2:-0.012, 0.3:0}}
+    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    
+    # upper outer
+    ctl = pm.PyNode('LT_eyelid_outer_upper_ctrl')
+    attr_keys = {'ty': {0.75:0, 0.8:0.012, 1:0},
+                'tx': {0.75:0, 0.8:0.012, 1:0}}
+    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    
+    # lower inner
+    ctl = pm.PyNode('LT_eyelid_inner_lower_ctrl')
+    attr_keys = {'ty': {0.3:0, 0.35:-0.012, 0.5:0},
+                'tx': {0.3:0, 0.35:-0.012, 0.5:0}}
+    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    
+    # lower outer
+    ctl = pm.PyNode('LT_eyelid_outer_lower_ctrl')
+    attr_keys = {'ty': {0.5:0, 0.65:-0.012, 0.75:0},
+                'tx': {0.5:0, 0.65:0.012, 0.75:0}}
+    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    
+    #===========================================================================
+    # Right side
+    #===========================================================================
+    eye_pivot = pm.PyNode('RT_eyeball_bnd')
+    eye_ctl = pm.PyNode('RT_eye_ctl')
+    eye_ctl.addAttr('autoFleshy', at='float', k=True, min=0, max=1)
+    
+    # upper
+    ctl = pm.PyNode('RT_eyelid_upper_ctrl')
+    attr_keys = {'ty': {0:0.05, 0.2:0, 0.75:0, 1:0.05}}
+    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    
+    # lower
+    ctl = pm.PyNode('RT_eyelid_lower_ctrl')
+    attr_keys = {'ty': {0.3:0, 0.5:-0.05, 0.65:0}}
+    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    
+    # upper inner
+    ctl = pm.PyNode('RT_eyelid_inner_upper_ctrl')
+    attr_keys = {'ty': {1:0, 0.8:0.012, 0.7:0},
+                'tx': {1:0, 0.8:0.012, 0.7:0}}
+    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    
+    # upper outer
+    ctl = pm.PyNode('RT_eyelid_outer_upper_ctrl')
+    attr_keys = {'ty': {0.25:0, 0.2:0.012, 0:0},
+                'tx': {0.25:0, 0.2:-0.012, 0:0}}
+    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    
+    # lower inner
+    ctl = pm.PyNode('RT_eyelid_inner_lower_ctrl')
+    attr_keys = {'ty': {0.5:0, 0.65:-0.012, 0.7:0},
+                'tx': {0.5:0, 0.65:0.012, 0.7:0}}
+    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    
+    # lower outer
+    ctl = pm.PyNode('RT_eyelid_outer_lower_ctrl')
+    attr_keys = {'ty': {0.25:0, 0.35:-0.012, 0.5:0},
+                'tx': {0.25:0, 0.35:-0.012, 0.5:0}}
+    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    
+def addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, auto_attr):
+    '''
+    eye_pivot is an xfo with radialPoseReader setup
+    eye_pivot = pm.PyNode('RT_eyeball_bnd')
+    import rigger.modules.poseReader as preader
+    reload(preader)
+    preader.radial_pose_reader(eye_pivot)
+    
+    ctl = pm.PyNode('LT_eyelid_upper_ctrl')
+    
+    attr_keys: {'tx': {param:float}}
+    '''
+    bnd = pm.PyNode(ctl.replace('_ctrl', '_bnd'))
+    
+    # create fleshy auto for ctl
+    auto = pm.group(em=True, n=ctl+'_fleshy_auto')
+    ctg = ctl.getParent()
+    ctg | auto
+    pm.makeIdentity(auto, t=1, r=1, s=1, a=0)
+    auto | ctl
+
+    # create fleshy auto for bnd
+    autobnd = pm.group(em=True, n=bnd+'_fleshy_auto')
+    bndgrp = bnd.getParent()
+    bndgrp | autobnd
+    pm.makeIdentity(autobnd, t=1, r=1, s=1, a=0)
+    autobnd | bnd
+    
+    # connect param to autos
+    for attr, keys in attr_keys.items():
+        # modulate by vectorAngle
+        mdl = pm.createNode('multDoubleLinear', n=ctl+'_fleshy_mdl_'+attr)
+        eye_pivot.vectorAngle >> mdl.input1
+        # modulate by autoFleshy
+        mdl2 = pm.createNode('multDoubleLinear', n=ctl+'_fleshyAuto_mdl_'+attr)
+        mdl.output >> mdl2.input1
+        auto_attr >> mdl2.input2
+    
+        rt.connectSDK(eye_pivot.paramNormalized, mdl.input2, keys)
+        mdl2.output >> auto.attr(attr)
+        auto.attr(attr) >> autobnd.attr(attr)
+
 
 def integrationWithFAT():
     '''
