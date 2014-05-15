@@ -6,6 +6,53 @@ Created on May 11, 2014
 import pymel.core as pm
 mel = pm.language.Mel()
 
+import utils.rigging as rt
+
+def mirror_bnd_driver(bndLf):
+    '''
+    '''
+    # mirror SDKs on bnd from left to right
+    bndRt = pm.PyNode(bndLf.replace('LT_', 'RT_'))
+    
+    bwNodesLf = {}
+    for attr in ['tx', 'ty', 'tz', 'rx', 'ry', 'rz', 'sx', 'sy', 'sz']:
+        bwNodesLf[attr] = bndLf.attr(attr+'_bwMsg').inputs()[0]
+        
+    bwNodesRt = {}
+    for attr in ['tx', 'ty', 'tz', 'rx', 'ry', 'rz', 'sx', 'sy', 'sz']:
+        bwNodesRt[attr] = bndRt.attr(attr+'_bwMsg').inputs()[0]
+        
+    for attr, bwLf in bwNodesLf.items():
+        bwRt = bwNodesRt[attr]
+        # compare inputs to see which needs mirroring
+        inputsLf = bwLf.input.inputs(p=True)
+        inputsRt = bwRt.input.inputs(p=True)
+        
+        if len(inputsLf) > len(inputsRt):
+            # we have new stuff to mirror
+            for inputId in range(len(inputsRt), len(inputsLf)):
+                # mirror inputId
+                print 'mirror %d for %s' % (inputId, bwLf)
+                mirror_animCurve(inputsLf[inputId].node())
+                
+def mirror_animCurve(acrv):
+    '''
+    '''
+    # mirror acrv from LT to RT
+    # time & values remain the same
+    indices = acrv.ktv.get(mi=True)
+    ktvs = [acrv.ktv[i].get() for i in indices]
+    ktvs_tbl = {}
+    for t,v in ktvs:
+        ktvs_tbl[t] = v
+    # swap names for input and output
+    inPlugLf = acrv.input.inputs(p=True)[0]
+    inPlugRt = pm.PyNode(inPlugLf.replace('LT_', 'RT_'))
+    outPlugLf = acrv.output.outputs(p=True)[0]
+    outPlugRt = pm.PyNode(outPlugLf.replace('LT_', 'RT_'))
+    # make new sdk
+    rt.connectSDK(inPlugRt, outPlugRt, ktvs_tbl, acrv+'_mirrorToRt')
+
 def mirror_bnd_weights(src_bnd):
     '''
     mirror from LT to RT

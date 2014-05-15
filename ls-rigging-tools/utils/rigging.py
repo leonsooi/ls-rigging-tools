@@ -509,6 +509,61 @@ def setupIkFkSnapping(FkIkCtl, fkCtls, ikCtl, ikPvCtl, ikJnts, ikCtlOriOffset):
     
 """
 
+def mirrorXfo(xfo):
+    '''
+    mirror lf to rt
+    '''
+    xfo_rt = pm.PyNode(xfo.replace('LT_', 'RT_'))
+    
+    # create temp nodes
+    grp1 = pm.group(em=True)
+    grp2 = pm.group(grp1)
+    grp3 = pm.group(em=True)
+    
+    xfo | grp2
+    pm.makeIdentity()
+    grp3 | grp2
+    
+    grp3.sx.set(-1)
+    grp1.sx.set(-1)
+    
+    # get original parent of xfo_rt so we can set it back later
+    parent_rt = xfo_rt.getParent()
+    
+    # snap xfo_rt to grp1's xfo
+    grp1 | xfo_rt
+    pm.makeIdentity(xfo_rt)
+    
+    if parent_rt:
+        parent_rt | xfo_rt
+        
+    # delete temp nodes
+    pm.delete(grp1, grp2, grp3)
+        
+    pm.select(xfo_rt)
+    
+def mirrorXfoRun():
+    '''
+    '''
+    selXfos = pm.ls(sl=True)
+    for each in selXfos:
+        mirrorXfo(each)
+
+def passXfoToParent(xfo, generation=1):
+    '''
+    '''
+    origMatrix = xfo.getMatrix(worldSpace=True)
+    parent = xfo.getParent(generation)
+    parent.setMatrix(origMatrix, worldSpace=True)
+    xfo.setMatrix(origMatrix, worldSpace=True)
+    
+def passXfoToParentRun(generation=1):
+    '''
+    '''
+    selXfos = pm.ls(sl=True)
+    for each in selXfos:
+        passXfoToParent(each, generation)
+
 def transferAttrValues(srcAttr, destAttr, zeroSrc):
     '''
     transfer values from srcAttr to destAttr
