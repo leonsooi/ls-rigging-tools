@@ -10,6 +10,27 @@ import pymel.core as pm
 import pymel.core.nodetypes as nt
 import face
 
+import cgm.lib.rigging as cgmrigging
+
+def addLeftCheekPuffPivots(mirror=False):
+    bnds = [nt.Joint(u'LT_upper_sneer_lip_bnd'),
+            nt.Joint(u'LT_upper_pinch_lip_bnd'),
+            nt.Joint(u'LT_corner_lip_bnd'),
+            nt.Joint(u'LT_lower_pinch_lip_bnd'),
+            nt.Joint(u'LT_lower_sneer_lip_bnd'),
+            nt.Joint(u'LT_sneer_bnd'),
+            nt.Joint(u'LT_mid_chin_bnd'),
+            nt.Joint(u'CT_upper_lip_bnd'),
+            nt.Joint(u'CT_lower_lip_bnd'),
+            nt.Joint(u'CT_mid_chin_bnd'),
+            nt.Joint(u'LT_low_crease_bnd')]
+    pivotName = 'cheekPuffLeft'
+    if mirror:
+        bnds = [pm.PyNode(bnd.name().replace('LT_', 'RT_')) for bnd in bnds]
+        pivotName = 'cheekPuffRight'
+    for eachBnd in bnds:
+        addPivotToBnd(eachBnd, pivotName)
+
 def addInnerLipsPivots():
     bnds = [nt.Joint(u'CT_upper_lip_bnd'),
             nt.Joint(u'LT_upper_sneer_lip_bnd'),
@@ -39,6 +60,17 @@ def addRollLipsPivots():
             nt.Joint(u'RT_upper_sneer_lip_bnd')]
     for eachBnd in bnds:
         addPivotToBnd(eachBnd, 'rollPivot')
+        
+def addLeftSmileLipsPivots(mirror=False):
+    bnds = [nt.Joint(u'LT_sneer_bnd'),
+            nt.Joint(u'LT_mid_crease_bnd'),
+            nt.Joint(u'LT_up_crease_bnd'),
+            nt.Joint(u'LT_up_cheek_bnd'),
+            nt.Joint(u'LT_cheek_bnd')]
+    if mirror:
+        bnds = [pm.PyNode(bnd.name().replace('LT_', 'RT_')) for bnd in bnds]
+    for eachBnd in bnds:
+        addPivotToBnd(eachBnd, 'smilePivot')
 
 def addPivotToBnd(bnd, name='_Pivot'):
     '''
@@ -63,10 +95,10 @@ def addPivotToBnd(bnd, name='_Pivot'):
 
 
 
-def connectBndToPivot(bnd, pivot):
+def connectBndToPivot(bnd, pivot, drivePrimary=False):
     '''
     basically the same at face.connectBndToPriCtl
-    but don't drive primary controls
+    but can don't drive primary controls
     '''
     
     # bnd's "local" matrix within pivot
@@ -124,3 +156,35 @@ def connectBndToPivot(bnd, pivot):
         bnd.addAttr(pivot.nodeName() + '_weight_' + eachChannel, at='double', k=True, min=-1, max=2, dv=1)
         bnd.attr(pivot.nodeName() + '_weight_' + eachChannel) >> bwNodes[eachChannel].weight[nextIndex]
     
+    if drivePrimary:
+        # if this bnd already has it's own attached priCtl
+        # we need to drive that too
+        if bnd.hasAttr('attached_pri_ctl'):
+            attachedCtl = bnd.attr('attached_pri_ctl').get()
+            
+            if attachedCtl != pivot:
+                print 'Bnd: ' + bnd
+                print 'Current Pri Ctl: ' + pivot
+                print 'Attached Pri Ctl: ' + attachedCtl
+                attachedCtg = attachedCtl.getParent()
+                # add zero grp to take in connections
+                zeroGrp = pm.PyNode(cgmrigging.groupMeObject(attachedCtg.nodeName(), True, True))
+                for eachChannel in channels:
+                    mdl = pm.createNode('multDoubleLinear', n=bnd.replace('_bnd', '_%s_%s_mdl' % (eachChannel, pivot)))
+                    if eachChannel in ['sx', 'sy', 'sz']:
+                        adl = pm.createNode('addDoubleLinear', n=bnd.replace('_bnd', '_%s_%s_adl' % (eachChannel, pivot)))
+                        dmNd.attr('o' + eachChannel) >> adl.input1
+                        adl.input2.set(-1)
+                        adl.output >> mdl.input1
+                    else:
+                        dmNd.attr('o' + eachChannel) >> mdl.input1
+                        
+                    bnd.attr(pivot.nodeName() + '_weight_' + eachChannel) >> mdl.input2
+                    
+                    if eachChannel in ['sx', 'sy', 'sz']:
+                        adl = pm.createNode('addDoubleLinear', n=bnd.replace('_bnd', '_%s_%s_adl' % (eachChannel, pivot)))
+                        mdl.output >> adl.input1
+                        adl.input2.set(1)
+                        adl.output >> zeroGrp.attr(eachChannel)
+                    else:
+                        mdl.output >> zeroGrp.attr(eachChannel)

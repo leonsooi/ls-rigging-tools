@@ -508,6 +508,38 @@ def setupIkFkSnapping(FkIkCtl, fkCtls, ikCtl, ikPvCtl, ikJnts, ikCtlOriOffset):
     mc.setAttr(FkIkCtl+'.ikCtlOriOffset', *ikCtlOriOffset, type='double3')
     
 """
+def mirrorXfoFromToRun():
+    '''
+    '''
+    xfos = pm.ls(os=True)
+    xfos_from = xfos[::2]
+    xfos_to = xfos[1::2]
+    
+    for xfo_from, xfo_to in zip(xfos_from, xfos_to):
+        mirrorXfoFromTo(xfo_from, xfo_to)
+
+def mirrorXfoFromTo(xfo_from, xfo_to):
+    # create temp nodes
+    grp1 = pm.group(em=True)
+    grp2 = pm.group(grp1)
+    grp3 = pm.group(em=True)
+    xfo_from | grp2
+    pm.makeIdentity()
+    grp3 | grp2
+    grp3.sx.set(-1)
+    grp1.sx.set(-1)
+    # get original parent of xfo_rt so we can set it back later
+    parent_rt = xfo_to.getParent()
+    # snap xfo_rt to grp1's xfo
+    grp1 | xfo_to
+    pm.makeIdentity(xfo_to)
+    if parent_rt:
+        parent_rt | xfo_to
+    else:
+        xfo_to.setParent(None)
+        # delete temp nodes
+    pm.delete(grp1, grp2, grp3)
+    pm.select(xfo_to)
 
 def mirrorXfo(xfo):
     '''
@@ -515,32 +547,7 @@ def mirrorXfo(xfo):
     '''
     xfo_rt = pm.PyNode(xfo.replace('LT_', 'RT_'))
     
-    # create temp nodes
-    grp1 = pm.group(em=True)
-    grp2 = pm.group(grp1)
-    grp3 = pm.group(em=True)
-    
-    xfo | grp2
-    pm.makeIdentity()
-    grp3 | grp2
-    
-    grp3.sx.set(-1)
-    grp1.sx.set(-1)
-    
-    # get original parent of xfo_rt so we can set it back later
-    parent_rt = xfo_rt.getParent()
-    
-    # snap xfo_rt to grp1's xfo
-    grp1 | xfo_rt
-    pm.makeIdentity(xfo_rt)
-    
-    if parent_rt:
-        parent_rt | xfo_rt
-        
-    # delete temp nodes
-    pm.delete(grp1, grp2, grp3)
-        
-    pm.select(xfo_rt)
+    mirrorXfoFromTo(xfo, xfo_rt)
     
 def mirrorXfoRun():
     '''
@@ -548,6 +555,8 @@ def mirrorXfoRun():
     selXfos = pm.ls(sl=True)
     for each in selXfos:
         mirrorXfo(each)
+        
+
 
 def passXfoToParent(xfo, generation=1):
     '''

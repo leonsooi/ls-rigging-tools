@@ -8,6 +8,28 @@ mel = pm.language.Mel()
 
 import utils.rigging as rt
 
+def mirror_PyNodes(*args, **kwargs):
+    '''
+    pass in as many nodes or list of nodes as you want
+    '''
+    search = kwargs.get('search', 'LT_')
+    replace = kwargs.get('replace', 'RT_')
+    
+    retList = []
+    for arg in args:
+        if isinstance(arg, pm.PyNode):
+            mirrored = pm.PyNode(arg.replace(search, replace))
+            retList.append(mirrored)
+        elif isinstance(arg, list):
+            mirrored = [pm.PyNode(a.replace(search, replace)) for a in arg]
+            retList.append(mirrored)
+        else:
+            # don't know what this is, so just return it unchanged
+            retList.append(arg)
+            
+    return retList
+            
+
 def mirror_bnd_driver(bndLf):
     '''
     '''

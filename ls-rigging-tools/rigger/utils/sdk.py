@@ -6,6 +6,9 @@ Created on May 14, 2014
 import pymel.core.nodetypes as nt
 import pymel.core as pm
 
+import rigger.utils.symmetry as rsym
+reload(rsym)
+
 def mapAnimCurveToAttr(animCrv, attr, scale=1.0):
     '''
     attr - time will be replaced by this attribute
@@ -18,7 +21,7 @@ def mapAnimCurveToAttr(animCrv, attr, scale=1.0):
     keys = [animCrv.ktv[i].get()[0] for i in ktv_indices]
     
     for i, key in enumerate(keys):
-        scaledKey = key / scale
+        scaledKey = key * scale
         pm.keyframe(animCrv, index=(i), edit=True, tc=scaledKey)
     
 def transferAnimToSDK(xfo, attr, scale=1.0):
@@ -40,7 +43,63 @@ def transferUpperLipRollToSDK():
             nt.Transform(u'RT_upper_pinch_lip_bnd_rollPivot_loc'),
             nt.Transform(u'RT_upper_sneer_lip_bnd_rollPivot_loc')]
     for xfo in xfos:
-        transferAnimToSDK(xfo, attr, 10.0)
+        transferAnimToSDK(xfo, attr, .1)
+        
+def transferLeftSmileLipToSDK(mirror=False):
+    attr = pm.PyNode('LT_corner_lip_pri_ctrl.ty')
+    xfos = [nt.Transform(u'LT_sneer_bnd_smilePivot_loc'),
+            nt.Transform(u'LT_mid_crease_bnd_smilePivot_loc'),
+            nt.Transform(u'LT_up_crease_bnd_smilePivot_loc'),
+            nt.Transform(u'LT_up_cheek_bnd_smilePivot_loc'),
+            nt.Transform(u'LT_cheek_bnd_smilePivot_loc')]
+    if mirror:
+        xfos = [pm.PyNode(xfo.name().replace('LT_', 'RT_')) for xfo in xfos]
+        attr = pm.PyNode(attr.name().replace('LT_', 'RT_'))
+    for xfo in xfos:
+        transferAnimToSDK(xfo, attr, .1)
+        
+        
+def transferLeftCheekPuffToSDK():
+    '''
+    this is a case where the pivot name needs Left/Right
+    but we only added Right later
+    so cheekPuff will be replaced with cheekPuffRight
+    '''
+    attr = pm.PyNode('LT_low_crease_ctrl.tz')
+    xfos = [nt.Transform(u'LT_upper_sneer_lip_bnd_cheekPuff_loc'),
+            nt.Transform(u'LT_upper_pinch_lip_bnd_cheekPuff_loc'),
+            nt.Transform(u'LT_corner_lip_bnd_cheekPuff_loc'),
+            nt.Transform(u'LT_lower_pinch_lip_bnd_cheekPuff_loc'),
+            nt.Transform(u'LT_lower_sneer_lip_bnd_cheekPuff_loc'),
+            nt.Transform(u'LT_sneer_bnd_cheekPuff_loc'),
+            nt.Transform(u'LT_mid_chin_bnd_cheekPuff_loc'),
+            nt.Transform(u'CT_upper_lip_bnd_cheekPuff_loc'),
+            nt.Transform(u'CT_lower_lip_bnd_cheekPuff_loc'),
+            nt.Transform(u'CT_mid_chin_bnd_cheekPuff_loc'),
+            nt.Transform(u'LT_low_crease_bnd_cheekPuff_loc')]
+    for xfo in xfos:
+        transferAnimToSDK(xfo, attr, .1)
+
+def transferRightCheekPuffToSDK():
+    '''
+    this is a case where the pivot name needs Left/Right
+    but we only added Right later
+    so cheekPuff will be replaced with cheekPuffRight
+    '''
+    attr = pm.PyNode('RT_low_crease_ctrl.tz')
+    xfos = [nt.Transform(u'RT_upper_sneer_lip_bnd_cheekPuffRight_loc'),
+            nt.Transform(u'RT_upper_pinch_lip_bnd_cheekPuffRight_loc'),
+            nt.Transform(u'RT_corner_lip_bnd_cheekPuffRight_loc'),
+            nt.Transform(u'RT_lower_pinch_lip_bnd_cheekPuffRight_loc'),
+            nt.Transform(u'RT_lower_sneer_lip_bnd_cheekPuffRight_loc'),
+            nt.Transform(u'RT_sneer_bnd_cheekPuffRight_loc'),
+            nt.Transform(u'RT_mid_chin_bnd_cheekPuffRight_loc'),
+            nt.Transform(u'CT_upper_lip_bnd_cheekPuffRight_loc'),
+            nt.Transform(u'CT_lower_lip_bnd_cheekPuffRight_loc'),
+            nt.Transform(u'CT_mid_chin_bnd_cheekPuffRight_loc'),
+            nt.Transform(u'RT_low_crease_bnd_cheekPuffRight_loc')]
+    for xfo in xfos:
+        transferAnimToSDK(xfo, attr, .1)
         
 def transferLowerLipRollToSDK():
     attr = pm.PyNode('CT_jaw_pri_ctrl.lowerLipRoll')
@@ -50,4 +109,4 @@ def transferLowerLipRollToSDK():
             nt.Transform(u'RT_lower_sneer_lip_bnd_rollPivot_loc'),
             nt.Transform(u'RT_lower_pinch_lip_bnd_rollPivot_loc')]
     for xfo in xfos:
-        transferAnimToSDK(xfo, attr, 10.0)
+        transferAnimToSDK(xfo, attr, .1)
