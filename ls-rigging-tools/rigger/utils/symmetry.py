@@ -26,8 +26,11 @@ def mirror_PyNodes(*args, **kwargs):
         else:
             # don't know what this is, so just return it unchanged
             retList.append(arg)
-            
-    return retList
+    
+    if len(retList) > 1:        
+        return retList
+    else:
+        return retList[0]
             
 
 def mirror_bnd_driver(bndLf):

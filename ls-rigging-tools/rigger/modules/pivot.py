@@ -9,8 +9,50 @@ Pivots behave like pri_ctls, but are represented as locators
 import pymel.core as pm
 import pymel.core.nodetypes as nt
 import face
-
+import rigger.utils.symmetry as rsym
 import cgm.lib.rigging as cgmrigging
+
+def addLeftBrowVertPivots(mirror=False):
+    bnds = [nt.Joint(u'LT_in_brow_bnd'),
+            nt.Joint(u'LT_mid_brow_bnd'),
+            nt.Joint(u'LT_out_brow_bnd'),
+            nt.Joint(u'CT_brow_bnd')]
+    pivotName = 'browVertLT'
+    if mirror:
+        bnds = rsym.mirror_PyNodes(bnds)
+        pivotName = 'browVertRT'
+    for eachBnd in bnds:
+        addPivotToBnd(eachBnd, pivotName)
+        
+def addLeftBrowHoriPivots(mirror=False):
+    bnds = [nt.Joint(u'LT_in_brow_bnd'),
+            nt.Joint(u'LT_mid_brow_bnd'),
+            nt.Joint(u'LT_out_brow_bnd'),
+            nt.Joint(u'CT_brow_bnd')]
+    pivotName = 'browHoriLT'
+    if mirror:
+        bnds = rsym.mirror_PyNodes(bnds)
+        pivotName = 'browHoriRT'
+    for eachBnd in bnds:
+        addPivotToBnd(eachBnd, pivotName)
+
+def addLeftSneerPivots(mirror=False):
+    bnds = [nt.Joint(u'LT_in_philtrum_bnd'),
+            nt.Joint(u'LT_philtrum_bnd'),
+            nt.Joint(u'LT_nostril_bnd'),
+            nt.Joint(u'LT_sneer_bnd'),
+            nt.Joint(u'LT_upper_pinch_lip_bnd'),
+            nt.Joint(u'LT_lower_pinch_lip_bnd'),
+            nt.Joint(u'LT_lower_sneer_lip_bnd'),
+            nt.Joint(u'LT_upper_sneer_lip_bnd'),
+            nt.Joint(u'CT_upper_lip_bnd'),
+            nt.Joint(u'CT_lower_lip_bnd')]
+    pivotName = 'sneerLT'
+    if mirror:
+        bnds = [pm.PyNode(bnd.name().replace('LT_', 'RT_')) for bnd in bnds]
+        pivotName = 'sneerRT'
+    for eachBnd in bnds:
+        addPivotToBnd(eachBnd, pivotName)
 
 def addLeftCheekPuffPivots(mirror=False):
     bnds = [nt.Joint(u'LT_upper_sneer_lip_bnd'),

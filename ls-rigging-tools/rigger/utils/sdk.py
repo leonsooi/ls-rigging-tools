@@ -23,7 +23,7 @@ def mapAnimCurveToAttr(animCrv, attr, scale=1.0):
     for i, key in enumerate(keys):
         scaledKey = key * scale
         pm.keyframe(animCrv, index=(i), edit=True, tc=scaledKey)
-    
+
 def transferAnimToSDK(xfo, attr, scale=1.0):
     '''
     xfo - any animated (by time or anything) xfo
@@ -58,7 +58,48 @@ def transferLeftSmileLipToSDK(mirror=False):
     for xfo in xfos:
         transferAnimToSDK(xfo, attr, .1)
         
+def transferLeftSneerToSDK(mirror=False):
+    attr = pm.PyNode('LT_philtrum_ctrl.ty')
+    xfos = [nt.Transform(u'LT_in_philtrum_bnd_sneerLT_loc'),
+            nt.Transform(u'LT_philtrum_bnd_sneerLT_loc'),
+            nt.Transform(u'LT_nostril_bnd_sneerLT_loc'),
+            nt.Transform(u'LT_sneer_bnd_sneerLT_loc'),
+            nt.Transform(u'LT_upper_pinch_lip_bnd_sneerLT_loc'),
+            nt.Transform(u'LT_lower_pinch_lip_bnd_sneerLT_loc'),
+            nt.Transform(u'LT_lower_sneer_lip_bnd_sneerLT_loc'),
+            nt.Transform(u'LT_upper_sneer_lip_bnd_sneerLT_loc'),
+            nt.Transform(u'CT_upper_lip_bnd_sneerLT_loc'),
+            nt.Transform(u'CT_lower_lip_bnd_sneerLT_loc')]
+    if mirror:
+        xfos = rsym.mirror_PyNodes(xfos)
+        attr = rsym.mirror_PyNodes(attr)
+    for xfo in xfos:
+        transferAnimToSDK(xfo, attr, .03)   
+         
+def transferLeftBrowHoriToSDK(mirror=False):
+    attr = pm.PyNode('LT_mid_brow_pri_ctrl.tx')
+    xfos = [nt.Transform(u'LT_in_brow_bnd_browHoriLT_loc'),
+            nt.Transform(u'LT_mid_brow_bnd_browHoriLT_loc'),
+            nt.Transform(u'LT_out_brow_bnd_browHoriLT_loc'),
+            nt.Transform(u'CT_brow_bnd_browHoriLT_loc')]
+    if mirror:
+        xfos = rsym.mirror_PyNodes(xfos)
+        attr = rsym.mirror_PyNodes(attr)
+    for xfo in xfos:
+        transferAnimToSDK(xfo, attr, .1) 
         
+def transferLeftBrowVertToSDK(mirror=False):
+    attr = pm.PyNode('LT_mid_brow_pri_ctrl.ty')
+    xfos = [nt.Transform(u'LT_in_brow_bnd_browVertLT_loc'),
+            nt.Transform(u'LT_mid_brow_bnd_browVertLT_loc'),
+            nt.Transform(u'LT_out_brow_bnd_browVertLT_loc'),
+            nt.Transform(u'CT_brow_bnd_browVertLT_loc')]
+    if mirror:
+        xfos = rsym.mirror_PyNodes(xfos)
+        attr = rsym.mirror_PyNodes(attr)
+    for xfo in xfos:
+        transferAnimToSDK(xfo, attr, .1) 
+
 def transferLeftCheekPuffToSDK():
     '''
     this is a case where the pivot name needs Left/Right
