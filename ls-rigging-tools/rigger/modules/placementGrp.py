@@ -128,18 +128,18 @@ def addIndirectPlacements(pGrp):
     addIndirectPlacementBetweenLocs('LT_up_cheek', {pos1:1, pos2:1}, pGrp)
     
     # sneer - bt upper_pinch and midCrease
-    pos1 = pm.PyNode('LT_lip_upper_sneer_pLoc').t.get()
+    pos1 = pm.PyNode('LT_upper_sneer_lip_pLoc').t.get()
     pos2 = pm.PyNode('LT_mid_crease_pLoc').t.get()
     addIndirectPlacementBetweenLocs('LT_sneer', {pos1:1, pos2:1}, pGrp)
     
     # CT_midChin - between CT_chin and lowerLip
     pos1 = pm.PyNode('CT_chin_pLoc').t.get()
-    pos2 = pm.PyNode('CT_lip_lower_mid_pLoc').t.get()
+    pos2 = pm.PyNode('CT_lower_lip_pLoc').t.get()
     addIndirectPlacementBetweenLocs('CT_mid_chin', {pos1:1, pos2:2}, pGrp)
     
     # LT_midChin - between LT_chin and lower_pinch
     pos1 = pm.PyNode('LT_chin_pLoc').t.get()
-    pos2 = pm.PyNode('LT_lip_lower_pinch_pLoc').t.get()
+    pos2 = pm.PyNode('LT_lower_pinch_lip_pLoc').t.get()
     addIndirectPlacementBetweenLocs('LT_mid_chin', {pos1:1, pos2:2}, pGrp)
     
     

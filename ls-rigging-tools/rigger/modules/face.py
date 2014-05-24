@@ -371,12 +371,9 @@ def addSecondaryCtls():
     
 # addSecondaryCtls()
 
-def createBndsFromPlacement(placementGrp, mesh, overrideCornerCVs=None):
+def createBndsFromPlacement(placementGrp):
     '''
     placementGrp [PyNode.Transform] - parent of placement locs and attrs
-    mesh [PyNode.Mesh] - mesh for joints to surface snap to
-    overrideCornerCVs [list of ints] - cv ids for in, up, out, low
-        e.g. [2, 9, 16, 23]
     '''
     bndGrp = pm.group(n='CT_bnd_grp', em=True)
     
@@ -384,342 +381,20 @@ def createBndsFromPlacement(placementGrp, mesh, overrideCornerCVs=None):
     # Direct bnds - one bnd jnt for each loc
     #===========================================================================
     directPLoc = placementGrp.getChildren()
-    # not needed for CT_chin and CT_philtrum
-    directPLoc = [loc for loc in directPLoc if loc.bindType.get() == 0]
+    # not needed for CT_philtrum
+    directPLoc = [loc for loc in directPLoc if 
+                  loc.bindType.get() != 2 and
+                  'CT_philtrum' not in loc.name() ]
+    
     for eachLoc in directPLoc:
         pm.select(cl=True)
-        pos = eachLoc.t.get()
+        xfo = eachLoc.getMatrix(worldSpace=True)
         jnt = pm.joint(n=eachLoc.replace('pLoc', 'bnd'))
-        jnt.t.set(pos)
+        jnt.setMatrix(xfo)
+        scale = eachLoc.localScaleX.get()
+        jnt.radius.set(scale)
         bndGrp | jnt
-        if 'CT_' not in str(eachLoc):
-            # make for the other side too
-            pm.select(cl=True)
-            pos = pos * (-1, 1, 1)
-            jnt = pm.joint(n=jnt.replace('LT_', 'RT_'))
-            jnt.t.set(pos)
-            bndGrp | jnt
                    
-    #===========================================================================
-    # Loop bnds - bnd along curves
-    #===========================================================================
-    # Eyelids
-    loop = [pm.PyNode(node) for node in placementGrp.leftEyelidLoop.get()]
-    pm.select(loop, r=True)
-    crv = pm.PyNode(pm.polyToCurve(form=1, degree=3, ch=False)[0])
-    
-    cornerCVs = eye.returnInUpOutLowCVsOnCurve(crv)  # in, up, out, low
-    # override cornerCVs if eyeshape is weird and does not calc properly
-    if overrideCornerCVs:
-        cornerCVs = [crv.cv[index] for index in overrideCornerCVs]
-    
-    # add corner jnts
-    for cv, corner in zip(cornerCVs, ('inner', 'upper', 'outer', 'lower')):
-        pos = cv.getPosition()
-        pm.select(cl=True)
-        jnt = pm.joint(n='LT_eyelid_' + corner + '_bnd')
-        jnt.t.set(pos)
-        bndGrp | jnt
-        # right side
-        pos = pos * (-1, 1, 1)
-        pm.select(cl=True)
-        jnt = pm.joint(n='RT_eyelid_' + corner + '_bnd')
-        jnt.t.set(pos)
-        bndGrp | jnt
-        
-    # add secondary eyelid jnts
-    cornerParams = [getParamFromCV(cv) for cv in cornerCVs]
-    totalParam = crv.spans.get()
-    eachSectionParam = totalParam / 8.0
-    
-    # inner corner
-    params = [cornerParams[0] + eachSectionParam, cornerParams[0] - eachSectionParam]
-    for _ in range(len(params)):
-        if params[_] < 0:
-            params[_] = totalParam + params[_]
-        if params[_] > totalParam:
-            params[_] = params[_] - totalParam
-    print params
-    positions = [crv.getPointAtParam(p) for p in params]
-    # see which position-y is higher
-    if positions[0].y > positions[1].y:
-        upperPos = positions[0]
-        lowerPos = positions[1]
-    else:
-        upperPos = positions[1]
-        lowerPos = positions[0]
-        
-    pm.select(cl=True)
-    jnt = pm.joint(n='LT_eyelid_inner_upper_bnd')
-    jnt.t.set(upperPos)
-    bndGrp | jnt
-    
-    pm.select(cl=True)
-    jnt = pm.joint(n='LT_eyelid_inner_lower_bnd')
-    jnt.t.set(lowerPos)
-    bndGrp | jnt
-    
-    # right side
-    
-    upperPos = upperPos * (-1, 1, 1)
-    lowerPos = lowerPos * (-1, 1, 1)
-    
-    pm.select(cl=True)
-    jnt = pm.joint(n='RT_eyelid_inner_upper_bnd')
-    jnt.t.set(upperPos)
-    bndGrp | jnt
-    
-    pm.select(cl=True)
-    jnt = pm.joint(n='RT_eyelid_inner_lower_bnd')
-    jnt.t.set(lowerPos)
-    bndGrp | jnt
-    
-    # outer corner
-    params = [cornerParams[2] + eachSectionParam, cornerParams[2] - eachSectionParam]
-    for _ in range(len(params)):
-        if params[_] < 0:
-            params[_] = totalParam + params[_]
-        if params[_] > totalParam:
-            params[_] = params[_] - totalParam
-    print params
-    positions = [crv.getPointAtParam(p) for p in params]
-    # see which position-y is higher
-    if positions[0].y > positions[1].y:
-        upperPos = positions[0]
-        lowerPos = positions[1]
-    else:
-        upperPos = positions[1]
-        lowerPos = positions[0]
-        
-    pm.select(cl=True)
-    jnt = pm.joint(n='LT_eyelid_outer_upper_bnd')
-    jnt.t.set(upperPos)
-    bndGrp | jnt
-    
-    pm.select(cl=True)
-    jnt = pm.joint(n='LT_eyelid_outer_lower_bnd')
-    jnt.t.set(lowerPos)
-    bndGrp | jnt
-    
-    # right side
-    
-    upperPos = upperPos * (-1, 1, 1)
-    lowerPos = lowerPos * (-1, 1, 1)
-    
-    pm.select(cl=True)
-    jnt = pm.joint(n='RT_eyelid_outer_upper_bnd')
-    jnt.t.set(upperPos)
-    bndGrp | jnt
-    
-    pm.select(cl=True)
-    jnt = pm.joint(n='RT_eyelid_outer_lower_bnd')
-    jnt.t.set(lowerPos)
-    bndGrp | jnt
-    
-    pm.delete(crv)
-    
-    #===========================================================================
-    # loop bnds for mouth lip
-    #===========================================================================
-    loop = [pm.PyNode(node) for node in placementGrp.mouthLipsLoop.get()]
-    pm.select(loop, r=True)
-    mel.ConvertSelectionToVertices()
-    
-    lipVerts = pm.ls(sl=True, fl=True)
-    
-    # lips center
-    centerVerts = [vert for vert in lipVerts if vert.getPosition().x < 0.001 and vert.getPosition().x > -0.001]
-    positions = [vert.getPosition() for vert in centerVerts]
-    # see which position-y is higher
-    if positions[0].y > positions[1].y:
-        upperPos = positions[0]
-        lowerPos = positions[1]
-    else:
-        upperPos = positions[1]
-        lowerPos = positions[0]
-        
-    pm.select(cl=True)
-    jnt = pm.joint(n='CT_upper_lip_bnd')
-    jnt.t.set(upperPos)
-    bndGrp | jnt
-    
-    pm.select(cl=True)
-    jnt = pm.joint(n='CT_lower_lip_bnd')
-    jnt.t.set(lowerPos)
-    bndGrp | jnt
-    
-    # lips corner
-    # find left corner
-    cornerVert = max(lipVerts, key=lambda x: x.getPosition()[0])
-    pos = cornerVert.getPosition()
-    pm.select(cl=True)
-    jnt = pm.joint(n='LT_corner_lip_bnd')
-    jnt.t.set(pos)
-    bndGrp | jnt
-    # right side
-    rtpos = pos * (-1, 1, 1)
-    pm.select(cl=True)
-    jnt = pm.joint(n='RT_corner_lip_bnd')
-    jnt.t.set(rtpos)
-    bndGrp | jnt
-    
-    # add secondary controls to lips
-    cornerPos = pos
-    loop = [pm.PyNode(node) for node in placementGrp.mouthLipsLoop.get()]
-    pm.select(loop, r=True)
-    crv = pm.PyNode(pm.polyToCurve(form=1, degree=3, ch=False)[0])
-    
-    cPt = crv.closestPoint(cornerPos)
-    cornerParam = crv.getParamAtPoint(cPt)
-    
-    totalParam = crv.spans.get()
-    sectionParam = totalParam / 12.0
-    
-    # get pinch params by +/- sectionParam
-    params = [cornerParam + sectionParam, cornerParam - sectionParam]
-    for _ in range(len(params)):
-        if params[_] < 0:
-            params[_] = totalParam + params[_]
-    print params
-    positions = [crv.getPointAtParam(p) for p in params]
-    # see which position-y is higher
-    if positions[0].y > positions[1].y:
-        upperPos = positions[0]
-        lowerPos = positions[1]
-    else:
-        upperPos = positions[1]
-        lowerPos = positions[0]
-        
-    pm.select(cl=True)
-    jnt = pm.joint(n='LT_upper_pinch_lip_bnd')
-    jnt.t.set(upperPos)
-    bndGrp | jnt
-    
-    pm.select(cl=True)
-    jnt = pm.joint(n='LT_lower_pinch_lip_bnd')
-    jnt.t.set(lowerPos)
-    bndGrp | jnt
-    
-    # right side
-    upperPos = upperPos * (-1, 1, 1)
-    lowerPos = lowerPos * (-1, 1, 1)
-    
-    pm.select(cl=True)
-    jnt = pm.joint(n='RT_upper_pinch_lip_bnd')
-    jnt.t.set(upperPos)
-    bndGrp | jnt
-    
-    pm.select(cl=True)
-    jnt = pm.joint(n='RT_lower_pinch_lip_bnd')
-    jnt.t.set(lowerPos)
-    bndGrp | jnt
-    
-    # get sneer params by +/- 2 * sectionParam
-    params = [cornerParam + 2 * sectionParam, cornerParam - 2 * sectionParam]
-    for _ in range(len(params)):
-        if params[_] < 0:
-            params[_] = totalParam + params[_]
-    print params
-    positions = [crv.getPointAtParam(p) for p in params]
-    # see which position-y is higher
-    if positions[0].y > positions[1].y:
-        upperPos = positions[0]
-        lowerPos = positions[1]
-    else:
-        upperPos = positions[1]
-        lowerPos = positions[0]
-        
-    pm.select(cl=True)
-    jnt = pm.joint(n='LT_upper_sneer_lip_bnd')
-    jnt.t.set(upperPos)
-    bndGrp | jnt
-    
-    pm.select(cl=True)
-    jnt = pm.joint(n='LT_lower_sneer_lip_bnd')
-    jnt.t.set(lowerPos)
-    bndGrp | jnt
-    
-    # right side
-    upperPos = upperPos * (-1, 1, 1)
-    lowerPos = lowerPos * (-1, 1, 1)
-    
-    pm.select(cl=True)
-    jnt = pm.joint(n='RT_upper_sneer_lip_bnd')
-    jnt.t.set(upperPos)
-    bndGrp | jnt
-    
-    pm.select(cl=True)
-    jnt = pm.joint(n='RT_lower_sneer_lip_bnd')
-    jnt.t.set(lowerPos)
-    bndGrp | jnt
-    
-    pm.delete(crv)
-    
-    #===========================================================================
-    # Additional bnds - bnd between locs
-    #===========================================================================
-    # CT_brow
-    pos = pm.PyNode('LT_in_brow_pLoc').t.get()
-    jnt = placeBndBetweenLocs('CT_brow_bnd', {pos:0.5, pos * (-1, 1, 1):0.5}, mesh, bndGrp)
-    
-    # LT_in_low_forehead
-    pos1 = pm.PyNode('LT_in_brow_pLoc').t.get()
-    pos2 = pm.PyNode('LT_in_forehead_pLoc').t.get()
-    jnt = placeBndBetweenLocs('LT_in_low_forehead_bnd', {pos1:0.5, pos2:0.5}, mesh, bndGrp, True)
-    
-    # LT_out_low_forehead
-    pos1 = pm.PyNode('LT_out_brow_pLoc').t.get()
-    pos2 = pm.PyNode('LT_out_forehead_pLoc').t.get()
-    jnt = placeBndBetweenLocs('LT_out_low_forehead_bnd', {pos1:0.5, pos2:0.5}, mesh, bndGrp, True)
-    
-    # LT_low_temple
-    pos1 = pm.PyNode('LT_temple_bnd').t.get()
-    pos2 = pm.PyNode('LT_up_jaw_pLoc').t.get()
-    jnt = placeBndBetweenLocs('LT_low_temple_bnd', {pos1:2, pos2:1}, mesh, bndGrp, True)
-    
-    # LT_low_temple
-    pos1 = pm.PyNode('LT_temple_bnd').t.get()
-    pos2 = pm.PyNode('LT_up_jaw_pLoc').t.get()
-    jnt = placeBndBetweenLocs('LT_out_cheek_bnd', {pos1:1, pos2:2}, mesh, bndGrp, True)
-    
-    # LT_in_philtrum
-    pos1 = pm.PyNode('CT_philtrum_pLoc').t.get()
-    pos2 = pm.PyNode('LT_philtrum_pLoc').t.get()
-    jnt = placeBndBetweenLocs('LT_in_philtrum_bnd', {pos1:2.5, pos2:1}, mesh, bndGrp, True)
-    
-    # LT_low_cheek
-    pos1 = pm.PyNode('LT_cheek_pLoc').t.get()
-    pos2 = pm.PyNode('LT_corner_jaw_pLoc').t.get()
-    jnt = placeBndBetweenLocs('LT_low_cheek_bnd', {pos1:1, pos2:1}, mesh, bndGrp, True)
-    
-    #===========================================================================
-    # Additional bnds - bnd between loc and jnts
-    #===========================================================================
-    # inCheek - bt upCrease and inner_eyelid
-    pos1 = pm.PyNode('LT_up_crease_pLoc').t.get()
-    pos2 = pm.PyNode('LT_eyelid_inner_bnd').t.get()
-    jnt = placeBndBetweenLocs('LT_in_cheek_bnd', {pos1:1, pos2:1}, mesh, bndGrp, True)
-    
-    # upCheek - bt midCrease and lower_eyelid
-    pos1 = pm.PyNode('LT_mid_crease_pLoc').t.get()
-    pos2 = pm.PyNode('LT_eyelid_lower_bnd').t.get()
-    jnt = placeBndBetweenLocs('LT_up_cheek_bnd', {pos1:1, pos2:1}, mesh, bndGrp, True)
-    
-    # sneer - bt upper_pinch and midCrease
-    pos1 = pm.PyNode('LT_upper_pinch_lip_bnd').t.get()
-    pos2 = pm.PyNode('LT_mid_crease_pLoc').t.get()
-    jnt = placeBndBetweenLocs('LT_sneer_bnd', {pos1:1, pos2:1}, mesh, bndGrp, True)
-    
-    # CT_midChin - between CT_chin and lowerLip
-    pos1 = pm.PyNode('CT_chin_pLoc').t.get()
-    pos2 = pm.PyNode('CT_lower_lip_bnd').t.get()
-    jnt = placeBndBetweenLocs('CT_mid_chin_bnd', {pos1:1, pos2:2}, mesh, bndGrp, False)
-    
-    # LT_midChin - between LT_chin and lower_pinch
-    pos1 = pm.PyNode('LT_chin_pLoc').t.get()
-    pos2 = pm.PyNode('LT_lower_pinch_lip_bnd').t.get()
-    jnt = placeBndBetweenLocs('LT_mid_chin_bnd', {pos1:1, pos2:2}, mesh, bndGrp, True)
-    
     #===========================================================================
     # Special bnds
     #===========================================================================
@@ -769,50 +444,7 @@ def buildSecondaryControlSystem(placementGrp, bndGrp, mesh):
     '''
     '''
     bnds = bndGrp.getChildren()
-    
-    #===========================================================================
-    # Fix bnd alignments
-    #===========================================================================
-    
-    # Orient loops
-    # LT Eye
-    orientLoopTransforms([nt.Joint(u'LT_eyelid_outer_bnd'), nt.Joint(u'LT_eyelid_outer_upper_bnd'), nt.Joint(u'LT_eyelid_upper_bnd')], (-1, 0, 0))
-    orientLoopTransforms([nt.Joint(u'LT_eyelid_inner_bnd'), nt.Joint(u'LT_eyelid_inner_upper_bnd'), nt.Joint(u'LT_eyelid_upper_bnd')], (1, 0, 0))
-    orientLoopTransforms([nt.Joint(u'LT_eyelid_outer_bnd'), nt.Joint(u'LT_eyelid_outer_lower_bnd'), nt.Joint(u'LT_eyelid_lower_bnd')], (-1, 0, 0))
-    orientLoopTransforms([nt.Joint(u'LT_eyelid_inner_bnd'), nt.Joint(u'LT_eyelid_inner_lower_bnd'), nt.Joint(u'LT_eyelid_lower_bnd')], (1, 0, 0))
-    # RT Eye
-    orientLoopTransforms([nt.Joint(u'RT_eyelid_inner_bnd'), nt.Joint(u'RT_eyelid_inner_upper_bnd'), nt.Joint(u'RT_eyelid_upper_bnd')], (-1, 0, 0))
-    orientLoopTransforms([nt.Joint(u'RT_eyelid_outer_bnd'), nt.Joint(u'RT_eyelid_outer_upper_bnd'), nt.Joint(u'RT_eyelid_upper_bnd')], (1, 0, 0))
-    orientLoopTransforms([nt.Joint(u'RT_eyelid_inner_bnd'), nt.Joint(u'RT_eyelid_inner_lower_bnd'), nt.Joint(u'RT_eyelid_lower_bnd')], (-1, 0, 0))
-    orientLoopTransforms([nt.Joint(u'RT_eyelid_outer_bnd'), nt.Joint(u'RT_eyelid_outer_lower_bnd'), nt.Joint(u'RT_eyelid_lower_bnd')], (1, 0, 0))
-    # Mouth lips
-    orientLoopTransforms([nt.Joint(u'LT_corner_lip_bnd'), nt.Joint(u'LT_upper_pinch_lip_bnd'), nt.Joint(u'LT_upper_sneer_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd')], (-1, 0, 0))
-    orientLoopTransforms([nt.Joint(u'LT_corner_lip_bnd'), nt.Joint(u'LT_lower_pinch_lip_bnd'), nt.Joint(u'LT_lower_sneer_lip_bnd'), nt.Joint(u'CT_lower_lip_bnd')], (-1, 0, 0))
-    orientLoopTransforms([nt.Joint(u'RT_corner_lip_bnd'), nt.Joint(u'RT_upper_pinch_lip_bnd'), nt.Joint(u'RT_upper_sneer_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd')], (1, 0, 0))
-    orientLoopTransforms([nt.Joint(u'RT_corner_lip_bnd'), nt.Joint(u'RT_lower_pinch_lip_bnd'), nt.Joint(u'RT_lower_sneer_lip_bnd'), nt.Joint(u'CT_lower_lip_bnd')], (1, 0, 0))
-    
-    # Align for sliding
-    slidingBnds = [nt.Joint(u'LT_in_forehead_bnd'), nt.Joint(u'RT_in_forehead_bnd'), nt.Joint(u'LT_out_forehead_bnd'), nt.Joint(u'RT_out_forehead_bnd'), nt.Joint(u'LT_in_low_forehead_bnd'),
-                   nt.Joint(u'RT_in_low_forehead_bnd'), nt.Joint(u'LT_out_low_forehead_bnd'), nt.Joint(u'RT_out_low_forehead_bnd'), nt.Joint(u'LT_in_brow_bnd'), nt.Joint(u'RT_in_brow_bnd'),
-                   nt.Joint(u'LT_mid_brow_bnd'), nt.Joint(u'RT_mid_brow_bnd'), nt.Joint(u'LT_out_brow_bnd'), nt.Joint(u'RT_out_brow_bnd'), nt.Joint(u'LT_temple_bnd'), nt.Joint(u'RT_temple_bnd'),
-                   nt.Joint(u'CT_brow_bnd'), nt.Joint(u'LT_up_jaw_bnd'), nt.Joint(u'LT_low_temple_bnd'), nt.Joint(u'LT_out_cheek_bnd'), nt.Joint(u'LT_low_cheek_bnd'), nt.Joint(u'LT_squint_bnd'),
-                   nt.Joint(u'LT_low_crease_bnd'), nt.Joint(u'LT_cheek_bnd'), nt.Joint(u'LT_corner_jaw_bnd'), nt.Joint(u'LT_low_jaw_bnd'), nt.Joint(u'LT_mid_crease_bnd'), nt.Joint(u'LT_up_cheek_bnd'),
-                   nt.Joint(u'LT_sneer_bnd'), nt.Joint(u'LT_philtrum_bnd'), nt.Joint(u'RT_philtrum_bnd'), nt.Joint(u'LT_in_philtrum_bnd'), nt.Joint(u'RT_in_philtrum_bnd'), nt.Joint(u'LT_up_crease_bnd'),
-                   nt.Joint(u'LT_in_cheek_bnd'), nt.Joint(u'RT_up_crease_bnd'), nt.Joint(u'RT_in_cheek_bnd'), nt.Joint(u'RT_mid_crease_bnd'), nt.Joint(u'RT_cheek_bnd'), nt.Joint(u'RT_up_cheek_bnd'),
-                   nt.Joint(u'RT_sneer_bnd'), nt.Joint(u'RT_low_temple_bnd'), nt.Joint(u'RT_out_cheek_bnd'), nt.Joint(u'RT_low_crease_bnd'), nt.Joint(u'RT_up_jaw_bnd'), nt.Joint(u'RT_corner_jaw_bnd'),
-                   nt.Joint(u'RT_low_jaw_bnd'), nt.Joint(u'RT_low_cheek_bnd'), nt.Joint(u'LT_chin_bnd'), nt.Joint(u'RT_chin_bnd'), nt.Joint(u'CT_chin_bnd'), nt.Joint(u'CT_mid_chin_bnd'),
-                   nt.Joint(u'LT_mid_chin_bnd'), nt.Joint(u'RT_mid_chin_bnd'),
-                   nt.Joint(u'CT_neck_bnd'), nt.Joint(u'LT_neck_bnd'), nt.Joint(u'RT_neck_bnd')
-                   ]
-    
-    for eachBnd in slidingBnds:
-        rt.alignTransformToMesh(eachBnd, mesh, method='sliding')
-    
-    # Align for normal
-    normalBnds = [nt.Joint(u'LT_corner_jaw_bnd'), nt.Joint(u'LT_low_jaw_bnd'), nt.Joint(u'LT_chin_bnd'), nt.Joint(u'CT_chin_bnd'), nt.Joint(u'RT_chin_bnd'), nt.Joint(u'RT_low_jaw_bnd'), nt.Joint(u'RT_corner_jaw_bnd')]
-    for eachBnd in normalBnds:
-        rt.alignTransformToMesh(eachBnd, mesh, method='normal')
-    
+
     #===========================================================================
     # Set up hierarchy
     #===========================================================================
@@ -927,33 +559,33 @@ def buildPrimaryControlSystem():
     pm.progressWindow(e=True, step=1, status='Create driver for LT_upper_sneer_lip_bnd')
     # sneers
     priCtl = addPrimaryCtlToBnd(pm.PyNode('LT_upper_sneer_lip_bnd'))
-    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'LT_upper_pinch_lip_bnd'), nt.Joint(u'LT_upper_sneer_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd'), nt.Joint(u'LT_in_philtrum_bnd'), nt.Joint(u'LT_philtrum_bnd'), nt.Joint(u'LT_sneer_bnd')])
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'LT_upper_pinch_lip_bnd'), nt.Joint(u'LT_upper_sneer_lip_bnd'), nt.Joint(u'LT_upper_side_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd'), nt.Joint(u'LT_in_philtrum_bnd'), nt.Joint(u'LT_philtrum_bnd'), nt.Joint(u'LT_sneer_bnd')])
     allPriCtls.append(priCtl)
     
     pm.progressWindow(e=True, step=1, status='Create driver for LT_lower_sneer_lip_bnd')
     priCtl = addPrimaryCtlToBnd(pm.PyNode('LT_lower_sneer_lip_bnd'))
-    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'CT_lower_lip_bnd'), nt.Joint(u'LT_lower_sneer_lip_bnd'), nt.Joint(u'LT_lower_pinch_lip_bnd'), nt.Joint(u'LT_mid_chin_bnd'), nt.Joint(u'CT_mid_chin_bnd')])
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'CT_lower_lip_bnd'), nt.Joint(u'LT_lower_sneer_lip_bnd'), nt.Joint(u'LT_lower_side_lip_bnd'), nt.Joint(u'LT_lower_pinch_lip_bnd'), nt.Joint(u'LT_mid_chin_bnd'), nt.Joint(u'CT_mid_chin_bnd')])
     allPriCtls.append(priCtl)
     
     pm.progressWindow(e=True, step=1, status='Create driver for RT_upper_sneer_lip_bnd')
     priCtl = addPrimaryCtlToBnd(pm.PyNode('RT_upper_sneer_lip_bnd'))
-    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_upper_pinch_lip_bnd'), nt.Joint(u'RT_upper_sneer_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd'), nt.Joint(u'RT_in_philtrum_bnd'), nt.Joint(u'RT_philtrum_bnd'), nt.Joint(u'RT_sneer_bnd')])
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_upper_pinch_lip_bnd'), nt.Joint(u'RT_upper_sneer_lip_bnd'), nt.Joint(u'RT_upper_side_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd'), nt.Joint(u'RT_in_philtrum_bnd'), nt.Joint(u'RT_philtrum_bnd'), nt.Joint(u'RT_sneer_bnd')])
     allPriCtls.append(priCtl)
     
     pm.progressWindow(e=True, step=1, status='Create driver for RT_lower_sneer_lip_bnd')
     priCtl = addPrimaryCtlToBnd(pm.PyNode('RT_lower_sneer_lip_bnd'))
-    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'CT_lower_lip_bnd'), nt.Joint(u'RT_lower_sneer_lip_bnd'), nt.Joint(u'RT_lower_pinch_lip_bnd'), nt.Joint(u'RT_mid_chin_bnd'), nt.Joint(u'CT_mid_chin_bnd')])
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'CT_lower_lip_bnd'), nt.Joint(u'RT_lower_sneer_lip_bnd'), nt.Joint(u'RT_lower_side_lip_bnd'), nt.Joint(u'RT_lower_pinch_lip_bnd'), nt.Joint(u'RT_mid_chin_bnd'), nt.Joint(u'CT_mid_chin_bnd')])
     allPriCtls.append(priCtl)
     
     pm.progressWindow(e=True, step=1, status='Create driver for LT_corner_lip_bnd')
     # nwsf
     priCtl = addPrimaryCtlToBnd(pm.PyNode('LT_corner_lip_bnd'))
-    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'LT_corner_lip_bnd'), nt.Joint(u'LT_upper_pinch_lip_bnd'), nt.Joint(u'LT_upper_sneer_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd'), nt.Joint(u'CT_lower_lip_bnd'), nt.Joint(u'LT_lower_sneer_lip_bnd'), nt.Joint(u'LT_lower_pinch_lip_bnd'), nt.Joint(u'CT_mid_chin_bnd'), nt.Joint(u'LT_mid_chin_bnd'), nt.Joint(u'LT_in_philtrum_bnd'), nt.Joint(u'LT_philtrum_bnd'), nt.Joint(u'LT_sneer_bnd'), nt.Joint(u'LT_low_crease_bnd'), nt.Joint(u'LT_mid_crease_bnd')])
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'LT_corner_lip_bnd'), nt.Joint(u'LT_upper_pinch_lip_bnd'), nt.Joint(u'LT_upper_sneer_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd'), nt.Joint(u'CT_lower_lip_bnd'), nt.Joint(u'LT_lower_sneer_lip_bnd'), nt.Joint(u'LT_lower_pinch_lip_bnd'), nt.Joint(u'CT_mid_chin_bnd'), nt.Joint(u'LT_mid_chin_bnd'), nt.Joint(u'LT_in_philtrum_bnd'), nt.Joint(u'LT_philtrum_bnd'), nt.Joint(u'LT_sneer_bnd'), nt.Joint(u'LT_low_crease_bnd'), nt.Joint(u'LT_mid_crease_bnd'), nt.Joint(u'LT_upper_side_lip_bnd'), nt.Joint(u'LT_lower_side_lip_bnd')])
     allPriCtls.append(priCtl)
     
     pm.progressWindow(e=True, step=1, status='Create driver for RT_corner_lip_bnd')
     priCtl = addPrimaryCtlToBnd(pm.PyNode('RT_corner_lip_bnd'))
-    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_corner_lip_bnd'), nt.Joint(u'RT_upper_pinch_lip_bnd'), nt.Joint(u'RT_upper_sneer_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd'), nt.Joint(u'CT_lower_lip_bnd'), nt.Joint(u'RT_lower_sneer_lip_bnd'), nt.Joint(u'RT_lower_pinch_lip_bnd'), nt.Joint(u'CT_mid_chin_bnd'), nt.Joint(u'RT_mid_chin_bnd'), nt.Joint(u'RT_in_philtrum_bnd'), nt.Joint(u'RT_philtrum_bnd'), nt.Joint(u'RT_sneer_bnd'), nt.Joint(u'RT_low_crease_bnd'), nt.Joint(u'RT_mid_crease_bnd')])
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_corner_lip_bnd'), nt.Joint(u'RT_upper_pinch_lip_bnd'), nt.Joint(u'RT_upper_sneer_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd'), nt.Joint(u'CT_lower_lip_bnd'), nt.Joint(u'RT_lower_sneer_lip_bnd'), nt.Joint(u'RT_lower_pinch_lip_bnd'), nt.Joint(u'CT_mid_chin_bnd'), nt.Joint(u'RT_mid_chin_bnd'), nt.Joint(u'RT_in_philtrum_bnd'), nt.Joint(u'RT_philtrum_bnd'), nt.Joint(u'RT_sneer_bnd'), nt.Joint(u'RT_low_crease_bnd'), nt.Joint(u'RT_mid_crease_bnd'), nt.Joint(u'RT_upper_side_lip_bnd'), nt.Joint(u'RT_lower_side_lip_bnd')])
     allPriCtls.append(priCtl)
     
     
@@ -991,7 +623,11 @@ def buildPrimaryControlSystem():
                                      nt.Joint(u'LT_low_crease_bnd'),
                                      nt.Joint(u'LT_mid_chin_bnd'),
                                      nt.Joint(u'CT_mid_chin_bnd'),
-                                     nt.Joint(u'RT_mid_chin_bnd')])
+                                     nt.Joint(u'RT_mid_chin_bnd'),
+                                     nt.Joint(u'LT_upper_side_lip_bnd'),
+                                     nt.Joint(u'LT_lower_side_lip_bnd'),
+                                     nt.Joint(u'RT_upper_side_lip_bnd'),
+                                     nt.Joint(u'RT_lower_side_lip_bnd')])
     
     pm.progressWindow(e=True, step=1, status='Create driver for eye movers')
     # EYE
@@ -1038,7 +674,11 @@ def buildPrimaryControlSystem():
                                     nt.Joint(u'RT_low_jaw_bnd'), nt.Joint(u'RT_corner_jaw_bnd'), nt.Joint(u'RT_low_cheek_bnd'), 
                                     nt.Joint(u'RT_up_jaw_bnd'), nt.Joint(u'RT_cheek_bnd'), nt.Joint(u'RT_up_cheek_bnd'), 
                                     nt.Joint(u'RT_out_cheek_bnd'), nt.Joint(u'LT_neck_bnd'), nt.Joint(u'RT_neck_bnd'),
-                                    nt.Joint(u'CT_neck_bnd')])
+                                    nt.Joint(u'CT_neck_bnd'),
+                                    nt.Joint(u'LT_upper_side_lip_bnd'),
+                                    nt.Joint(u'LT_lower_side_lip_bnd'),
+                                    nt.Joint(u'RT_upper_side_lip_bnd'),
+                                    nt.Joint(u'RT_lower_side_lip_bnd')])
     
     allPriCtlHms = [ctl.getParent(-1) for ctl in allPriCtls]
     pm.group(allPriCtlHms, n='CT_face_primary_ctls_grp') 
