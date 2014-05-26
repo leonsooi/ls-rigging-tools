@@ -162,8 +162,9 @@ def mapControlsToFeaturePts():
                          nt.Transform(u'LT_low_crease_ctrl'): [nt.Transform(u'Offset_LBCH')],
                          nt.Transform(u'LT_low_jaw_ctrl'): [nt.Transform(u'Offset_LMCH')],
                          nt.Transform(u'LT_low_temple_ctrl'): [nt.Transform(u'Offset_LTEMP')],
-                         nt.Transform(u'LT_lower_pinch_lip_ctrl'): [nt.Transform(u'Offset_LBLP')],
-                         nt.Transform(u'LT_lower_sneer_lip_pri_ctrl'): [nt.Transform(u'Offset_LLLP')],
+                         nt.Transform(u'LT_lower_pinch_lip_ctrl'): [nt.Transform(u'Offset_LBLP'), nt.Transform(u'Offset_LOLP')],
+                         nt.Transform(u'LT_lower_sneer_lip_ctrl'): [nt.Transform(u'Offset_LBLP')],
+                         nt.Transform(u'LT_lower_side_lip_ctrl'): [nt.Transform(u'Offset_LLLP')],
                          nt.Transform(u'LT_mid_brow_pri_ctrl'): [nt.Transform(u'Offset_LMBR')],
                          nt.Transform(u'LT_mid_chin_ctrl'): [nt.Transform(u'Offset_LCHIN')],
                          nt.Transform(u'LT_mid_crease_ctrl'): [nt.Transform(u'Offset_LNOSE')],
@@ -181,8 +182,9 @@ def mapControlsToFeaturePts():
                                                               nt.Transform(u'Offset_LNOSE'),
                                                               nt.Transform(u'Offset_LMOU')],
                          nt.Transform(u'LT_up_jaw_ctrl'): [nt.Transform(u'Offset_LTJA')],
-                         nt.Transform(u'LT_upper_pinch_lip_ctrl'): [nt.Transform(u'Offset_LTLP')],
-                         nt.Transform(u'LT_upper_sneer_lip_pri_ctrl'): [nt.Transform(u'Offset_LMLP')],
+                         nt.Transform(u'LT_upper_pinch_lip_ctrl'): [nt.Transform(u'Offset_LTLP'), nt.Transform(u'Offset_LOLP')],
+                         nt.Transform(u'LT_upper_sneer_lip_ctrl'): [nt.Transform(u'Offset_LTLP')],
+                         nt.Transform(u'LT_upper_side_lip_ctrl'): [nt.Transform(u'Offset_LMLP')],
                          nt.Transform(u'RT_cheek_pri_ctrl'): [nt.Transform(u'Offset_RTCH')],
                          nt.Transform(u'RT_chin_ctrl'): [nt.Transform(u'Offset_RCHN')],
                          nt.Transform(u'RT_corner_lip_pri_ctrl'): [nt.Transform(u'Offset_ROLP')],
@@ -197,8 +199,9 @@ def mapControlsToFeaturePts():
                          nt.Transform(u'RT_low_crease_ctrl'): [nt.Transform(u'Offset_RBCH')],
                          nt.Transform(u'RT_low_jaw_ctrl'): [nt.Transform(u'Offset_RMCH')],
                          nt.Transform(u'RT_low_temple_ctrl'): [nt.Transform(u'Offset_RTEMP')],
-                         nt.Transform(u'RT_lower_pinch_lip_ctrl'): [nt.Transform(u'Offset_RBLP')],
-                         nt.Transform(u'RT_lower_sneer_lip_pri_ctrl'): [nt.Transform(u'Offset_RLLP')],
+                         nt.Transform(u'RT_lower_pinch_lip_ctrl'): [nt.Transform(u'Offset_RBLP'), nt.Transform(u'Offset_ROLP')],
+                         nt.Transform(u'RT_lower_sneer_lip_ctrl'): [nt.Transform(u'Offset_RBLP')],
+                         nt.Transform(u'RT_lower_side_lip_ctrl'): [nt.Transform(u'Offset_RLLP')],
                          nt.Transform(u'RT_mid_brow_pri_ctrl'): [nt.Transform(u'Offset_RMBR')],
                          nt.Transform(u'RT_mid_chin_ctrl'): [nt.Transform(u'Offset_RCHIN')],
                          nt.Transform(u'RT_mid_crease_ctrl'): [nt.Transform(u'Offset_RNOSE')],
@@ -216,8 +219,10 @@ def mapControlsToFeaturePts():
                                                               nt.Transform(u'Offset_RNOSE'),
                                                               nt.Transform(u'Offset_RMOU')],
                          nt.Transform(u'RT_up_jaw_ctrl'): [nt.Transform(u'Offset_RTJA')],
-                         nt.Transform(u'RT_upper_pinch_lip_ctrl'): [nt.Transform(u'Offset_RTLP')],
-                         nt.Transform(u'RT_upper_sneer_lip_pri_ctrl'): [nt.Transform(u'Offset_RMLP')]}
+                         nt.Transform(u'RT_upper_pinch_lip_ctrl'): [nt.Transform(u'Offset_RTLP'), nt.Transform(u'Offset_ROLP')],
+                         nt.Transform(u'RT_upper_sneer_lip_ctrl'): [nt.Transform(u'Offset_RTLP')],
+                         nt.Transform(u'RT_upper_side_lip_ctrl'): [nt.Transform(u'Offset_RMLP')]
+                         }
     
     for eachCtl, targets in ctlToTargetTable.items():
         pm.parentConstraint(targets, eachCtl, mo=True)

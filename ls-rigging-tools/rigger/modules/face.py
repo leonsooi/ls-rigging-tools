@@ -23,6 +23,22 @@ from ngSkinTools.mllInterface import MllInterface
 
 mel = pm.language.Mel()
 
+def selectVertsClosestToBnds(mll):
+    infIter = mll.listLayerInfluences(2)
+    infs = list(infIter)
+    mesh = mll.getTargetInfo()[0]
+    mesh = pm.PyNode(mesh)
+    vertIds = []
+    for inf, infId in infs:
+        pos = pm.PyNode(inf).getTranslation(space='world')
+        faceId = mesh.getClosestPoint(pos, space='world')[1]
+        faceVertIds = mesh.f[faceId].getVertices()
+        closestVertId = min(faceVertIds, key=lambda vtxId: (mesh.vtx[vtxId].getPosition() - pos).length())
+        vertIds += [closestVertId]
+    
+    closestVerts = [mesh.vtx[i] for i in vertIds]
+    pm.select(closestVerts)
+
 def addPerimeterBndSystem(mesh):
     '''
     '''
@@ -537,12 +553,12 @@ def buildPrimaryControlSystem():
     pm.progressWindow(e=True, step=1, status='Create driver for LT_mid_brow_bnd')
     # brows
     priCtl = addPrimaryCtlToBnd(pm.PyNode('LT_mid_brow_bnd'))
-    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'LT_mid_brow_bnd'), nt.Joint(u'LT_in_brow_bnd'), nt.Joint(u'LT_out_brow_bnd'), nt.Joint(u'LT_in_forehead_bnd'), nt.Joint(u'LT_out_forehead_bnd'), nt.Joint(u'LT_in_low_forehead_bnd'), nt.Joint(u'LT_out_low_forehead_bnd')])
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'LT_mid_brow_bnd'), nt.Joint(u'LT_in_brow_bnd'), nt.Joint(u'LT_out_brow_bnd'), nt.Joint(u'LT_in_forehead_bnd'), nt.Joint(u'LT_out_forehead_bnd'), nt.Joint(u'LT_in_low_forehead_bnd'), nt.Joint(u'LT_out_low_forehead_bnd'), nt.Joint('CT_brow_bnd')])
     allPriCtls.append(priCtl)
     
     pm.progressWindow(e=True, step=1, status='Create driver for RT_mid_brow_bnd')
     priCtl = addPrimaryCtlToBnd(pm.PyNode('RT_mid_brow_bnd'))
-    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_mid_brow_bnd'), nt.Joint(u'RT_in_brow_bnd'), nt.Joint(u'RT_in_forehead_bnd'), nt.Joint(u'RT_out_forehead_bnd'), nt.Joint(u'RT_in_low_forehead_bnd'), nt.Joint(u'RT_out_low_forehead_bnd'), nt.Joint(u'RT_out_brow_bnd')])
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_mid_brow_bnd'), nt.Joint(u'RT_in_brow_bnd'), nt.Joint(u'RT_in_forehead_bnd'), nt.Joint(u'RT_out_forehead_bnd'), nt.Joint(u'RT_in_low_forehead_bnd'), nt.Joint(u'RT_out_low_forehead_bnd'), nt.Joint(u'RT_out_brow_bnd'), nt.Joint('CT_brow_bnd')])
     allPriCtls.append(priCtl)
     
     pm.progressWindow(e=True, step=1, status='Create driver for LT_cheek_bnd')
@@ -769,7 +785,7 @@ def cleanFaceRig():
     priCtls.append('LT_eye_ctl')
     priCtls.append('RT_eye_ctl')
     rt.connectVisibilityToggle(priCtls, faceCtl.name(), 'primaryControlsVis', True)
-    secCtls = [u'LT_eyelid_inner_ctrl', u'LT_eyelid_upper_ctrl', u'LT_eyelid_outer_ctrl', u'LT_eyelid_lower_ctrl', u'LT_eyelid_inner_upper_ctrl', u'LT_eyelid_inner_lower_ctrl', u'LT_eyelid_outer_upper_ctrl', u'LT_eyelid_outer_lower_ctrl', u'RT_eyelid_inner_ctrl', u'RT_eyelid_upper_ctrl', u'RT_eyelid_outer_ctrl', u'RT_eyelid_lower_ctrl', u'RT_eyelid_inner_upper_ctrl', u'RT_eyelid_inner_lower_ctrl', u'RT_eyelid_outer_upper_ctrl', u'RT_eyelid_outer_lower_ctrl', u'RT_nostril_ctrl', u'CT_noseTip_ctrl', u'LT_nostril_ctrl', u'CT_upper_lip_ctrl', u'CT_lower_lip_ctrl', u'LT_upper_sneer_lip_ctrl', u'LT_lower_sneer_lip_ctrl', u'RT_upper_sneer_lip_ctrl', u'RT_lower_sneer_lip_ctrl', u'LT_corner_lip_ctrl', u'LT_upper_pinch_lip_ctrl', u'RT_corner_lip_ctrl', u'RT_upper_pinch_lip_ctrl', u'RT_lower_pinch_lip_ctrl', u'LT_lower_pinch_lip_ctrl', u'LT_in_brow_ctrl', u'LT_mid_brow_ctrl', u'LT_out_brow_ctrl', u'RT_in_brow_ctrl', u'CT_brow_ctrl', u'RT_mid_brow_ctrl', u'RT_out_brow_ctrl']
+    secCtls = [u'LT_upper_side_lip_ctrl', u'LT_lower_side_lip_ctrl', u'RT_lower_side_lip_ctrl', u'RT_upper_side_lip_ctrl', u'LT_eyelid_inner_ctrl', u'LT_eyelid_upper_ctrl', u'LT_eyelid_outer_ctrl', u'LT_eyelid_lower_ctrl', u'LT_eyelid_inner_upper_ctrl', u'LT_eyelid_inner_lower_ctrl', u'LT_eyelid_outer_upper_ctrl', u'LT_eyelid_outer_lower_ctrl', u'RT_eyelid_inner_ctrl', u'RT_eyelid_upper_ctrl', u'RT_eyelid_outer_ctrl', u'RT_eyelid_lower_ctrl', u'RT_eyelid_inner_upper_ctrl', u'RT_eyelid_inner_lower_ctrl', u'RT_eyelid_outer_upper_ctrl', u'RT_eyelid_outer_lower_ctrl', u'RT_nostril_ctrl', u'CT_noseTip_ctrl', u'LT_nostril_ctrl', u'CT_upper_lip_ctrl', u'CT_lower_lip_ctrl', u'LT_upper_sneer_lip_ctrl', u'LT_lower_sneer_lip_ctrl', u'RT_upper_sneer_lip_ctrl', u'RT_lower_sneer_lip_ctrl', u'LT_corner_lip_ctrl', u'LT_upper_pinch_lip_ctrl', u'RT_corner_lip_ctrl', u'RT_upper_pinch_lip_ctrl', u'RT_lower_pinch_lip_ctrl', u'LT_lower_pinch_lip_ctrl', u'LT_in_brow_ctrl', u'LT_mid_brow_ctrl', u'LT_out_brow_ctrl', u'RT_in_brow_ctrl', u'CT_brow_ctrl', u'RT_mid_brow_ctrl', u'RT_out_brow_ctrl']
     rt.connectVisibilityToggle(secCtls, faceCtl.name(), 'secondaryControlsVis', False)
     terCtls = [u'LT_in_forehead_ctrl', u'RT_in_forehead_ctrl', u'LT_out_forehead_ctrl', u'RT_out_forehead_ctrl', u'LT_temple_ctrl', u'RT_temple_ctrl', u'LT_squint_ctrl', u'RT_squint_ctrl', u'LT_philtrum_ctrl', u'RT_philtrum_ctrl', u'LT_up_crease_ctrl', u'RT_up_crease_ctrl', u'LT_mid_crease_ctrl', u'RT_mid_crease_ctrl', u'LT_low_crease_ctrl', u'RT_low_crease_ctrl', u'LT_cheek_ctrl', u'RT_cheek_ctrl', u'LT_up_jaw_ctrl', u'RT_up_jaw_ctrl', u'LT_corner_jaw_ctrl', u'RT_corner_jaw_ctrl', u'LT_low_jaw_ctrl', u'RT_low_jaw_ctrl', u'LT_chin_ctrl', u'RT_chin_ctrl', u'CT_chin_ctrl', u'LT_in_low_forehead_ctrl', u'RT_in_low_forehead_ctrl', u'LT_out_low_forehead_ctrl', u'RT_out_low_forehead_ctrl', u'LT_low_temple_ctrl', u'RT_low_temple_ctrl', u'LT_out_cheek_ctrl', u'RT_out_cheek_ctrl', u'LT_in_philtrum_ctrl', u'RT_in_philtrum_ctrl', u'LT_low_cheek_ctrl', u'RT_low_cheek_ctrl', u'LT_in_cheek_ctrl', u'RT_in_cheek_ctrl', u'LT_up_cheek_ctrl', u'RT_up_cheek_ctrl', u'LT_sneer_ctrl', u'RT_sneer_ctrl', u'CT_mid_chin_ctrl', u'LT_mid_chin_ctrl', u'RT_mid_chin_ctrl']
     terCtls += ['LT_neck_ctrl', 'CT_neck_ctrl', 'RT_neck_ctrl']

@@ -13,6 +13,7 @@ import rigger.utils.xform as xform
 def savePlacementGrpToDict(pGrp):
     '''
     returns dictionary with all information about a pGrp
+    (just loc xforms for now)
     {pLoc : (xform, bindType),
      attr : values, attrType}
     '''
@@ -22,14 +23,17 @@ def savePlacementGrpToDict(pGrp):
     
     for eachLoc in allLocs:
         xform = eachLoc.getMatrix(worldSpace=True)
-        placementDict[eachLoc.name()] = xform.formated(), eachLoc.bindType.get()
-        
-    allAttrs = pGrp.listAttr(ud=True)
-    
-    for eachAttr in allAttrs:
-        placementDict[eachAttr.attrName()] = eachAttr.get(), eachAttr.type()
+        placementDict[eachLoc.name()] = xform
     
     return placementDict
+
+def setPlacementGrpFromDict(pGrp, pDict):
+    '''
+    '''
+    allLocs = [loc for loc in pGrp.getChildren()]
+    for eachLoc in allLocs:
+        if eachLoc.name() in pDict.keys():
+            eachLoc.setMatrix(pDict[eachLoc.name()], worldSpace=True)
 
 def savePlacementDictToJSON(pDict, jsonPath):
     '''
