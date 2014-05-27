@@ -14,7 +14,8 @@ reload(data)
 import utils.wrappers.abRiggingTools as abRT
 import rigger.lib.controls as ctls
 reload(ctls)
-
+import rigger.modules.priCtl as priCtl
+reload(priCtl)
 from ngSkinTools.mllInterface import MllInterface
 
 mel = pm.language.Mel()
@@ -1168,82 +1169,66 @@ def addFleshyEye():
     #===========================================================================
     eye_pivot = pm.PyNode('LT_eyeball_bnd')
     eye_ctl = pm.PyNode('LT_eye_ctl')
-    eye_ctl.addAttr('autoFleshy', at='float', k=True, min=0, max=1)
+    eye_ctl.addAttr('autoFleshy', at='float', k=True, min=0, max=1, dv=1)
 
     # upper
-    ctl = pm.PyNode('LT_eyelid_upper_ctrl')
-    attr_keys = {'ty': {0:0.05, 0.25:0, 0.8:0, 1:0.05}}
-    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    ctl = pm.PyNode('LT_eyelid_upper_pri_ctrl')
+    attr_keys = {'ty': {0:0.05, 0.25:0, 0.5:-0.04, 0.8:0, 1:0.05},
+                 'rz': {0:0, 0.2:-0.5, 0.4:0, 0.6:0, 0.8:0.5, 1:0}}
+    addFleshyEyeToPriCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
     
     # lower
-    ctl = pm.PyNode('LT_eyelid_lower_ctrl')
-    attr_keys = {'ty': {0.35:0, 0.5:-0.05, 0.75:0}}
-    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
-    
-    # upper inner
-    ctl = pm.PyNode('LT_eyelid_inner_upper_ctrl')
-    attr_keys = {'ty': {0:0,0.2:0.012, 0.3:0},
-                'tx': {0:0,0.2:-0.012, 0.3:0}}
-    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
-    
-    # upper outer
-    ctl = pm.PyNode('LT_eyelid_outer_upper_ctrl')
-    attr_keys = {'ty': {0.75:0, 0.8:0.012, 1:0},
-                'tx': {0.75:0, 0.8:0.012, 1:0}}
-    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
-    
-    # lower inner
-    ctl = pm.PyNode('LT_eyelid_inner_lower_ctrl')
-    attr_keys = {'ty': {0.3:0, 0.35:-0.012, 0.5:0},
-                'tx': {0.3:0, 0.35:-0.012, 0.5:0}}
-    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
-    
-    # lower outer
-    ctl = pm.PyNode('LT_eyelid_outer_lower_ctrl')
-    attr_keys = {'ty': {0.5:0, 0.65:-0.012, 0.75:0},
-                'tx': {0.5:0, 0.65:0.012, 0.75:0}}
-    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    ctl = pm.PyNode('LT_eyelid_lower_pri_ctrl')
+    attr_keys = {'ty': {0:0.02, 0.3:0, 0.5:-0.03, 0.75:0, 1:0.02},
+                 'rz': {0.2:0, 0.35:0.25, 0.5:0, 0.7:-0.25, 0.85:0}}
+    addFleshyEyeToPriCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
     
     #===========================================================================
     # Right side
     #===========================================================================
     eye_pivot = pm.PyNode('RT_eyeball_bnd')
     eye_ctl = pm.PyNode('RT_eye_ctl')
-    eye_ctl.addAttr('autoFleshy', at='float', k=True, min=0, max=1)
-    
+    eye_ctl.addAttr('autoFleshy', at='float', k=True, min=0, max=1, dv=1)
+
     # upper
-    ctl = pm.PyNode('RT_eyelid_upper_ctrl')
-    attr_keys = {'ty': {0:0.05, 0.2:0, 0.75:0, 1:0.05}}
-    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    ctl = pm.PyNode('RT_eyelid_upper_pri_ctrl')
+    attr_keys = {'ty': {0:0.05, 0.8:0, 0.5:-0.04, 0.25:0, 1:0.05},
+                 'rz': {0:0, 0.8:0.5, 0.6:0, 0.4:0, 0.2:-0.5, 1:0}}
+    addFleshyEyeToPriCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
     
     # lower
-    ctl = pm.PyNode('RT_eyelid_lower_ctrl')
-    attr_keys = {'ty': {0.3:0, 0.5:-0.05, 0.65:0}}
-    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    ctl = pm.PyNode('RT_eyelid_lower_pri_ctrl')
+    attr_keys = {'ty': {0:0.02, 0.75:0, 0.5:-0.03, 0.3:0, 1:0.02},
+                 'rz': {0.85:0, 0.7:-0.25, 0.5:0, 0.35:0.25, 0.2:0}}
+    addFleshyEyeToPriCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
     
-    # upper inner
-    ctl = pm.PyNode('RT_eyelid_inner_upper_ctrl')
-    attr_keys = {'ty': {1:0, 0.8:0.012, 0.7:0},
-                'tx': {1:0, 0.8:0.012, 0.7:0}}
-    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+
+def addFleshyEyeToPriCtl(ctl, eye_pivot, attr_keys, auto_attr):
+    '''
+    eye_pivot is an xfo with radialPoseReader setup
+    eye_pivot = pm.PyNode('RT_eyeball_bnd')
+    import rigger.modules.poseReader as preader
+    reload(preader)
+    preader.radial_pose_reader(eye_pivot)
     
-    # upper outer
-    ctl = pm.PyNode('RT_eyelid_outer_upper_ctrl')
-    attr_keys = {'ty': {0.25:0, 0.2:0.012, 0:0},
-                'tx': {0.25:0, 0.2:-0.012, 0:0}}
-    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    ctl = pm.PyNode('LT_eyelid_upper_ctrl')
     
-    # lower inner
-    ctl = pm.PyNode('RT_eyelid_inner_lower_ctrl')
-    attr_keys = {'ty': {0.5:0, 0.65:-0.012, 0.7:0},
-                'tx': {0.5:0, 0.65:0.012, 0.7:0}}
-    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    attr_keys: {'tx': {param:float}}
+    '''
+    auto = priCtl.addOffset(ctl, 'parent', '_fleshyAuto')
     
-    # lower outer
-    ctl = pm.PyNode('RT_eyelid_outer_lower_ctrl')
-    attr_keys = {'ty': {0.25:0, 0.35:-0.012, 0.5:0},
-                'tx': {0.25:0, 0.35:-0.012, 0.5:0}}
-    addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    # connect param to autos
+    for attr, keys in attr_keys.items():
+        # modulate by vectorAngle
+        mdl = pm.createNode('multDoubleLinear', n=ctl+'_fleshy_mdl_'+attr)
+        eye_pivot.vectorAngle >> mdl.input1
+        # modulate by autoFleshy
+        mdl2 = pm.createNode('multDoubleLinear', n=ctl+'_fleshyAuto_mdl_'+attr)
+        mdl.output >> mdl2.input1
+        auto_attr >> mdl2.input2
+    
+        rt.connectSDK(eye_pivot.paramNormalized, mdl.input2, keys)
+        mdl2.output >> auto.attr(attr)
     
 def addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, auto_attr):
     '''

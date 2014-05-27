@@ -27,7 +27,7 @@ pGrp = pm.PyNode('CT_placement_grp')
 mesh = pm.PyNode(pGrp.mouthLipsLoop.get()[0]).node()
 
 #------------------------------------------------------------------------------ 
-# Loop locs
+#--------------------------------------------------------------------- LOOP LOCS
 placementGrp.previewLoop(pGrp, 'leftEyelidLoop')
 
 cvMapping = {'LT_eyelid_inner': 19,
@@ -56,11 +56,11 @@ cvMapping = {'CT_upper_lip': 29,
 placementGrp.addLoopPlacements(pGrp, 'mouthLipsLoop', cvMapping)
 
 #------------------------------------------------------------------------------ 
-# Indirect locs
+#----------------------------------------------------------------- INDIRECT LOCS
 placementGrp.addIndirectPlacements(pGrp)
 
 #------------------------------------------------------------------------------ 
-# Align new locs
+#---------------------------------------------------------------- ALIGN NEW LOCS
 # Eyelids
 face.orientLoopTransforms([nt.Transform(u'LT_eyelid_outer_pLoc'), 
                            nt.Transform(u'LT_eyelid_outer_upper_pLoc'), 
@@ -91,42 +91,7 @@ face.orientLoopTransforms([nt.Transform(u'LT_corner_lip_pLoc'),
                            nt.Transform(u'CT_lower_lip_pLoc')], (-1, 0, 0))
 
 # Align for sliding
-slidingBnds = [nt.Transform(u'LT_in_forehead_pLoc'),
-                 nt.Transform(u'LT_out_forehead_pLoc'),
-                 nt.Transform(u'LT_in_low_forehead_pLoc'),
-                 nt.Transform(u'LT_out_low_forehead_pLoc'),
-                 nt.Transform(u'LT_in_brow_pLoc'),
-                 nt.Transform(u'LT_mid_brow_pLoc'),
-                 nt.Transform(u'LT_out_brow_pLoc'),
-                 nt.Transform(u'LT_temple_pLoc'),
-                 nt.Transform(u'CT_brow_pLoc'),
-                 nt.Transform(u'LT_up_jaw_pLoc'),
-                 nt.Transform(u'LT_low_temple_pLoc'),
-                 nt.Transform(u'LT_out_cheek_pLoc'),
-                 nt.Transform(u'LT_squint_pLoc'),
-                 nt.Transform(u'LT_low_crease_pLoc'),
-                 nt.Transform(u'LT_cheek_pLoc'),
-                 nt.Transform(u'LT_corner_jaw_pLoc'),
-                 nt.Transform(u'LT_low_jaw_pLoc'),
-                 nt.Transform(u'LT_mid_crease_pLoc'),
-                 nt.Transform(u'LT_up_cheek_pLoc'),
-                 nt.Transform(u'LT_sneer_pLoc'),
-                 nt.Transform(u'LT_philtrum_pLoc'),
-                 nt.Transform(u'LT_in_philtrum_pLoc'),
-                 nt.Transform(u'LT_up_crease_pLoc'),
-                 nt.Transform(u'LT_in_cheek_pLoc'),
-                 nt.Transform(u'LT_chin_pLoc'),
-                 nt.Transform(u'CT_chin_pLoc'),
-                 nt.Transform(u'CT_mid_chin_pLoc'),
-                 nt.Transform(u'LT_mid_chin_pLoc'),
-                 nt.Transform(u'CT_neck_pLoc'),
-                 nt.Transform(u'LT_neck_pLoc'),
-                 nt.Transform(u'LT_corner_jaw_pLoc'),
-                 nt.Transform(u'LT_low_jaw_pLoc'),
-                 nt.Transform(u'LT_chin_pLoc'),
-                 nt.Transform(u'CT_chin_pLoc'),
-                 nt.Transform(u'LT_low_cheek_pLoc')]
-
+slidingBnds = data.slidingBnds
 for eachBnd in slidingBnds:
     rt.alignTransformToMesh(eachBnd, mesh, method='sliding')
 
@@ -154,14 +119,14 @@ priCtls = face.buildPrimaryControlSystem()
 perimeterGrp = face.addPerimeterBndSystem(mesh)
 mll = face.createSkinLayers(mesh)
 
-# set primary ctl weights
+#------------------------------------------------------- SET PRIMARY CTL WEIGHTS
 # all weights from facerigB_v010
 
 allWeights = data.priCtlBndWeights
 for attr, val in allWeights.items():
     pm.Attribute(attr).set(val)
 
-# rig cleanup
+#------------------------------------------------------------------- RIG CLEANUP
 face.cleanFaceRig()
 
 # smooth necessary layers
@@ -175,14 +140,14 @@ face.selectVertsClosestToBnds(mll) # use this as a mask while smoothing
 # mathilda_facerigB_v008.ma
 #===============================================================================
 
-# add left eye deformer
+#--------------------------------------------------------- ADD LEFT EYE DEFORMER
 edgeLoop = [pm.PyNode(edge) for edge in pGrp.leftEyelidLoop.get()]
 eyePivot = pm.PyNode('LT_eyeball_geo')
 rigidLoops = 2
 falloffLoops = 4
 eye.buildEyeRigCmd('LT_eye', eyePivot, edgeLoop, rigidLoops, falloffLoops)
 
-# right eye deformer
+#---------------------------------------------------------- RIGHT EYE DEFORMER
 symTable = sym.buildSymTable('CT_face_geo')
 pm.select(edgeLoop)
 mel.ConvertSelectionToVertices()
@@ -196,18 +161,74 @@ eye.buildEyeRigCmd('RT_eye', eyePivot, edgeLoop, rigidLoops, falloffLoops)
 weights.setEyelidLoopWeights('LT')
 weights.setEyelidLoopWeights('RT')
 
-# eyeball rig (simple aim constraints)
+#------------------------------------------ EYEBALL RIG (SIMPLE AIM CONSTRAINTS)
 eye.buildEyeballRig()
 eye.addEyeAim(prefix='LT_', distance=25)
 eye.addEyeAim(prefix='RT_', distance=25)
 
-# sticky lips
-s = sticky.Sticky(up_bnd=pm.PyNode('CT_upper_lip_bnd'), low_bnd=pm.PyNode('CT_lower_lip_bnd'), center=pm.PyNode('CT_jaw_pri_ctrl'))
-s = sticky.Sticky(up_bnd=pm.PyNode('LT_upper_side_lip_bnd'), low_bnd=pm.PyNode('LT_lower_side_lip_bnd'), center=pm.PyNode('CT_jaw_pri_ctrl'))
-s = sticky.Sticky(up_bnd=pm.PyNode('LT_upper_sneer_lip_bnd'), low_bnd=pm.PyNode('LT_lower_sneer_lip_bnd'), center=pm.PyNode('CT_jaw_pri_ctrl'))
-s = sticky.Sticky(up_bnd=pm.PyNode('LT_upper_pinch_lip_bnd'), low_bnd=pm.PyNode('LT_lower_pinch_lip_bnd'), center=pm.PyNode('CT_jaw_pri_ctrl'))
-s = sticky.Sticky(up_bnd=pm.PyNode('RT_upper_side_lip_bnd'), low_bnd=pm.PyNode('RT_lower_side_lip_bnd'), center=pm.PyNode('CT_jaw_pri_ctrl'))
-s = sticky.Sticky(up_bnd=pm.PyNode('RT_upper_sneer_lip_bnd'), low_bnd=pm.PyNode('RT_lower_sneer_lip_bnd'), center=pm.PyNode('CT_jaw_pri_ctrl'))
-s = sticky.Sticky(up_bnd=pm.PyNode('RT_upper_pinch_lip_bnd'), low_bnd=pm.PyNode('RT_lower_pinch_lip_bnd'), center=pm.PyNode('CT_jaw_pri_ctrl'))
+#----------------------------------------------------------------- STICKY LIPS
+sticky.Sticky(up_bnd=pm.PyNode('CT_upper_lip_bnd'), 
+                  low_bnd=pm.PyNode('CT_lower_lip_bnd'), 
+                  center=pm.PyNode('CT_jaw_pri_ctrl'))
+sticky.Sticky(up_bnd=pm.PyNode('LT_upper_side_lip_bnd'), 
+                  low_bnd=pm.PyNode('LT_lower_side_lip_bnd'), 
+                  center=pm.PyNode('CT_jaw_pri_ctrl'))
+sticky.Sticky(up_bnd=pm.PyNode('LT_upper_sneer_lip_bnd'), 
+                  low_bnd=pm.PyNode('LT_lower_sneer_lip_bnd'), 
+                  center=pm.PyNode('CT_jaw_pri_ctrl'))
+sticky.Sticky(up_bnd=pm.PyNode('LT_upper_pinch_lip_bnd'), 
+                  low_bnd=pm.PyNode('LT_lower_pinch_lip_bnd'), 
+                  center=pm.PyNode('CT_jaw_pri_ctrl'))
+sticky.Sticky(up_bnd=pm.PyNode('RT_upper_side_lip_bnd'), 
+                  low_bnd=pm.PyNode('RT_lower_side_lip_bnd'), 
+                  center=pm.PyNode('CT_jaw_pri_ctrl'))
+sticky.Sticky(up_bnd=pm.PyNode('RT_upper_sneer_lip_bnd'), 
+                  low_bnd=pm.PyNode('RT_lower_sneer_lip_bnd'), 
+                  center=pm.PyNode('CT_jaw_pri_ctrl'))
+sticky.Sticky(up_bnd=pm.PyNode('RT_upper_pinch_lip_bnd'), 
+                  low_bnd=pm.PyNode('RT_lower_pinch_lip_bnd'), 
+                  center=pm.PyNode('CT_jaw_pri_ctrl'))
 
 sticky.addStickyToFRS()
+
+#------------------------------------------------------------------ AUTO EYELIDS
+# create pose reader on eye joint
+import rigger.modules.poseReader as poseReader
+reload(poseReader)
+xfo = pm.PyNode('LT_eyeball_bnd')
+poseReader.radial_pose_reader(xfo)
+xfo = pm.PyNode('RT_eyeball_bnd')
+poseReader.radial_pose_reader(xfo)
+eye.addFleshyEye()
+# adjust sdk tangents
+
+#------------------------------------------------------------------- MOUTH MOVER
+# create offset for mouth pri control
+import rigger.modules.priCtl as priCtl
+reload(priCtl)
+pCtl = pm.PyNode('CT_mouthMover_pri_ctrl')
+offsetGrp = priCtl.addOffset(pCtl, 'child', '_autoRotate')
+rt.connectSDK(pCtl.tx, offsetGrp.ry, {-1:-15, 0:0, 1:15})
+rt.connectSDK(pCtl.tx, offsetGrp.rz, {-1:-15, 0:0, 1:15})
+rt.connectSDK(pCtl.tx, offsetGrp.tz, {-1:0.25, 0:0, 1:0.25})
+
+#------------------------------------------------------------ EYE SQUASH LATTICE
+import rigger.modules.eyeLattice as eyeLattice
+reload(eyeLattice)
+eyeGeos = [nt.Transform(u'LT_eyeball_geo'), 
+           nt.Transform(u'RT_eyeball_geo')]
+faceGeos = [nt.Mesh(u'LT_eyeIris_geoShape'),
+            nt.Mesh(u'RT_eyeIris_geoShape'),
+            nt.Mesh(u'LT_eyeLash_geoShape'),
+            nt.Mesh(u'RT_eyeLash_geoShape'),
+            nt.Mesh(u'CT_face_geoShape')]
+latticeGrp = eyeLattice.createLattice(eyeGeos, faceGeos)
+
+# set latticeGrp xform
+from pymel.core.datatypes import Matrix
+latticeGrpXform = Matrix([[1.31887392826, 0.0, 0.0, 0.0],
+                            [0.0, 2.05176168568, 0.0, 0.0],
+                            [0.0, 0.0, 2.44573893765, 0.0],
+                            [0.00162200337874, -111.225338771, -5.69868431046, 1.0]])
+latticeGrp.setMatrix(latticeGrpXform, worldSpace=True)
+eyeLattice.createLatticeControls()

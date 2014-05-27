@@ -100,7 +100,9 @@ def addStickyToFRS():
     jaw_ctl.rightSealHeight >> ct_avg_pma.input3D[1].i3x
     ct_avg_pma.output3D.o3x >> ct_stick.midVal
     
-    
+    pm.group(lf_pinch, lf_side, lf_sneer,
+             rt_pinch, rt_side, rt_sneer,
+             ct_stick, n='CT_stickylips_grp')
 
 class Sticky():
     

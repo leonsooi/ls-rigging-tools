@@ -6,7 +6,7 @@ Created on May 12, 2014
 import pymel.core as pm
 
 
-def radial_pose_reader(xfo, dir=(0,0,1), targetAxis=(0,0,1)):
+def radial_pose_reader(xfo, aimAxis=(0,0,1), targetAxis=(0,0,1)):
     '''
     '''
     xfo.addAttr('vectorAngle', k=True, at='float')
@@ -15,14 +15,14 @@ def radial_pose_reader(xfo, dir=(0,0,1), targetAxis=(0,0,1)):
     
     # vector product gets xfo's direction vector
     vpd = pm.createNode('vectorProduct', n=xfo+'_radPosReader_vpd')
-    vpd.input1.set(dir)
+    vpd.input1.set(aimAxis)
     vpd.operation.set(3)
-    xfo.matrix >> vpd.matrix
+    xfo.worldMatrix >> vpd.matrix
     
     # angle between direction vector and target axis
     abt = pm.createNode('angleBetween', n=xfo+'_radPosReader_abt')
     vpd.output >> abt.vector1
-    abt.vector2.set(dir)
+    abt.vector2.set(aimAxis)
     abt.angle >> xfo.vectorAngle
     
     # make nurbs circle to calculate direction
