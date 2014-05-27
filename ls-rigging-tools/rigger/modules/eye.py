@@ -769,6 +769,8 @@ def updateConnections(masterGrp, upperAngle, lowerAngle):
     masterGrp.lowerClosed.set(midLowerAngle-midUpperAngle)
     masterGrp.lowerOverclosed.set(midLowerAngle-(3.0*midUpperAngle/2.0))
 
+import rigger.modules.localReader as localReader
+reload(localReader)
 def buildEyeballRig():
     '''
     '''
@@ -787,7 +789,9 @@ def buildEyeballRig():
     pm.skinCluster(bnd, eyeball)
     
     ctl = pm.PyNode('LT_eye_ctl')
-    pm.aimConstraint(ctl, bndGrp, aim=(0,0,1), mo=True)
+    ctg = ctl.getParent()
+    reader = localReader.create(bndGrp, ctg)
+    pm.aimConstraint(ctl, reader, aim=(0,0,1), mo=True)
     
     # right eyeball
     pm.select(cl=True)
@@ -802,7 +806,9 @@ def buildEyeballRig():
     pm.skinCluster(bnd, eyeball)
     
     ctl = pm.PyNode('RT_eye_ctl')
-    pm.aimConstraint(ctl, bndGrp, aim=(0,0,1), mo=True)
+    ctg = ctl.getParent()
+    reader = localReader.create(bndGrp, ctg)
+    pm.aimConstraint(ctl, reader, aim=(0,0,1), mo=True)
     
 
 """    
@@ -1155,6 +1161,10 @@ def addEyeAim(prefix='LT_', distance=1):
     eye_aim_grp | eye_hm
     
     pm.aimConstraint(eye_aim_loc, eye_aim_grp, aim=(0,0,1), mo=True, wut=2, wu=(0,1,0), wuo=eye_aim_loc)
+    
+    # move localReader to above the aim_grp
+    localReader = pm.PyNode(prefix+'eyeball_grp_localReaderHm')
+    eye_aim_hm | localReader
 
 def addFleshyEye():
     '''

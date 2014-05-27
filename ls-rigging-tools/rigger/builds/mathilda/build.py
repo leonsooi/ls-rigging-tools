@@ -231,4 +231,32 @@ latticeGrpXform = Matrix([[1.31887392826, 0.0, 0.0, 0.0],
                             [0.0, 0.0, 2.44573893765, 0.0],
                             [0.00162200337874, -111.225338771, -5.69868431046, 1.0]])
 latticeGrp.setMatrix(latticeGrpXform, worldSpace=True)
-eyeLattice.createLatticeControls()
+eyeShaperCtg = eyeLattice.createLatticeControls()
+nt.Transform(u'CT_face_ctrl') | eyeShaperCtg
+
+#--------------------------------------------------------- PUPIL AND IRIS DILATE
+import rigger.modules.dilate as dilate
+reload(dilate)
+
+# left iris
+geo = nt.Mesh(u'LT_eyeball_geoShape')
+tipGeo = geo.vtx[381]
+ctl = nt.Transform(u'LT_eye_ctl')
+name = '_iris'
+keys = {'sx': {0.01:0.01, 1:1, 2:2},
+        'sy': {0.01:0.01, 1:1, 2:2},
+        'sz': {0.01:0.01, 1:1, 2:3.75}}
+weights = [1, 1, 1, 1, 1, .95, 0.58, 0.3, .15, .06]
+addGeos = [nt.Mesh(u'LT_eyeIris_geoShape')]
+dilate.create(ctl, tipGeo, weights, name, keys, addGeos, True)
+
+# left pupil
+geo = nt.Mesh(u'LT_eyeIris_geoShape')
+tipGeo = geo.vtx[40]
+ctl = nt.Transform(u'LT_eye_ctl')
+name = '_pupil'
+keys = {'sx': {0.01:0.01, 1:1, 2:2},
+        'sy': {0.01:0.01, 1:1, 2:2},
+        'sz': {0.01:0.01, 1:1, 2:2}}
+weights = [1, 1, 0.25]
+dilate.create(ctl, tipGeo, weights, name, keys)

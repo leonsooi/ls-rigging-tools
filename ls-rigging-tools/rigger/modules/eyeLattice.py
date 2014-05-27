@@ -6,6 +6,9 @@ Created on May 26, 2014
 import pymel.core as pm
 import pymel.core.nodetypes as nt
 import pymel.core.datatypes as dt
+import rigger.lib.controls as controls
+import rigger.modules.localReader as localReader
+reload(localReader)
 
 def createLattice(eyeGeos, faceGeos):
     '''
@@ -59,7 +62,10 @@ def createLatticeControls():
     clusters = {}
     dfg = pm.group(em=True, n='CT_eyeLatticeClusters_dfg')
     for name, components in deformPoints.items():
-        dfm, hdl = pm.cluster(components[1], n=name+'_cluster_dfm')
+        dfm, hdl = pm.cluster(components[1], n=name+'_cluster_dfm', relative=True)
+        # above: use relative - the cluster handles will be parented with the face/head control
+        # so parentConstraint will only drive offset values to the handles
+        # so we'll make sure to only use the local offset values
         dfm.setGeometry(components[0])
         dfg | hdl
         clusters[name] = dfm, hdl
@@ -67,6 +73,7 @@ def createLatticeControls():
     # create controls
     controlZOffset = -2.3
     childEyeShapers = []
+    localReadersGrp = pm.group(em=True, n='CT_eyeLatticeClusters_localReadersGrp')
     for name, (dfm, hdl) in clusters.items():
         pt = hdl.getRotatePivot(space='world')
         pt = dt.Point(pt + (0, 0, controlZOffset))
@@ -82,8 +89,16 @@ def createLatticeControls():
         # scale transform
         ctl[0].sy.set(0.333)
         pm.makeIdentity(ctl[0], s=True, a=True)
-        # parent constraint cluster
-        pm.parentConstraint(ctl[0], hdl, mo=True)
+        # color shape
+        if 'LT_' in name:
+            controls.setColor(ctl[0], 18)
+        elif 'RT_' in name:
+            controls.setColor(ctl[0], 20)
+        else:
+            pm.warning('unknown side %s' % name)
+        # parent constraint cluster (using matrices)
+        reader = localReader.create(hdl, localReadersGrp)
+        pm.parentConstraint(ctl[0], reader, mo=True)
         childEyeShapers.append(cth)
         
     # control parents
@@ -105,9 +120,19 @@ def createLatticeControls():
         # scale transform
         ctl[0].sy.set(0.1)
         pm.makeIdentity(ctl[0], s=True, a=True)
+        # color shape
+        if 'LT_' in parentCtlName:
+            controls.setColor(ctl[0], 18)
+        elif 'RT_' in parentCtlName:
+            controls.setColor(ctl[0], 20)
+        else:
+            pm.warning('unknown side %s' % name)
         # parent other controls
         children = [n for n in childEyeShapers if parentCtlName in n.name()]
         pm.parent(children, ctl[0])
         parentEyeShapers.append(cth)
-    print parentEyeShapers
-    eyeShaperCtg = pm.group(parentEyeShapers, n='CT_eyeLatticeControls_ctg')
+        
+    # group both controls and clusters under the CTG,
+    # so cluster will only use local offsets
+    eyeShaperCtg = pm.group(parentEyeShapers, localReadersGrp, n='CT_eyeLatticeControls_ctg')
+    return eyeShaperCtg

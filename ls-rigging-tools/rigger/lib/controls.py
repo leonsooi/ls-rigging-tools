@@ -7,6 +7,16 @@ Created on Jan 5, 2014
 import maya.cmds as mc
 from cgm.lib import curves
 
+def setColor(ctl, colorId):
+    '''
+    ctl - ctl transform (will find shape)
+    colorTable - {'token':colorId}
+    '''
+    ctlShapes = ctl.getChildren(type='shape')
+    for ctlShape in ctlShapes:
+        ctlShape.overrideEnabled.set(True)
+        ctlShape.overrideColor.set(colorId)
+
 def createControl(controlType=None, color=0):
     '''
     controlType (string) - eyeball, uppereyelid, lowereyelid
