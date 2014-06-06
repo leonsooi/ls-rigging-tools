@@ -212,6 +212,16 @@ rt.connectSDK(pCtl.tx, offsetGrp.ry, {-1:-15, 0:0, 1:15})
 rt.connectSDK(pCtl.tx, offsetGrp.rz, {-1:-15, 0:0, 1:15})
 rt.connectSDK(pCtl.tx, offsetGrp.tz, {-1:0.25, 0:0, 1:0.25})
 
+# create offset for cheek pri ctrl
+pCtl = pm.PyNode('LT_cheek_pri_ctrl')
+offsetGrp = priCtl.addOffset(pCtl, 'child', '_autoVolume')
+rt.connectSDK(pCtl.ty, offsetGrp.tz, {-1:-0.25, 0:0, 1:0.5})
+
+# create offset for cheek pri ctrl
+pCtl = pm.PyNode('RT_cheek_pri_ctrl')
+offsetGrp = priCtl.addOffset(pCtl, 'child', '_autoVolume')
+rt.connectSDK(pCtl.ty, offsetGrp.tz, {-1:-0.25, 0:0, 1:0.5})
+
 #------------------------------------------------------------ EYE SQUASH LATTICE
 import rigger.modules.eyeLattice as eyeLattice
 reload(eyeLattice)
@@ -255,6 +265,29 @@ geo = nt.Mesh(u'LT_eyeIris_geoShape')
 tipGeo = geo.vtx[40]
 ctl = nt.Transform(u'LT_eye_ctl')
 name = '_pupil'
+keys = {'sx': {0.01:0.01, 1:1, 2:2},
+        'sy': {0.01:0.01, 1:1, 2:2},
+        'sz': {0.01:0.01, 1:1, 2:2}}
+weights = [1, 1, 0.25]
+dilate.create(ctl, tipGeo, weights, name, keys)
+
+# right iris
+geo = nt.Mesh(u'RT_eyeball_geoShape')
+tipGeo = geo.vtx[381]
+ctl = nt.Transform(u'RT_eye_ctl')
+name = '_iris'
+keys = {'sx': {0.01:0.01, 1:1, 2:2},
+        'sy': {0.01:0.01, 1:1, 2:2},
+        'sz': {0.01:0.01, 1:1, 2:3.75}}
+weights = [1, 1, 1, 1, 1, .95, 0.58, 0.3, .15, .06]
+addGeos = [nt.Mesh(u'RT_eyeIris_geoShape')]
+dilate.create(ctl, tipGeo, weights, name, keys, addGeos, True)
+
+# right pupil
+geo = nt.Mesh(u'RT_eyeIris_geoShape')
+tipGeo = geo.vtx[40]
+ctl = nt.Transform(u'RT_eye_ctl')
+name = '_pupil' 
 keys = {'sx': {0.01:0.01, 1:1, 2:2},
         'sy': {0.01:0.01, 1:1, 2:2},
         'sz': {0.01:0.01, 1:1, 2:2}}
