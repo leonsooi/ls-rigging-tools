@@ -165,6 +165,10 @@ weights.setEyelidLoopWeights('RT')
 eye.buildEyeballRig()
 eye.addEyeAim(prefix='LT_', distance=25)
 eye.addEyeAim(prefix='RT_', distance=25)
+# BUG - version F_v003:
+# eyes will flip if head ctrl is rotated. this is because Y axis is trying to
+# align with world Y. this is fixed manually in v004
+# just make sure that Y axis is aligned to head_ctrl Y axis
 
 #----------------------------------------------------------------- STICKY LIPS
 sticky.Sticky(up_bnd=pm.PyNode('CT_upper_lip_bnd'), 
@@ -293,3 +297,140 @@ keys = {'sx': {0.01:0.01, 1:1, 2:2},
         'sz': {0.01:0.01, 1:1, 2:2}}
 weights = [1, 1, 0.25]
 dilate.create(ctl, tipGeo, weights, name, keys)
+
+#===============================================================================
+# CONNECT CORRECTIVE BSPS
+#===============================================================================
+import rigger.utils.blendshapeBaker as bspBaker
+reload(bspBaker)
+
+# bsp targets should be already created
+
+#------------------------------------------------------------------ lips stretch
+bspGeos = {-0.1: nt.Mesh(u'blendshape:mouth_lfcorner_move_inShape'),
+            0.1: nt.Mesh(u'blendshape:mouth_lfcorner_move_outShape')}
+
+bspBaker.connectBsp(pm.PyNode('LT_corner_lip_pri_ctrl.tx'),
+                    pm.PyNode('blendShapeCt_face_geo.lipStretch_Lf'),
+                    nt.Mesh(u'CT_face_geoShape'),
+                    bspGeos)
+# flip bspGeos using abSymMesh, just re-use the same dict
+bspBaker.connectBsp(pm.PyNode('RT_corner_lip_pri_ctrl.tx'),
+                    pm.PyNode('blendShapeCt_face_geo.lipStretch_Rt'),
+                    nt.Mesh(u'CT_face_geoShape'),
+                    bspGeos)
+
+#-------------------------------------------------------------- lips smile frown
+bspGeos = {-0.1: nt.Mesh(u'blendshape:mouth_lfcorner_move_downShape'),
+            0.1: nt.Mesh(u'blendshape:mouth_lfcorner_move_upShape')}
+
+keys = bspBaker.connectBsp(pm.PyNode('LT_corner_lip_pri_ctrl.ty'),
+                    pm.PyNode('blendShapeCt_face_geo.lipSmileFrown_Lf'),
+                    nt.Mesh(u'CT_face_geoShape'),
+                    bspGeos)
+                    
+# flip bspGeos using abSymMesh, just re-use the same dict
+bspBaker.connectBsp(pm.PyNode('RT_corner_lip_pri_ctrl.ty'),
+                    pm.PyNode('blendShapeCt_face_geo.lipSmileFrown_Rt'),
+                    nt.Mesh(u'CT_face_geoShape'),
+                    bspGeos)
+
+#--------------------------------------------------------------------- brow down
+bspGeos = {0.1: nt.Mesh(u'LT_brow_downShape')}
+
+keys = bspBaker.connectBsp(pm.PyNode('LT_mid_brow_pri_ctrl.ty'),
+                    pm.PyNode('blendShapeCt_face_geo.browDown_Lf'),
+                    nt.Mesh(u'CT_face_geoShape'),
+                    bspGeos)
+                    
+bspGeos = {0.1: nt.Mesh(u'RT_brow_downShape')}                   
+bspBaker.connectBsp(pm.PyNode('RT_mid_brow_pri_ctrl.ty'),
+                    pm.PyNode('blendShapeCt_face_geo.browDown_Rt'),
+                    nt.Mesh(u'CT_face_geoShape'),
+                    bspGeos)
+# also limit TY for center brow
+
+#------------------------------------------------------------------ brow squeeze
+rt.connectSDK(pm.PyNode('LT_mid_brow_pri_ctrl.tx'),
+                        pm.PyNode('blendShapeCt_face_geo.browSqueeze_Lf'),
+                        {0:0, -0.9:0.1})
+                        
+rt.connectSDK(pm.PyNode('RT_mid_brow_pri_ctrl.tx'),
+                        pm.PyNode('blendShapeCt_face_geo.browSqueeze_Rt'),
+                        {0:0, 0.9:0.1})
+
+#------------------------------------------------------------------- mouth mover
+rt.connectSDK(pm.PyNode('CT_mouthMover_pri_ctrl.tx'),
+                        pm.PyNode('blendShapeCt_face_geo.mouthMove_Ct'),
+                        {0:0, 1.045:0.1, -1.045:-0.1})
+
+#------------------------------------------------------------------------- sneer
+bspGeos = {0.1: nt.Mesh(u'blendshape:lf_nose_upShape')}
+
+keys = bspBaker.connectBsp(pm.PyNode('LT_nostril_ctrl.ty'),
+                    pm.PyNode('blendShapeCt_face_geo.sneer_Lf'),
+                    nt.Mesh(u'CT_face_geoShape'),
+                    bspGeos)
+                
+# flip bspGeos using abSymMesh, just re-use the same dict
+bspBaker.connectBsp(pm.PyNode('RT_nostril_ctrl.ty'),
+                    pm.PyNode('blendShapeCt_face_geo.sneer_Rt'),
+                    nt.Mesh(u'CT_face_geoShape'),
+                    bspGeos)
+
+#-------------------------------------------------------------------- cheek puff
+bspGeos = {-0.1: nt.Mesh(u'blendshape:lf_face_shrinkShape'),
+            0.1: nt.Mesh(u'blendshape:lf_face_inflateShape')}
+
+bspBaker.connectBsp(pm.PyNode('LT_low_cheek_ctrl.tz'),
+                    pm.PyNode('blendShapeCt_face_geo.cheekPuff_Lf'),
+                    nt.Mesh(u'CT_face_geoShape'),
+                    bspGeos)
+# flip bspGeos using abSymMesh, just re-use the same dict
+bspBaker.connectBsp(pm.PyNode('RT_low_cheek_ctrl.tz'),
+                    pm.PyNode('blendShapeCt_face_geo.cheekPuff_Rt'),
+                    nt.Mesh(u'CT_face_geoShape'),
+                    bspGeos)
+
+# also drive ctls by bsp
+ctls = [nt.Transform(u'LT_upper_sneer_lip_pri_ctrl'),
+        nt.Transform(u'LT_lower_pinch_lip_ctrl'),
+        nt.Transform(u'LT_upper_pinch_lip_ctrl'),
+        nt.Transform(u'LT_corner_lip_ctrl'),
+        nt.Transform(u'LT_upper_sneer_lip_ctrl'),
+        nt.Transform(u'LT_lower_sneer_lip_ctrl'),
+        nt.Transform(u'LT_lower_sneer_lip_pri_ctrl'),
+        nt.Transform(u'LT_corner_lip_pri_ctrl')]
+bspDriver = pm.PyNode('blendShapeCt_face_geo.cheekPuff_Lf')
+geo = nt.Mesh(u'CT_face_geoShape')
+weights = [0, 0.1]
+bspBaker.connectBspDriver(ctls, bspDriver, geo, weights)
+
+ctls = [nt.Transform(u'RT_lower_pinch_lip_ctrl'),
+        nt.Transform(u'RT_upper_pinch_lip_ctrl'),
+        nt.Transform(u'RT_corner_lip_ctrl'),
+        nt.Transform(u'RT_upper_sneer_lip_ctrl'),
+        nt.Transform(u'RT_lower_sneer_lip_ctrl'),
+        nt.Transform(u'RT_upper_sneer_lip_pri_ctrl'),
+        nt.Transform(u'RT_lower_sneer_lip_pri_ctrl'),
+        nt.Transform(u'RT_corner_lip_pri_ctrl')]
+bspDriver = pm.PyNode('blendShapeCt_face_geo.cheekPuff_Rt')
+geo = nt.Mesh(u'CT_face_geoShape')
+weights = [0, 0.1]
+bspBaker.connectBspDriver(ctls, bspDriver, geo, weights)
+
+#------------------------------------------------------------------ lips curls
+ctl = pm.PyNode('CT_jaw_pri_ctrl')
+ctl.addAttr('leftUpperLipCurl', k=True, min=-1, max=1)
+ctl.addAttr('rightUpperLipCurl', k=True, min=-1, max=1)
+ctl.addAttr('leftLowerLipCurl', k=True, min=-1, max=1)
+ctl.addAttr('rightLowerLipCurl', k=True, min=-1, max=1)
+
+rt.connectSDK(ctl.leftUpperLipCurl, "blendShapeCt_face_geo.upLipCurlOut_Lf", {0:0, 1:0.1})
+rt.connectSDK(ctl.rightUpperLipCurl, "blendShapeCt_face_geo.upLipCurlOut_Rt", {0:0, 1:0.1})
+rt.connectSDK(ctl.leftLowerLipCurl, "blendShapeCt_face_geo.lowLipCurlOut_Lf", {0:0, 1:0.1})
+rt.connectSDK(ctl.rightLowerLipCurl, "blendShapeCt_face_geo.lowLipCurlOut_Rt", {0:0, 1:0.1})
+rt.connectSDK(ctl.leftUpperLipCurl, "blendShapeCt_face_geo.upLipCurlIn_Lf", {0:0, -1:0.1})
+rt.connectSDK(ctl.rightUpperLipCurl, "blendShapeCt_face_geo.upLipCurlIn_Rt", {0:0, -1:0.1})
+rt.connectSDK(ctl.leftLowerLipCurl, "blendShapeCt_face_geo.lowLipCurlIn_Lf", {0:0, -1:0.1})
+rt.connectSDK(ctl.rightLowerLipCurl, "blendShapeCt_face_geo.lowLipCurlIn_Rt", {0:0, -1:0.1})

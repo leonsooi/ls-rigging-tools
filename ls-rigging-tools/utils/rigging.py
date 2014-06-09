@@ -321,19 +321,27 @@ def connectSDK(inPlug, outPlug, keys, name=''):
     
     return AnimCurveUU node
     '''
-    inPlug = str(inPlug)
-    outPlug= str(outPlug)
+    inPlugStr = str(inPlug)
+    outPlugStr = str(outPlug)
     
     if not name:
-        name = outPlug.replace('.', '_') + '_SDK_0'
+        try:
+            alias = outPlug.getAlias()
+        except:
+            alias = None
+        
+        if alias:
+            name = outPlugStr.split('.')[0] + '_' + alias + '_SDK_0'
+        else:
+            name = outPlugStr.replace('.', '_') + '_SDK_0'
     
     node = mc.createNode('animCurveUU', name=name)
 
     for eachKey, eachValue in keys.items():
         mc.setKeyframe(node, f=eachKey, v=eachValue)
         
-    mc.connectAttr(inPlug, node+'.input', f=True)
-    mc.connectAttr(node+'.output', outPlug, f=True)
+    mc.connectAttr(inPlugStr, node+'.input', f=True)
+    mc.connectAttr(node+'.output', outPlugStr, f=True)
     
     return node
     
