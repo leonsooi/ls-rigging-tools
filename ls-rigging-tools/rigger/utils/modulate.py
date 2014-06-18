@@ -10,6 +10,32 @@ import pymel.core.nodetypes as nt
 
 import rigger.utils.symmetry as sym
 
+def multiplyInput(attr, dv, suffix=''):
+    '''
+    '''
+    node = attr.node()
+    node.addAttr(attr.attrName()+'_mult'+suffix, k=True, dv=dv)
+    modAttr = node.attr(attr.attrName()+'_mult'+suffix)
+    
+    try:
+        inPlug = attr.inputs(p=True)[0]
+    except IndexError:
+        # this attr does not have any inputs yet
+        inPlug = None
+    
+    mdl = pm.createNode('multDoubleLinear', 
+                        n=node+'_'+attr.attrName()+'_multInput_mdl'+suffix)
+    
+    if inPlug:
+        inPlug >> mdl.input1
+    else:
+        mdl.input1.set(1)
+        
+    modAttr >> mdl.input2
+    
+    mdl.output >> attr
+    
+
 def modulatePivotWeightOnBnd(ctlAttr, bnds, pivot, keys):
     '''
     '''

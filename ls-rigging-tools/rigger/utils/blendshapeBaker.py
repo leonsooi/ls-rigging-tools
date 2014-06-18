@@ -57,7 +57,10 @@ def connectBsp(driverAttr, drivenAttr, geo, bspGeos, scaleTime=100):
         # save keys as attributes to be used later
         weightStr = str(weight).replace('.','_').replace('-','neg')
         weightAttr = 'bspWeight_' + drivenAttr.getAlias()+ '_' + weightStr
-        driverCtl.addAttr(weightAttr)
+        try:
+            driverCtl.addAttr(weightAttr)
+        except RuntimeError:
+            driverCtl.attr(weightAttr).set(l=False)
         driverCtl.attr(weightAttr).set(offset)
         driverCtl.attr(weightAttr).set(l=True)
         

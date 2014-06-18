@@ -255,7 +255,22 @@ def connectBndsToPriCtlGo():
 def connectBndsToPriCtlCmd(priCtl, bnds):
     for eachBnd in bnds:
         connectBndToPriCtl(eachBnd, priCtl)
+
+def updateBndToPriCtl(bnd, priCtl):
+    '''
+    update bnd's localMatrix inside priCtl's space
+    make sure everything is zeroed out before running
+    '''
+    # bnd's "local" matrix within priCtl
+    bnd_wMat = bnd.getMatrix(ws=True)
+    priCtl_wMat = priCtl.getMatrix(ws=True)
+    bnd_lMat = bnd_wMat * priCtl_wMat.inverse()
     
+    lMatNd = pm.PyNode(bnd.replace('_bnd', '_lMat_in_' + priCtl.nodeName()))
+    for i in range(4):
+        for j in range(4):
+            lMatNd.attr('in%d%d' % (i, j)).set(bnd_lMat[i][j])
+
 def connectBndToPriCtl(bnd, priCtl):
     '''
     bnd = pm.PyNode('lf_nostrilf_bnd')
@@ -526,22 +541,38 @@ def buildPrimaryControlSystem():
     allPriCtls = []
     # eyes
     priCtl = addPrimaryCtlToBnd(pm.PyNode('LT_eyelid_upper_bnd'))
-    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'LT_eyelid_inner_upper_bnd'), nt.Joint(u'LT_eyelid_upper_bnd'), nt.Joint(u'LT_eyelid_outer_upper_bnd')])
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'LT_eyelid_inner_bnd'),
+                                    nt.Joint(u'LT_eyelid_inner_upper_bnd'),
+                                    nt.Joint(u'LT_eyelid_upper_bnd'),
+                                    nt.Joint(u'LT_eyelid_outer_upper_bnd'),
+                                    nt.Joint(u'LT_eyelid_outer_bnd')])
     allPriCtls.append(priCtl)
     
     pm.progressWindow(e=True, step=1, status='Create driver for LT_eyelid_lower_bnd')
     priCtl = addPrimaryCtlToBnd(pm.PyNode('LT_eyelid_lower_bnd'))
-    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'LT_eyelid_inner_lower_bnd'), nt.Joint(u'LT_eyelid_lower_bnd'), nt.Joint(u'LT_eyelid_outer_lower_bnd')])
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'LT_eyelid_inner_bnd'),
+                                    nt.Joint(u'LT_eyelid_inner_lower_bnd'),
+                                    nt.Joint(u'LT_eyelid_lower_bnd'),
+                                    nt.Joint(u'LT_eyelid_outer_lower_bnd'),
+                                    nt.Joint(u'LT_eyelid_outer_bnd')])
     allPriCtls.append(priCtl)
     
     pm.progressWindow(e=True, step=1, status='Create driver for RT_eyelid_upper_bnd')
     priCtl = addPrimaryCtlToBnd(pm.PyNode('RT_eyelid_upper_bnd'))
-    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_eyelid_inner_upper_bnd'), nt.Joint(u'RT_eyelid_upper_bnd'), nt.Joint(u'RT_eyelid_outer_upper_bnd')])
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_eyelid_inner_bnd'),
+                                    nt.Joint(u'RT_eyelid_inner_upper_bnd'),
+                                    nt.Joint(u'RT_eyelid_upper_bnd'),
+                                    nt.Joint(u'RT_eyelid_outer_upper_bnd'),
+                                    nt.Joint(u'RT_eyelid_outer_bnd')])
     allPriCtls.append(priCtl)
     
     pm.progressWindow(e=True, step=1, status='Create driver for RT_eyelid_lower_bnd')
     priCtl = addPrimaryCtlToBnd(pm.PyNode('RT_eyelid_lower_bnd'))
-    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_eyelid_inner_lower_bnd'), nt.Joint(u'RT_eyelid_lower_bnd'), nt.Joint(u'RT_eyelid_outer_lower_bnd')])
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_eyelid_inner_bnd'),
+                                    nt.Joint(u'RT_eyelid_inner_lower_bnd'),
+                                    nt.Joint(u'RT_eyelid_lower_bnd'),
+                                    nt.Joint(u'RT_eyelid_outer_lower_bnd'),
+                                    nt.Joint(u'RT_eyelid_outer_bnd')])
     allPriCtls.append(priCtl)
     
     pm.progressWindow(e=True, step=1, status='Create driver for CT_noseTip_bnd')

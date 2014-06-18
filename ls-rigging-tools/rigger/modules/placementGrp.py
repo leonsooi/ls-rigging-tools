@@ -29,10 +29,17 @@ def savePlacementGrpToDict(pGrp):
 
 def setPlacementGrpFromDict(pGrp, pDict):
     '''
+    you can add an attr 'placementLock'=True for placementLocs you don't want to affect
+    this attr is added manually
     '''
     allLocs = [loc for loc in pGrp.getChildren()]
     for eachLoc in allLocs:
-        if eachLoc.name() in pDict.keys():
+        # check if loc is locked
+        try:
+            locked = eachLoc.placementLock.get()
+        except:
+            locked = False
+        if eachLoc.name() in pDict.keys() and not locked:
             eachLoc.setMatrix(pDict[eachLoc.name()], worldSpace=True)
 
 def savePlacementDictToJSON(pDict, jsonPath):
