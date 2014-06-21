@@ -35,6 +35,35 @@ def multiplyInput(attr, dv, suffix=''):
     
     mdl.output >> attr
     
+    return modAttr
+    
+def addInput(attr, dv, suffix=''):
+    '''
+    '''
+    node = attr.node()
+    node.addAttr(attr.attrName()+'_add'+suffix, k=True, dv=dv)
+    modAttr = node.attr(attr.attrName()+'_add'+suffix)
+    
+    try:
+        inPlug = attr.inputs(p=True, scn=True)[0]
+    except IndexError:
+        # this attr does not have any inputs yet
+        inPlug = None
+    
+    adl = pm.createNode('addDoubleLinear', 
+                        n=node+'_'+attr.attrName()+'_addInput_mdl'+suffix)
+    
+    if inPlug:
+        inPlug >> adl.input1
+    else:
+        origVal = attr.get()
+        adl.input1.set(origVal)
+        
+    modAttr >> adl.input2
+    
+    adl.output >> attr
+    
+    return modAttr
 
 def modulatePivotWeightOnBnd(ctlAttr, bnds, pivot, keys):
     '''
