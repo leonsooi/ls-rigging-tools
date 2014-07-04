@@ -182,6 +182,8 @@ def makeCrvThroughObjs(objs, name=None, connect=False, degree=3):
     if name is None:
         name = '_'.join(objs[0].split('_')[:2])
         
+    objs = [str(obj) for obj in objs]
+        
     # get positions of objs
     pos = []
     for eachObj in objs:

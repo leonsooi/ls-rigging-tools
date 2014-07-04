@@ -104,6 +104,102 @@ def addStickyToFRS():
              rt_pinch, rt_side, rt_sneer,
              ct_stick, n='CT_stickylips_grp')
 
+import pymel.core.nodetypes as nt
+def patchOldSticky():
+    # patch old sticky
+    master = pm.PyNode('FACE:CT_stickylips_grp')
+    
+    master.addAttr('CT_upper_lip_bnd_weight', k=True, dv=0)
+    master.addAttr('CT_lower_lip_bnd_weight', k=True, dv=1)
+    
+    master.addAttr('LT_upper_side_lip_weight', k=True, dv=0.05)
+    master.addAttr('LT_upper_sneer_lip_weight', k=True, dv=0.1)
+    master.addAttr('LT_upper_pinch_lip_weight', k=True, dv=0.2)
+    master.addAttr('LT_corner_lip_weight', k=True, dv=0.5)
+    master.addAttr('LT_lower_side_lip_weight', k=True, dv=0.975)
+    master.addAttr('LT_lower_sneer_lip_weight', k=True, dv=0.95)
+    master.addAttr('LT_lower_pinch_lip_weight', k=True, dv=0.8)
+    
+    master.addAttr('RT_upper_side_lip_weight', k=True, dv=0.05)
+    master.addAttr('RT_upper_sneer_lip_weight', k=True, dv=0.1)
+    master.addAttr('RT_upper_pinch_lip_weight', k=True, dv=0.2)
+    master.addAttr('RT_corner_lip_weight', k=True, dv=0.5)
+    master.addAttr('RT_lower_side_lip_weight', k=True, dv=0.975)
+    master.addAttr('RT_lower_sneer_lip_weight', k=True, dv=0.95)
+    master.addAttr('RT_lower_pinch_lip_weight', k=True, dv=0.8)
+    
+    stickyNode = [nt.Transform(u'FACE:LT_upper_pinch_lip_sticky_master'),
+                    nt.Transform(u'FACE:LT_upper_side_lip_sticky_master'),
+                    nt.Transform(u'FACE:LT_upper_sneer_lip_sticky_master'),
+                    nt.Transform(u'FACE:RT_upper_pinch_lip_sticky_master'),
+                    nt.Transform(u'FACE:RT_upper_side_lip_sticky_master'),
+                    nt.Transform(u'FACE:RT_upper_sneer_lip_sticky_master'),
+                    nt.Transform(u'FACE:CT_upper_lip_bnd_sticky_master')]
+    
+    def patchStickyNode(node):
+        str = pm.createNode('setRange', n=node+'_str')
+        str.oldMax.set(1,1,1)
+        node.lowVal >> str.valueX
+        node.upVal >> str.valueY
+        upAttrName = '_'.join(node.split(':')[1].split('_')[:4])+'_weight'
+        if '_bnd' in upAttrName:
+            upAttrName = upAttrName.replace('_bnd', '')
+        lowAttrName = upAttrName.replace('upper', 'lower')
+        master.attr(upAttrName) >> str.maxX
+        master.attr(upAttrName) >> str.maxY
+        master.attr(lowAttrName) >> str.minX
+        master.attr(lowAttrName) >> str.minY
+        
+        attrs = ['tx','ty','tz','rx','ry','rz','sx','sy','sz']
+        
+        upBndName = '_'.join(node.split('_')[:4])
+        print upBndName
+        if '_bnd' in upBndName:
+            upBndName = upBndName.replace('_bnd', '')
+        upBndName = upBndName + '_bnd'
+        upBnd = pm.PyNode(upBndName)
+        lowBndName = upBndName.replace('upper', 'lower')
+        lowBnd = pm.PyNode(lowBndName)
+        
+        for attr in attrs:
+            weightAttr = upBnd.attr('CT_jaw_pri_ctrl_weight_'+attr)
+            str.outValueX >> weightAttr
+            weightAttr = lowBnd.attr('CT_jaw_pri_ctrl_weight_'+attr)
+            str.outValueY >> weightAttr
+        
+    for eachNode in stickyNode:
+        patchStickyNode(eachNode)
+
+def setStickyPointParam(master, param):
+    '''
+    no idea whether this works - not tested
+    '''
+    upCtl = pm.PyNode(master.replace('sticky_master', 'ctrl_ctg'))
+    dnCtl = pm.PyNode(upCtl.replace('_upper_', '_lower_'))
+    
+    upPos = pm.dt.Point(upCtl.getTranslation(space='world'))
+    dnPos = pm.dt.Point(dnCtl.getTranslation(space='world'))
+    
+    vec = dnPos - upPos
+    
+    up_ctr_pos = upPos + vec * param
+    up_ctr_pos = pm.dt.Point(up_ctr_pos)
+    dn_ctr_pos = dnPos - vec * param
+    dn_ctr_pos = pm.dt.Point(dn_ctr_pos)
+    
+    up_inv_mat = upCtl.getMatrix(worldSpace=True).inverse()
+    up_ctr_pos = up_ctr_pos * up_inv_mat
+    dn_inv_mat = dnCtl.getMatrix(worldSpace=True).inverse()
+    dn_ctr_pos = dn_ctr_pos * dn_inv_mat
+    
+    arc = master.radius.outputs()[0]
+    upPmm = arc.point1.inputs()[0]
+    dnPmm = arc.point2.inputs()[0]
+    
+    upPmm.inPoint.set(up_ctr_pos)
+    dnPmm.inPoint.set(dn_ctr_pos)
+
+
 class Sticky():
     
     def __init__(self, name=None, up_bnd=None, low_bnd=None, center=None):
