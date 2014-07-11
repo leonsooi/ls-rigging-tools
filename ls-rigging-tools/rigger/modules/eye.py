@@ -1182,13 +1182,13 @@ def addFleshyEye():
     eye_ctl.addAttr('autoFleshy', at='float', k=True, min=0, max=1, dv=1)
 
     # upper
-    ctl = pm.PyNode('LT_eyelid_upper_pri_ctrl')
+    ctl = pm.PyNode('LT_upper_eyelid_pri_ctrl')
     attr_keys = {'ty': {0:0.05, 0.25:0, 0.5:-0.04, 0.8:0, 1:0.05},
                  'rz': {0:0, 0.2:-0.5, 0.4:0, 0.6:0, 0.8:0.5, 1:0}}
     addFleshyEyeToPriCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
     
     # lower
-    ctl = pm.PyNode('LT_eyelid_lower_pri_ctrl')
+    ctl = pm.PyNode('LT_lower_eyelid_pri_ctrl')
     attr_keys = {'ty': {0:0.02, 0.3:0, 0.5:-0.03, 0.75:0, 1:0.02},
                  'rz': {0.2:0, 0.35:0.25, 0.5:0, 0.7:-0.25, 0.85:0}}
     addFleshyEyeToPriCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
@@ -1201,13 +1201,13 @@ def addFleshyEye():
     eye_ctl.addAttr('autoFleshy', at='float', k=True, min=0, max=1, dv=1)
 
     # upper
-    ctl = pm.PyNode('RT_eyelid_upper_pri_ctrl')
+    ctl = pm.PyNode('RT_upper_eyelid_pri_ctrl')
     attr_keys = {'ty': {0:0.05, 0.8:0, 0.5:-0.04, 0.25:0, 1:0.05},
                  'rz': {0:0, 0.8:0.5, 0.6:0, 0.4:0, 0.2:-0.5, 1:0}}
     addFleshyEyeToPriCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
     
     # lower
-    ctl = pm.PyNode('RT_eyelid_lower_pri_ctrl')
+    ctl = pm.PyNode('RT_lower_eyelid_pri_ctrl')
     attr_keys = {'ty': {0:0.02, 0.75:0, 0.5:-0.03, 0.3:0, 1:0.02},
                  'rz': {0.85:0, 0.7:-0.25, 0.5:0, 0.35:0.25, 0.2:0}}
     addFleshyEyeToPriCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
@@ -1225,7 +1225,7 @@ def addFleshyEyeToPriCtl(ctl, eye_pivot, attr_keys, auto_attr):
     
     attr_keys: {'tx': {param:float}}
     '''
-    auto = priCtl.addOffset(ctl, 'parent', '_fleshyAuto')
+    auto = priCtl.addOffset(ctl, 'parent', suffix='_fleshyAuto')
     
     # connect param to autos
     for attr, keys in attr_keys.items():

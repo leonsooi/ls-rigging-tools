@@ -664,20 +664,24 @@ def connectVisibilityToggle(targets, control, name, default=True):
         targets = [targets]
     
     # create new attribute
-    mc.addAttr(control, ln=name, at='bool', k=True, dv=default)
+    mc.addAttr(control, ln=name, at='bool', k=False, dv=default)
+    mc.setAttr(control+'.'+name, cb=True )
     
     # connect visibilities
     for eachTarget in targets:
         # mc.connectAttr(control+'.'+name, eachTarget+'.lodv', f=True)
         #"""
-        shapes = mc.listRelatives(eachTarget, s=True)
-        if not shapes:
-            # this is just a transform, so just connect it
-            mc.connectAttr(control+'.'+name, eachTarget+'.lodv', f=True)
-        else:
-            # connect all the shape nodes instead of the transform
-            for eachShape in shapes:
-                mc.connectAttr(control+'.'+name, eachShape+'.lodv', f=True)
+        try:
+            shapes = mc.listRelatives(eachTarget, s=True)
+            if not shapes:
+                # this is just a transform, so just connect it
+                mc.connectAttr(control+'.'+name, eachTarget+'.lodv', f=True)
+            else:
+                # connect all the shape nodes instead of the transform
+                for eachShape in shapes:
+                    mc.connectAttr(control+'.'+name, eachShape+'.lodv', f=True)
+        except ValueError as e:
+            print e
         #"""
         
 

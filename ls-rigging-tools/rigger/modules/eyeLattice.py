@@ -71,7 +71,7 @@ def createLatticeControls():
         clusters[name] = dfm, hdl
     
     # create controls
-    controlZOffset = -2.3
+    controlZOffset = 0
     childEyeShapers = []
     localReadersGrp = pm.group(em=True, n='CT_eyeLatticeClusters_localReadersGrp')
     for name, (dfm, hdl) in clusters.items():

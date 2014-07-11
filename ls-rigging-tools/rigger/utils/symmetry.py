@@ -84,11 +84,32 @@ def mirror_bnd_weights(src_bnd):
     '''
     all_attrs = src_bnd.listAttr(ud=True, u=True)
     all_attrs = [attr for attr in all_attrs if 'pri_ctrl_weight' in attr.name()]
+    all_attrs = [attr for attr in all_attrs if attr.isFreeToChange() == 0]
     
     for src_attr in all_attrs:
         weight = src_attr.get()
-        dest_attr = pm.PyNode(src_attr.name().replace('LT_', 'RT_'))
-        dest_attr.set(weight)
+        # mirror nodeName first
+        src_nodeName = src_attr.nodeName()
+        print 'source attr: ' + src_attr
+        dest_nodeName = src_nodeName.replace('LT_', 'RT_') # CT_ will remain as CT_
+        dest_node = pm.PyNode(dest_nodeName)
+        # then mirror attrName
+        src_attrName = src_attr.attrName()
+        if 'LT_' in src_attrName:
+            dest_attrName = src_attrName.replace('LT_', 'RT_')
+        elif 'RT_' in src_attrName:
+            dest_attrName = src_attrName.replace('RT_', 'LT_')
+        else:
+            # CT remains as CT
+            dest_attrName = src_attrName
+        dest_attr = dest_node.attr(dest_attrName)
+        try:
+            print 'dest attr: ' + dest_attr
+            print weight
+            dest_attr.set(weight)
+        except RuntimeError as e:
+            pass
+            print e
         
 def mirror_bnd_weights_run():
     '''

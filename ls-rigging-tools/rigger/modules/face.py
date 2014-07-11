@@ -266,12 +266,12 @@ def updateBndToPriCtl(bnd, priCtl):
     priCtl_wMat = priCtl.getMatrix(ws=True)
     bnd_lMat = bnd_wMat * priCtl_wMat.inverse()
     
-    lMatNd = pm.PyNode(bnd.replace('_bnd', '_lMat_in_' + priCtl.nodeName()))
+    lMatNd = pm.PyNode(bnd.replace('_bnd', '_lMat_in_' + priCtl.stripNamespace().nodeName()))
     for i in range(4):
         for j in range(4):
             lMatNd.attr('in%d%d' % (i, j)).set(bnd_lMat[i][j])
 
-def connectBndToPriCtl(bnd, priCtl):
+def connectBndToPriCtl(bnd, priCtl, simplify=False):
     '''
     bnd = pm.PyNode('lf_nostrilf_bnd')
     priCtl = pm.PyNode('nose_pri_ctrl')
@@ -280,13 +280,13 @@ def connectBndToPriCtl(bnd, priCtl):
     bnd_wMat = bnd.getMatrix(ws=True)
     priCtl_wMat = priCtl.getMatrix(ws=True)
     bnd_lMat = bnd_wMat * priCtl_wMat.inverse()
-    lMatNd = pm.createNode('fourByFourMatrix', n=bnd.replace('_bnd', '_lMat_in_' + priCtl.nodeName()))
+    lMatNd = pm.createNode('fourByFourMatrix', n=bnd.replace('_bnd', '_lMat_in_' + priCtl.stripNamespace().nodeName()))
     # populate "local" matrix
     for i in range(4):
         for j in range(4):
             lMatNd.attr('in%d%d' % (i, j)).set(bnd_lMat[i][j])
     # bnd's "local-inverse" matrix
-    lInvMatNd = pm.createNode('inverseMatrix', n=bnd.replace('_bnd', '_lInvMat_in_' + priCtl.nodeName()))
+    lInvMatNd = pm.createNode('inverseMatrix', n=bnd.replace('_bnd', '_lInvMat_in_' + priCtl.stripNamespace().nodeName()))
     lMatNd.output >> lInvMatNd.inputMatrix
     # for bnd to pivot around priCtl,
     # the matrix is lMat * priCtlMat * lInvMat
@@ -316,20 +316,20 @@ def connectBndToPriCtl(bnd, priCtl):
     dmNd.osy >> bwNodes['sy'].i[nextIndex]
     dmNd.osz >> bwNodes['sz'].i[nextIndex]
     # channel box separator
-    bnd.addAttr(priCtl.nodeName() + '_weights', at='double', k=True, dv=0)
-    bnd.setAttr(priCtl.nodeName() + '_weights', lock=True)
+    bnd.addAttr(priCtl.stripNamespace().nodeName() + '_weights', at='double', k=True, dv=0)
+    bnd.setAttr(priCtl.stripNamespace().nodeName() + '_weights', lock=True)
     # connect weight to be blended to 0
     for eachChannel in ['tx', 'ty', 'tz', 'rx', 'ry', 'rz']:
-        bnd.addAttr(priCtl.nodeName() + '_weight_' + eachChannel, at='double', k=True, min=-1, max=2, dv=1)
-        bnd.attr(priCtl.nodeName() + '_weight_' + eachChannel) >> bwNodes[eachChannel].weight[nextIndex]
+        bnd.addAttr(priCtl.stripNamespace().nodeName() + '_weight_' + eachChannel, at='double', k=True, min=-1, max=2, dv=1)
+        bnd.attr(priCtl.stripNamespace().nodeName() + '_weight_' + eachChannel) >> bwNodes[eachChannel].weight[nextIndex]
     # scales need a minus 1, to be normalized to 0 for blending
     for eachChannel in ['sx', 'sy', 'sz']:
         adl = pm.createNode('addDoubleLinear', n=bnd.replace('_bnd', '_%s_adl' % eachChannel))
         adl.input2.set(-1)
         dmNd.attr('o%s' % eachChannel) >> adl.input1
         adl.output >> bwNodes[eachChannel].i[nextIndex]
-        bnd.addAttr(priCtl.nodeName() + '_weight_' + eachChannel, at='double', k=True, min=-1, max=2, dv=1)
-        bnd.attr(priCtl.nodeName() + '_weight_' + eachChannel) >> bwNodes[eachChannel].weight[nextIndex]
+        bnd.addAttr(priCtl.stripNamespace().nodeName() + '_weight_' + eachChannel, at='double', k=True, min=-1, max=2, dv=1)
+        bnd.attr(priCtl.stripNamespace().nodeName() + '_weight_' + eachChannel) >> bwNodes[eachChannel].weight[nextIndex]
         
     # if this bnd already has it's own attached priCtl
     # we need to drive that too
@@ -353,7 +353,7 @@ def connectBndToPriCtl(bnd, priCtl):
                 else:
                     dmNd.attr('o' + eachChannel) >> mdl.input1
                     
-                bnd.attr(priCtl.nodeName() + '_weight_' + eachChannel) >> mdl.input2
+                bnd.attr(priCtl.stripNamespace().nodeName() + '_weight_' + eachChannel) >> mdl.input2
                 
                 if eachChannel in ['sx', 'sy', 'sz']:
                     adl = pm.createNode('addDoubleLinear', n=bnd.replace('_bnd', '_%s_%s_adl' % (eachChannel, priCtl)))
@@ -362,6 +362,16 @@ def connectBndToPriCtl(bnd, priCtl):
                     adl.output >> zeroGrp.attr(eachChannel)
                 else:
                     mdl.output >> zeroGrp.attr(eachChannel)
+    
+    if simplify:
+        # hide the 9 individual attrs
+        # add one attr to drive all 9
+        bnd.addAttr(priCtl.stripNamespace().nodeName() + '_weight_',
+                    at='double', min=-1, max=2, dv=1)
+        for eachChannel in ['tx', 'ty', 'tz', 'rx', 'ry', 'rz', 'sx', 'sy', 'sz']:
+            bnd.setAttr(priCtl.stripNamespace().nodeName() + '_weight_' + eachChannel, 
+                        k=False, cb=False)  
+            bnd.attr(priCtl.stripNamespace().nodeName() + '_weight_') >> bnd.attr(priCtl.stripNamespace().nodeName() + '_weight_' + eachChannel)
     
 # connectBndsToPriCtlGo()
 
@@ -412,10 +422,6 @@ def createBndsFromPlacement(placementGrp):
     # Direct bnds - one bnd jnt for each loc
     #===========================================================================
     directPLoc = placementGrp.getChildren()
-    # not needed for CT_philtrum
-    directPLoc = [loc for loc in directPLoc if 
-                  loc.bindType.get() != 2 and
-                  'CT_philtrum' not in loc.name() ]
     
     for eachLoc in directPLoc:
         pm.select(cl=True)
@@ -425,14 +431,6 @@ def createBndsFromPlacement(placementGrp):
         scale = eachLoc.localScaleX.get()
         jnt.radius.set(scale)
         bndGrp | jnt
-                   
-    #===========================================================================
-    # Special bnds
-    #===========================================================================
-    # base bnd - to hold all weights not affected by face
-    pm.select(cl=True)
-    baseBnd = pm.joint(n='CT_base_bnd')
-    bndGrp | baseBnd
     
     return bndGrp
     
@@ -764,27 +762,27 @@ def cleanFaceRig():
     # shapes
     #===========================================================================
     # lips
-    replaceControlCurve(pm.PyNode('LT_lower_sneer_lip_pri_ctrl'), 'downArrow')
-    replaceControlCurve(pm.PyNode('RT_lower_sneer_lip_pri_ctrl'), 'downArrow')
-    replaceControlCurve(pm.PyNode('LT_upper_sneer_lip_pri_ctrl'), 'upArrow')
-    replaceControlCurve(pm.PyNode('RT_upper_sneer_lip_pri_ctrl'), 'upArrow')
+    replaceControlCurve(pm.PyNode('LT_lowerSneer_lip_pri_ctrl'), 'downArrow')
+    replaceControlCurve(pm.PyNode('RT_lowerSneer_lip_pri_ctrl'), 'downArrow')
+    replaceControlCurve(pm.PyNode('LT_upperSneer_lip_pri_ctrl'), 'upArrow')
+    replaceControlCurve(pm.PyNode('RT_upperSneer_lip_pri_ctrl'), 'upArrow')
     replaceControlCurve(pm.PyNode('LT_corner_lip_pri_ctrl'), 'rightArrow')
     replaceControlCurve(pm.PyNode('RT_corner_lip_pri_ctrl'), 'leftArrow')
     # eye
-    replaceControlCurve(pm.PyNode('LT_eyelid_upper_pri_ctrl'), 'upArrow')
-    replaceControlCurve(pm.PyNode('RT_eyelid_upper_pri_ctrl'), 'upArrow')
-    replaceControlCurve(pm.PyNode('LT_eyelid_lower_pri_ctrl'), 'downArrow')
-    replaceControlCurve(pm.PyNode('RT_eyelid_lower_pri_ctrl'), 'downArrow')
+    replaceControlCurve(pm.PyNode('LT_upper_eyelid_pri_ctrl'), 'upArrow')
+    replaceControlCurve(pm.PyNode('RT_upper_eyelid_pri_ctrl'), 'upArrow')
+    replaceControlCurve(pm.PyNode('LT_lower_eyelid_pri_ctrl'), 'downArrow')
+    replaceControlCurve(pm.PyNode('RT_lower_eyelid_pri_ctrl'), 'downArrow')
     # jaw
-    replaceControlCurve(pm.PyNode('CT_jaw_pri_ctrl'), 'mouth')
+    replaceControlCurve(pm.PyNode('CT__jaw_pri_ctrl'), 'mouth')
     # face
     faceCtl = pm.group(pm.PyNode('face_ctrls_grp'), pm.PyNode('CT_face_primary_ctls_grp'), n='CT_face_ctrl')
     replaceControlCurve(pm.PyNode(faceCtl), 'head')
     faceCtl.getShape().overrideEnabled.set(True)
     faceCtl.getShape().overrideColor.set(21)
     # eye
-    upLidPos = pm.PyNode('LT_eyelid_upper_pri_ctrl').getTranslation(space='world')
-    lowLidPos = pm.PyNode('LT_eyelid_lower_pri_ctrl').getTranslation(space='world')
+    upLidPos = pm.PyNode('LT_upper_eyelid_pri_ctrl').getTranslation(space='world')
+    lowLidPos = pm.PyNode('LT_lower_eyelid_pri_ctrl').getTranslation(space='world')
     midPos = (upLidPos + lowLidPos) / 2
     eyeCtl = pm.group(em=True, n='LT_eye_ctl')
     eyeCtg = pm.group(eyeCtl, n='LT_eye_ctg')
@@ -794,8 +792,8 @@ def cleanFaceRig():
     eyeCtl.overrideEnabled.set(True)
     eyeCtl.overrideColor.set(6)
     faceCtl | eyeCth
-    upLidPos = pm.PyNode('RT_eyelid_upper_pri_ctrl').getTranslation(space='world')
-    lowLidPos = pm.PyNode('RT_eyelid_lower_pri_ctrl').getTranslation(space='world')
+    upLidPos = pm.PyNode('RT_upper_eyelid_pri_ctrl').getTranslation(space='world')
+    lowLidPos = pm.PyNode('RT_lower_eyelid_pri_ctrl').getTranslation(space='world')
     midPos = (upLidPos + lowLidPos) / 2
     eyeCtl = pm.group(em=True, n='RT_eye_ctl')
     eyeCtg = pm.group(eyeCtl, n='RT_eye_ctg')
@@ -807,21 +805,164 @@ def cleanFaceRig():
     faceCtl | eyeCth
     
     # visibilities
-    moverCtls = [u'CT_mouthMover_pri_ctrl',
-                 u'CT_noseMover_pri_ctrl',
-                 u'LT_eyeMover_pri_ctrl',
-                 u'RT_eyeMover_pri_ctrl']
+    moverCtls = [u'CT__jaw_pri_ctrl',
+                u'CT__mouthMover_pri_ctrl',
+                u'LT__eyeMover_pri_ctrl',
+                u'RT__eyeMover_pri_ctrl',
+                u'CT__noseMover_pri_ctrl',
+                u'LT__browMover_pri_ctrl',
+                u'RT__browMover_pri_ctrl']
     rt.connectVisibilityToggle(moverCtls, faceCtl.name(), 'moverControlsVis', True)
-    priCtls = [u'RT_mid_brow_pri_ctrl', u'RT_eyelid_upper_pri_ctrl', u'RT_eyelid_lower_pri_ctrl', u'LT_mid_brow_pri_ctrl', u'LT_eyelid_upper_pri_ctrl', u'LT_eyelid_lower_pri_ctrl', u'CT_noseTip_pri_ctrl', u'CT_jaw_pri_ctrl', u'RT_cheek_pri_ctrl', u'LT_cheek_pri_ctrl', u'LT_upper_sneer_lip_pri_ctrl', u'RT_upper_sneer_lip_pri_ctrl', u'RT_lower_sneer_lip_pri_ctrl', u'LT_lower_sneer_lip_pri_ctrl', u'LT_corner_lip_pri_ctrl', u'RT_corner_lip_pri_ctrl']
+    priCtls = [u'RT_out_browB_pri_ctrl',
+            u'RT_mid_browA_pri_ctrl',
+            u'RT_in_browA_pri_ctrl',
+            u'LT_in_browA_pri_ctrl',
+            u'LT_mid_browA_pri_ctrl',
+            u'LT_out_browB_pri_ctrl',
+            u'LT_upper_eyelid_pri_ctrl',
+            u'RT_upper_eyelid_pri_ctrl',
+            u'RT_lower_eyelid_pri_ctrl',
+            u'CT__noseTip_pri_ctrl',
+            u'LT_lower_eyelid_pri_ctrl',
+            u'LT__squint_pri_ctrl',
+            u'RT__squint_pri_ctrl',
+            u'LT_mid_cheek_pri_ctrl',
+            u'RT_mid_cheek_pri_ctrl',
+            u'CT_upper_lip_pri_ctrl',
+            u'CT_lower_lip_pri_ctrl',
+            u'LT_upperSneer_lip_pri_ctrl',
+            u'LT_lowerSneer_lip_pri_ctrl',
+            u'RT_upperSneer_lip_pri_ctrl',
+            u'RT_lowerSneer_lip_pri_ctrl',
+            u'RT_corner_lip_pri_ctrl',
+            u'LT_corner_lip_pri_ctrl']
     priCtls.append('LT_eye_ctl')
     priCtls.append('RT_eye_ctl')
     rt.connectVisibilityToggle(priCtls, faceCtl.name(), 'primaryControlsVis', True)
-    secCtls = [u'LT_upper_side_lip_ctrl', u'LT_lower_side_lip_ctrl', u'RT_lower_side_lip_ctrl', u'RT_upper_side_lip_ctrl', u'LT_eyelid_inner_ctrl', u'LT_eyelid_upper_ctrl', u'LT_eyelid_outer_ctrl', u'LT_eyelid_lower_ctrl', u'LT_eyelid_inner_upper_ctrl', u'LT_eyelid_inner_lower_ctrl', u'LT_eyelid_outer_upper_ctrl', u'LT_eyelid_outer_lower_ctrl', u'RT_eyelid_inner_ctrl', u'RT_eyelid_upper_ctrl', u'RT_eyelid_outer_ctrl', u'RT_eyelid_lower_ctrl', u'RT_eyelid_inner_upper_ctrl', u'RT_eyelid_inner_lower_ctrl', u'RT_eyelid_outer_upper_ctrl', u'RT_eyelid_outer_lower_ctrl', u'RT_nostril_ctrl', u'CT_noseTip_ctrl', u'LT_nostril_ctrl', u'CT_upper_lip_ctrl', u'CT_lower_lip_ctrl', u'LT_upper_sneer_lip_ctrl', u'LT_lower_sneer_lip_ctrl', u'RT_upper_sneer_lip_ctrl', u'RT_lower_sneer_lip_ctrl', u'LT_corner_lip_ctrl', u'LT_upper_pinch_lip_ctrl', u'RT_corner_lip_ctrl', u'RT_upper_pinch_lip_ctrl', u'RT_lower_pinch_lip_ctrl', u'LT_lower_pinch_lip_ctrl', u'LT_in_brow_ctrl', u'LT_mid_brow_ctrl', u'LT_out_brow_ctrl', u'RT_in_brow_ctrl', u'CT_brow_ctrl', u'RT_mid_brow_ctrl', u'RT_out_brow_ctrl']
-    rt.connectVisibilityToggle(secCtls, faceCtl.name(), 'secondaryControlsVis', False)
-    terCtls = [u'LT_in_forehead_ctrl', u'RT_in_forehead_ctrl', u'LT_out_forehead_ctrl', u'RT_out_forehead_ctrl', u'LT_temple_ctrl', u'RT_temple_ctrl', u'LT_squint_ctrl', u'RT_squint_ctrl', u'LT_philtrum_ctrl', u'RT_philtrum_ctrl', u'LT_up_crease_ctrl', u'RT_up_crease_ctrl', u'LT_mid_crease_ctrl', u'RT_mid_crease_ctrl', u'LT_low_crease_ctrl', u'RT_low_crease_ctrl', u'LT_cheek_ctrl', u'RT_cheek_ctrl', u'LT_up_jaw_ctrl', u'RT_up_jaw_ctrl', u'LT_corner_jaw_ctrl', u'RT_corner_jaw_ctrl', u'LT_low_jaw_ctrl', u'RT_low_jaw_ctrl', u'LT_chin_ctrl', u'RT_chin_ctrl', u'CT_chin_ctrl', u'LT_in_low_forehead_ctrl', u'RT_in_low_forehead_ctrl', u'LT_out_low_forehead_ctrl', u'RT_out_low_forehead_ctrl', u'LT_low_temple_ctrl', u'RT_low_temple_ctrl', u'LT_out_cheek_ctrl', u'RT_out_cheek_ctrl', u'LT_in_philtrum_ctrl', u'RT_in_philtrum_ctrl', u'LT_low_cheek_ctrl', u'RT_low_cheek_ctrl', u'LT_in_cheek_ctrl', u'RT_in_cheek_ctrl', u'LT_up_cheek_ctrl', u'RT_up_cheek_ctrl', u'LT_sneer_ctrl', u'RT_sneer_ctrl', u'CT_mid_chin_ctrl', u'LT_mid_chin_ctrl', u'RT_mid_chin_ctrl']
-    terCtls += ['LT_neck_ctrl', 'CT_neck_ctrl', 'RT_neck_ctrl']
-    rt.connectVisibilityToggle(terCtls, faceCtl.name(), 'tertiaryControlsVis', False)
-    rt.connectVisibilityToggle(['CT_bnd_grp', 'CT_jnts_grp', 'CT_placement_grp'], faceCtl.name(), 'jointsVis', False)
+    mouthTweakers = [u'CT__mouthMover_ctrl',
+                    u'LT_lowerSide_lip_ctrl',
+                    u'CT_upper_lip_ctrl',
+                    u'LT_lowerPinch_lip_ctrl',
+                    u'LT_upperPinch_lip_ctrl',
+                    u'CT_lower_lip_ctrl',
+                    u'LT_upperSide_lip_ctrl',
+                    u'LT_corner_lip_ctrl',
+                    u'LT_upperSneer_lip_ctrl',
+                    u'LT_lowerSneer_lip_ctrl',
+                    u'RT_lowerSide_lip_ctrl',
+                    u'RT_lowerPinch_lip_ctrl',
+                    u'RT_upperPinch_lip_ctrl',
+                    u'RT_upperSide_lip_ctrl',
+                    u'RT_corner_lip_ctrl',
+                    u'RT_upperSneer_lip_ctrl',
+                    u'RT_lowerSneer_lip_ctrl']
+    rt.connectVisibilityToggle(mouthTweakers, faceCtl.name(), 'mouthTweakersVis', True)
+    browTweakers = [u'CT__brow_ctrl',
+                    u'LT__browCrease_ctrl',
+                    u'RT__browCrease_ctrl',
+                    u'LT_in_browA_ctrl',
+                    u'LT_in_browB_ctrl',
+                    u'LT_mid_browA_ctrl',
+                    u'LT_mid_browB_ctrl',
+                    u'LT_out_browA_ctrl',
+                    u'RT_in_browA_ctrl',
+                    u'RT_in_browB_ctrl',
+                    u'RT_mid_browA_ctrl',
+                    u'RT_mid_browB_ctrl',
+                    u'RT_out_browA_ctrl',
+                    u'LT_out_browB_ctrl',
+                    u'RT_out_browB_ctrl']
+    rt.connectVisibilityToggle(browTweakers, faceCtl.name(), 'browTweakersVis', True)
+    eyelidTweakers = [u'LT_inner_eyelid_ctrl',
+                    u'LT_innerUpper_eyelid_ctrl',
+                    u'LT_upper_eyelid_ctrl',
+                    u'LT_outerUpper_eyelid_ctrl',
+                    u'LT_outer_eyelid_ctrl',
+                    u'LT_outerLower_eyelid_ctrl',
+                    u'LT_lower_eyelid_ctrl',
+                    u'LT_innerLower_eyelid_ctrl',
+                    u'RT_inner_eyelid_ctrl',
+                    u'RT_innerUpper_eyelid_ctrl',
+                    u'RT_upper_eyelid_ctrl',
+                    u'RT_outerUpper_eyelid_ctrl',
+                    u'RT_outer_eyelid_ctrl',
+                    u'RT_outerLower_eyelid_ctrl',
+                    u'RT_lower_eyelid_ctrl',
+                    u'RT_innerLower_eyelid_ctrl']
+    rt.connectVisibilityToggle(eyelidTweakers, faceCtl.name(), 'eyelidTweakersVis', True)
+    eyeSocketTweakers = [u'LT_in_cheek_ctrl',
+                        u'LT_in_eyeSocket_ctrl',
+                        u'LT_inCorner_eyeSocket_ctrl',
+                        u'LT_up_cheek_ctrl',
+                        u'LT_out_cheek_ctrl',
+                        u'LT_outCorner_eyeSocket_ctrl',
+                        u'LT_out_eyeSocket_ctrl',
+                        u'LT_mid_eyeSocket_ctrl',
+                        u'RT_mid_eyeSocket_ctrl',
+                        u'RT_in_eyeSocket_ctrl',
+                        u'RT_inCorner_eyeSocket_ctrl',
+                        u'RT_in_cheek_ctrl',
+                        u'RT_up_cheek_ctrl',
+                        u'RT_out_cheek_ctrl',
+                        u'RT_outCorner_eyeSocket_ctrl',
+                        u'RT_out_eyeSocket_ctrl']
+    rt.connectVisibilityToggle(eyeSocketTweakers, faceCtl.name(), 'eyeSocketTweakersVis', True)
+    noseTweakers = [u'CT__noseTip_ctrl',
+                    u'LT__nostril_ctrl',
+                    u'RT__nostril_ctrl',
+                    u'LT_mid_crease_ctrl',
+                    u'RT_mid_crease_ctrl']
+    rt.connectVisibilityToggle(noseTweakers, faceCtl.name(), 'noseTweakersVis', True)
+    hiddenCtls = [u'CT__base_ctrl',
+                    u'LT_in_forehead_ctrl',
+                    u'LT_out_forehead_ctrl',
+                    u'LT__temple_ctrl',
+                    u'LT__squint_ctrl',
+                    u'LT__philtrum_ctrl',
+                    u'LT_up_crease_ctrl',
+                    u'LT_low_crease_ctrl',
+                    u'LT_up_jaw_ctrl',
+                    u'LT_corner_jaw_ctrl',
+                    u'LT_low_jaw_ctrl',
+                    u'LT__chin_ctrl',
+                    u'CT__chin_ctrl',
+                    u'CT__neck_ctrl',
+                    u'LT__neck_ctrl',
+                    u'CT__jaw_ctrl',
+                    u'CT__noseMover_ctrl',
+                    u'LT__eyeMover_ctrl',
+                    u'RT__eyeMover_ctrl',
+                    u'LT_inLow_forehead_ctrl',
+                    u'LT_outLow_forehead_ctrl',
+                    u'LT_low_cheek_ctrl',
+                    u'LT_in_philtrum_ctrl',
+                    u'LT_mid_cheek_ctrl',
+                    u'LT__sneer_ctrl',
+                    u'CT_mid_chin_ctrl',
+                    u'LT_mid_chin_ctrl',
+                    u'RT_in_forehead_ctrl',
+                    u'RT_out_forehead_ctrl',
+                    u'RT__temple_ctrl',
+                    u'RT__squint_ctrl',
+                    u'RT__philtrum_ctrl',
+                    u'RT_up_crease_ctrl',
+                    u'RT_low_crease_ctrl',
+                    u'RT_up_jaw_ctrl',
+                    u'RT_corner_jaw_ctrl',
+                    u'RT_low_jaw_ctrl',
+                    u'RT__chin_ctrl',
+                    u'RT__neck_ctrl',
+                    u'RT_inLow_forehead_ctrl',
+                    u'RT_outLow_forehead_ctrl',
+                    u'RT_low_cheek_ctrl',
+                    u'RT_in_philtrum_ctrl',
+                    u'RT_mid_cheek_ctrl',
+                    u'RT__sneer_ctrl',
+                    u'RT_mid_chin_ctrl',
+                    u'LT__browMover_ctrl',
+                    u'RT__browMover_ctrl']
+    rt.connectVisibilityToggle(hiddenCtls, faceCtl.name(), 'hiddenControlsVis', False)
+    rt.connectVisibilityToggle(['CT_bnd_grp', 'CT_placement_grp'], faceCtl.name(), 'jointsVis', False)
     """
     # lock geometry
     geoGrp = pm.PyNode('CT_geo_grp')

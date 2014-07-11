@@ -40,16 +40,16 @@ def setEyelidLoopWeights(prefix):
     # define data
     drvCrv = pm.PyNode(prefix+'_eye_aimAt_crv_0')
     
-    upperBnds = [nt.Joint(prefix+'_eyelid_inner_bnd'),
-                 nt.Joint(prefix+'_eyelid_inner_upper_bnd'),
-                 nt.Joint(prefix+'_eyelid_upper_bnd'),
-                 nt.Joint(prefix+'_eyelid_outer_upper_bnd'),
-                 nt.Joint(prefix+'_eyelid_outer_bnd')]
-    lowerBnds = [nt.Joint(prefix+'_eyelid_inner_bnd'),
-                 nt.Joint(prefix+'_eyelid_inner_lower_bnd'),
-                 nt.Joint(prefix+'_eyelid_lower_bnd'),
-                 nt.Joint(prefix+'_eyelid_outer_lower_bnd'),
-                 nt.Joint(prefix+'_eyelid_outer_bnd')]
+    upperBnds = [nt.Joint(prefix+'_inner_eyelid_bnd'),
+                 nt.Joint(prefix+'_innerUpper_eyelid_bnd'),
+                 nt.Joint(prefix+'_upper_eyelid_bnd'),
+                 nt.Joint(prefix+'_outerUpper_eyelid_bnd'),
+                 nt.Joint(prefix+'_outer_eyelid_bnd')]
+    lowerBnds = [nt.Joint(prefix+'_inner_eyelid_bnd'),
+                 nt.Joint(prefix+'_innerLower_eyelid_bnd'),
+                 nt.Joint(prefix+'_lower_eyelid_bnd'),
+                 nt.Joint(prefix+'_outerLower_eyelid_bnd'),
+                 nt.Joint(prefix+'_outer_eyelid_bnd')]
     
     setEyelidControlsWeights(prefix)
     
@@ -98,16 +98,16 @@ def setEyelidLoopWeights(prefix):
 
 def setEyelidControlsWeights(prefix):
     # define all data - hard coded
-    upperBnds = [nt.Joint(prefix+'_eyelid_inner_bnd'),
-                 nt.Joint(prefix+'_eyelid_inner_upper_bnd'),
-                 nt.Joint(prefix+'_eyelid_upper_bnd'),
-                 nt.Joint(prefix+'_eyelid_outer_upper_bnd'),
-                 nt.Joint(prefix+'_eyelid_outer_bnd')]
-    lowerBnds = [nt.Joint(prefix+'_eyelid_inner_bnd'),
-                 nt.Joint(prefix+'_eyelid_inner_lower_bnd'),
-                 nt.Joint(prefix+'_eyelid_lower_bnd'),
-                 nt.Joint(prefix+'_eyelid_outer_lower_bnd'),
-                 nt.Joint(prefix+'_eyelid_outer_bnd')]
+    upperBnds = [nt.Joint(prefix+'_inner_eyelid_bnd'),
+                 nt.Joint(prefix+'_innerUpper_eyelid_bnd'),
+                 nt.Joint(prefix+'_upper_eyelid_bnd'),
+                 nt.Joint(prefix+'_outerUpper_eyelid_bnd'),
+                 nt.Joint(prefix+'_outer_eyelid_bnd')]
+    lowerBnds = [nt.Joint(prefix+'_inner_eyelid_bnd'),
+                 nt.Joint(prefix+'_innerLower_eyelid_bnd'),
+                 nt.Joint(prefix+'_lower_eyelid_bnd'),
+                 nt.Joint(prefix+'_outerLower_eyelid_bnd'),
+                 nt.Joint(prefix+'_outer_eyelid_bnd')]
     upperCtls = [pm.PyNode(node.name().replace('_bnd', '_ctrl')) for node in upperBnds]
     lowerCtls = [pm.PyNode(node.name().replace('_bnd', '_ctrl')) for node in lowerBnds]
     drvCrv = pm.PyNode(prefix+'_eye_aimAt_crv_0')

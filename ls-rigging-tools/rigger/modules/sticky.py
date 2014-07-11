@@ -27,15 +27,15 @@ def addStickyToFRS():
     '''
     #lf_ctl = pm.PyNode('LT_corner_lip_pri_ctrl')
     #rt_ctl = pm.PyNode('RT_corner_lip_pri_ctrl')
-    jaw_ctl = pm.PyNode('CT_jaw_pri_ctrl')
+    jaw_ctl = pm.PyNode('CT__jaw_pri_ctrl')
     jaw_ctg = jaw_ctl.getParent()
     
-    lf_pinch = pm.PyNode('LT_upper_pinch_lip_sticky_master')
-    lf_sneer = pm.PyNode('LT_upper_sneer_lip_sticky_master')
-    lf_side = pm.PyNode('LT_upper_side_lip_sticky_master')
-    rt_pinch = pm.PyNode('RT_upper_pinch_lip_sticky_master')
-    rt_sneer = pm.PyNode('RT_upper_sneer_lip_sticky_master')
-    rt_side = pm.PyNode('RT_upper_side_lip_sticky_master')
+    lf_pinch = pm.PyNode('LT_upperPinch_lip_bnd_sticky_master')
+    lf_sneer = pm.PyNode('LT_upperSneer_lip_bnd_sticky_master')
+    lf_side = pm.PyNode('LT_upperSide_lip_bnd_sticky_master')
+    rt_pinch = pm.PyNode('RT_upperPinch_lip_bnd_sticky_master')
+    rt_sneer = pm.PyNode('RT_upperSneer_lip_bnd_sticky_master')
+    rt_side = pm.PyNode('RT_upperSide_lip_bnd_sticky_master')
     ct_stick = pm.PyNode('CT_upper_lip_bnd_sticky_master')
     
     jaw_ctl.addAttr('leftSealAmount', k=True, dv=0, min=0, max=1)
@@ -107,41 +107,42 @@ def addStickyToFRS():
 import pymel.core.nodetypes as nt
 def patchOldSticky():
     # patch old sticky
-    master = pm.PyNode('FACE:CT_stickylips_grp')
+    master = pm.PyNode('CT_stickylips_grp')
     
-    master.addAttr('CT_upper_lip_bnd_weight', k=True, dv=0)
-    master.addAttr('CT_lower_lip_bnd_weight', k=True, dv=1)
+    master.addAttr('CT_upper_lip_weight', k=True, dv=0)
+    master.addAttr('CT_lower_lip_weight', k=True, dv=1)
     
-    master.addAttr('LT_upper_side_lip_weight', k=True, dv=0.05)
-    master.addAttr('LT_upper_sneer_lip_weight', k=True, dv=0.1)
-    master.addAttr('LT_upper_pinch_lip_weight', k=True, dv=0.2)
+    master.addAttr('LT_upperSide_lip_weight', k=True, dv=0.035)
+    master.addAttr('LT_upperSneer_lip_weight', k=True, dv=0.15)
+    master.addAttr('LT_upperPinch_lip_weight', k=True, dv=0.35)
     master.addAttr('LT_corner_lip_weight', k=True, dv=0.5)
-    master.addAttr('LT_lower_side_lip_weight', k=True, dv=0.975)
-    master.addAttr('LT_lower_sneer_lip_weight', k=True, dv=0.95)
-    master.addAttr('LT_lower_pinch_lip_weight', k=True, dv=0.8)
+    master.addAttr('LT_lowerSide_lip_weight', k=True, dv=0.975)
+    master.addAttr('LT_lowerSneer_lip_weight', k=True, dv=0.85)
+    master.addAttr('LT_lowerPinch_lip_weight', k=True, dv=0.65)
     
-    master.addAttr('RT_upper_side_lip_weight', k=True, dv=0.05)
-    master.addAttr('RT_upper_sneer_lip_weight', k=True, dv=0.1)
-    master.addAttr('RT_upper_pinch_lip_weight', k=True, dv=0.2)
+    master.addAttr('RT_upperSide_lip_weight', k=True, dv=0.035)
+    master.addAttr('RT_upperSneer_lip_weight', k=True, dv=0.15)
+    master.addAttr('RT_upperPinch_lip_weight', k=True, dv=0.35)
     master.addAttr('RT_corner_lip_weight', k=True, dv=0.5)
-    master.addAttr('RT_lower_side_lip_weight', k=True, dv=0.975)
-    master.addAttr('RT_lower_sneer_lip_weight', k=True, dv=0.95)
-    master.addAttr('RT_lower_pinch_lip_weight', k=True, dv=0.8)
+    master.addAttr('RT_lowerSide_lip_weight', k=True, dv=0.975)
+    master.addAttr('RT_lowerSneer_lip_weight', k=True, dv=0.85)
+    master.addAttr('RT_lowerPinch_lip_weight', k=True, dv=0.65)
     
-    stickyNode = [nt.Transform(u'FACE:LT_upper_pinch_lip_sticky_master'),
-                    nt.Transform(u'FACE:LT_upper_side_lip_sticky_master'),
-                    nt.Transform(u'FACE:LT_upper_sneer_lip_sticky_master'),
-                    nt.Transform(u'FACE:RT_upper_pinch_lip_sticky_master'),
-                    nt.Transform(u'FACE:RT_upper_side_lip_sticky_master'),
-                    nt.Transform(u'FACE:RT_upper_sneer_lip_sticky_master'),
-                    nt.Transform(u'FACE:CT_upper_lip_bnd_sticky_master')]
+    stickyNode = [nt.Transform(u'LT_upperPinch_lip_bnd_sticky_master'),
+                    nt.Transform(u'LT_upperSide_lip_bnd_sticky_master'),
+                    nt.Transform(u'LT_upperSneer_lip_bnd_sticky_master'),
+                    nt.Transform(u'RT_upperPinch_lip_bnd_sticky_master'),
+                    nt.Transform(u'RT_upperSide_lip_bnd_sticky_master'),
+                    nt.Transform(u'RT_upperSneer_lip_bnd_sticky_master'),
+                    nt.Transform(u'CT_upper_lip_bnd_sticky_master')]
     
     def patchStickyNode(node):
         str = pm.createNode('setRange', n=node+'_str')
         str.oldMax.set(1,1,1)
         node.lowVal >> str.valueX
         node.upVal >> str.valueY
-        upAttrName = '_'.join(node.split(':')[1].split('_')[:4])+'_weight'
+        # upAttrName = '_'.join(node.split(':')[1].split('_')[:4])+'_weight'
+        upAttrName = '_'.join(node.split('_')[:3])+'_weight'
         if '_bnd' in upAttrName:
             upAttrName = upAttrName.replace('_bnd', '')
         lowAttrName = upAttrName.replace('upper', 'lower')
@@ -162,9 +163,9 @@ def patchOldSticky():
         lowBnd = pm.PyNode(lowBndName)
         
         for attr in attrs:
-            weightAttr = upBnd.attr('CT_jaw_pri_ctrl_weight_'+attr)
+            weightAttr = upBnd.attr('CT__jaw_pri_ctrl_weight_'+attr)
             str.outValueX >> weightAttr
-            weightAttr = lowBnd.attr('CT_jaw_pri_ctrl_weight_'+attr)
+            weightAttr = lowBnd.attr('CT__jaw_pri_ctrl_weight_'+attr)
             str.outValueY >> weightAttr
         
     for eachNode in stickyNode:
@@ -252,7 +253,7 @@ class Sticky():
         master.lowVal >> master.rotateLowMult
         
         
-        
+        """
         # up_ctg world pt
         up_ctg_pmm = pm.createNode('pointMatrixMult', n=self.name+'_up_ctg_pmm')
         self.up_ctg.worldMatrix[0] >> up_ctg_pmm.inMatrix
@@ -411,7 +412,7 @@ class Sticky():
         low_bnd_sticky | self.low_bnd
         low_sticky.translate >> low_bnd_sticky.translate
         low_sticky.rotate >> low_bnd_sticky.rotate
-        
+        """
         pm.select(master)
 
         
