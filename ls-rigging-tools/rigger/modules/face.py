@@ -855,7 +855,11 @@ def cleanFaceRig():
                     u'RT_upperSide_lip_ctrl',
                     u'RT_corner_lip_ctrl',
                     u'RT_upperSneer_lip_ctrl',
-                    u'RT_lowerSneer_lip_ctrl']
+                    u'RT_lowerSneer_lip_ctrl',
+                    u'LT_lowerCorner_lip_ctrl',
+                    u'LT_upperCorner_lip_ctrl',
+                    u'RT_lowerCorner_lip_ctrl',
+                    u'RT_upperCorner_lip_ctrl']
     rt.connectVisibilityToggle(mouthTweakers, faceCtl.name(), 'mouthTweakersVis', True)
     browTweakers = [u'CT__brow_ctrl',
                     u'LT__browCrease_ctrl',
@@ -871,7 +875,9 @@ def cleanFaceRig():
                     u'RT_mid_browB_ctrl',
                     u'RT_out_browA_ctrl',
                     u'LT_out_browB_ctrl',
-                    u'RT_out_browB_ctrl']
+                    u'RT_out_browB_ctrl',
+                    u'LT_in_browC_ctrl',
+                    u'RT_in_browC_ctrl']
     rt.connectVisibilityToggle(browTweakers, faceCtl.name(), 'browTweakersVis', True)
     eyelidTweakers = [u'LT_inner_eyelid_ctrl',
                     u'LT_innerUpper_eyelid_ctrl',
@@ -960,7 +966,40 @@ def cleanFaceRig():
                     u'RT__sneer_ctrl',
                     u'RT_mid_chin_ctrl',
                     u'LT__browMover_ctrl',
-                    u'RT__browMover_ctrl']
+                    u'RT__browMover_ctrl',
+                    u'LT_low_temple_ctrl',
+                    u'LT_up_squint_ctrl',
+                    u'RT_low_temple_ctrl',
+                    u'CT_up_eyeSocket_ctrl',
+                    u'CT_mid_eyeSocket_ctrl',
+                    u'CT_low_eyeSocket_ctrl',
+                    u'CT__sneer_ctrl',
+                    u'LT_midCorner_chin_ctrl',
+                    u'LT_corner_sneer_ctrl',
+                    u'LT_in_chin_ctrl',
+                    u'LT_in_neck_ctrl',
+                    u'LT_midUp_cheek_ctrl',
+                    u'LT_midLow_cheek_ctrl',
+                    u'LT_cornerUp_jaw_ctrl',
+                    u'LT_cornerLow_jaw_ctrl',
+                    u'LT__chinA_ctrl',
+                    u'LT__neckA_ctrl',
+                    u'LT__neckB_ctrl',
+                    u'LT_lowOut_cheek_ctrl',
+                    u'RT_midCorner_chin_ctrl',
+                    u'RT_corner_sneer_ctrl',
+                    u'RT_up_squint_ctrl',
+                    u'RT_in_chin_ctrl',
+                    u'RT_in_neck_ctrl',
+                    u'RT_midUp_cheek_ctrl',
+                    u'RT_midLow_cheek_ctrl',
+                    u'RT_cornerUp_jaw_ctrl',
+                    u'RT_cornerLow_jaw_ctrl',
+                    u'RT__chinA_ctrl',
+                    u'RT__neckA_ctrl',
+                    u'RT__neckB_ctrl',
+                    u'RT_lowOut_cheek_ctrl',
+                    u'CT__mouthMover_ctrl']
     rt.connectVisibilityToggle(hiddenCtls, faceCtl.name(), 'hiddenControlsVis', False)
     rt.connectVisibilityToggle(['CT_bnd_grp', 'CT_placement_grp'], faceCtl.name(), 'jointsVis', False)
     """

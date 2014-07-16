@@ -19,12 +19,12 @@ reload(data)
 def build():
     '''
     '''
-#     mesh = nt.Mesh(u'CT_face_geoShape')
-#      
-#     placementGrp = nt.Transform(u'CT_placement_grp')
-#     bindGrp = face.createBndsFromPlacement(placementGrp)
-#     face.buildSecondaryControlSystem(placementGrp, bindGrp, mesh)
-#     
+    mesh = nt.Mesh(u'CT_face_geoShape')
+      
+    placementGrp = nt.Transform(u'CT_placement_grp')
+    bindGrp = face.createBndsFromPlacement(placementGrp)
+    face.buildSecondaryControlSystem(placementGrp, bindGrp, mesh)
+     
     bindGrp = nt.Transform(u'CT_bnd_grp')
     if data.priCtlMappings:
         # if priCtlMappings is setup, use the data

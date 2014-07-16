@@ -22,6 +22,7 @@ def connectStickyToSeal(leftSealAmt, rightSealAmt, stickyMaster):
 
 def addStickyToFRS():
     '''
+    decrepretated - only use for Ori
     assume all FRS nodes are already named correctly
     
     '''
@@ -103,6 +104,91 @@ def addStickyToFRS():
     pm.group(lf_pinch, lf_side, lf_sneer,
              rt_pinch, rt_side, rt_sneer,
              ct_stick, n='CT_stickylips_grp')
+
+def addStickyControlSystem():
+    '''
+    same as addStickyToFRS, but with arguments
+    adds connections to individual sticky master nodes
+    '''
+    #lf_ctl = pm.PyNode('LT_corner_lip_pri_ctrl')
+    #rt_ctl = pm.PyNode('RT_corner_lip_pri_ctrl')
+    jaw_ctl = pm.PyNode('CT__jaw_pri_ctrl')
+    jaw_ctg = jaw_ctl.getParent()
+    
+    lf_pinch = pm.PyNode('LT_upperPinch_lip_bnd_sticky_master')
+    lf_sneer = pm.PyNode('LT_upperSneer_lip_bnd_sticky_master')
+    lf_side = pm.PyNode('LT_upperSide_lip_bnd_sticky_master')
+    rt_pinch = pm.PyNode('RT_upperPinch_lip_bnd_sticky_master')
+    rt_sneer = pm.PyNode('RT_upperSneer_lip_bnd_sticky_master')
+    rt_side = pm.PyNode('RT_upperSide_lip_bnd_sticky_master')
+    ct_stick = pm.PyNode('CT_upper_lip_bnd_sticky_master')
+    
+    jaw_ctl.addAttr('leftSealAmount', k=True, dv=0, min=0, max=1)
+    jaw_ctl.addAttr('rightSealAmount', k=True, dv=0, min=0, max=1)
+    jaw_ctl.addAttr('leftSealHeight', k=True, dv=0.5, min=0, max=1)
+    jaw_ctl.addAttr('rightSealHeight', k=True, dv=0.5, min=0, max=1)
+    
+    jaw_ctg.addAttr('lf_pinch_amt_lf', k=True)
+    jaw_ctg.addAttr('lf_sneer_amt_lf', k=True)
+    jaw_ctg.addAttr('lf_side_amt_lf', k=True)
+    jaw_ctg.addAttr('lf_center_amt_lf', k=True)
+    jaw_ctg.addAttr('rt_pinch_amt_lf', k=True)
+    jaw_ctg.addAttr('rt_sneer_amt_lf', k=True)
+    jaw_ctg.addAttr('rt_side_amt_lf', k=True)
+    
+    jaw_ctg.addAttr('lf_pinch_amt_rt', k=True)
+    jaw_ctg.addAttr('lf_sneer_amt_rt', k=True)
+    jaw_ctg.addAttr('lf_side_amt_rt', k=True)
+    jaw_ctg.addAttr('lf_center_amt_rt', k=True)
+    jaw_ctg.addAttr('rt_pinch_amt_rt', k=True)
+    jaw_ctg.addAttr('rt_sneer_amt_rt', k=True)
+    jaw_ctg.addAttr('rt_side_amt_rt', k=True)
+    
+    rt.connectSDK(jaw_ctl.leftSealAmount, jaw_ctg.lf_pinch_amt_lf, {0:0, 0.25:1})
+    rt.connectSDK(jaw_ctl.leftSealAmount, jaw_ctg.lf_sneer_amt_lf, {0:0, 0.75:1})
+    rt.connectSDK(jaw_ctl.leftSealAmount, jaw_ctg.lf_side_amt_lf, {0.25:0, 0.9:0.75})
+    rt.connectSDK(jaw_ctl.leftSealAmount, jaw_ctg.lf_center_amt_lf, {0.5:0, 1:0.5})
+    rt.connectSDK(jaw_ctl.leftSealAmount, jaw_ctg.rt_side_amt_lf, {0.75:0, 1:0.25})
+    rt.connectSDK(jaw_ctl.leftSealAmount, jaw_ctg.rt_sneer_amt_lf, {0:0, 1:0})
+    rt.connectSDK(jaw_ctl.leftSealAmount, jaw_ctg.rt_pinch_amt_lf, {0:0, 1:0})
+    
+    rt.connectSDK(jaw_ctl.rightSealAmount, jaw_ctg.lf_pinch_amt_rt, {0:0, 0:0})
+    rt.connectSDK(jaw_ctl.rightSealAmount, jaw_ctg.lf_sneer_amt_rt, {0:0, 0:0})
+    rt.connectSDK(jaw_ctl.rightSealAmount, jaw_ctg.lf_side_amt_rt, {0.75:0, 1:0.25})
+    rt.connectSDK(jaw_ctl.rightSealAmount, jaw_ctg.lf_center_amt_rt, {0.5:0, 1:0.5})
+    rt.connectSDK(jaw_ctl.rightSealAmount, jaw_ctg.rt_side_amt_rt, {0.25:0, 0.9:0.75})
+    rt.connectSDK(jaw_ctl.rightSealAmount, jaw_ctg.rt_sneer_amt_rt, {0:0, 0.75:1})
+    rt.connectSDK(jaw_ctl.rightSealAmount, jaw_ctg.rt_pinch_amt_rt, {0:0, 0.25:1})
+    
+    # connect sealAmounts
+    connectStickyToSeal(jaw_ctg.lf_pinch_amt_lf, jaw_ctg.lf_pinch_amt_rt, lf_pinch)
+    connectStickyToSeal(jaw_ctg.lf_sneer_amt_lf, jaw_ctg.lf_sneer_amt_rt, lf_sneer)
+    connectStickyToSeal(jaw_ctg.lf_side_amt_lf, jaw_ctg.lf_side_amt_rt, lf_side)
+    connectStickyToSeal(jaw_ctg.lf_center_amt_lf, jaw_ctg.lf_center_amt_rt, ct_stick)
+    connectStickyToSeal(jaw_ctg.rt_side_amt_lf, jaw_ctg.rt_side_amt_rt, rt_side)
+    connectStickyToSeal(jaw_ctg.rt_sneer_amt_lf, jaw_ctg.rt_sneer_amt_rt, rt_sneer)
+    connectStickyToSeal(jaw_ctg.rt_pinch_amt_lf, jaw_ctg.rt_pinch_amt_rt, rt_pinch)
+    
+    # jaw_ctl.addAttr('autoSticky', k=True, dv=0, min=0, max=1)
+    
+    # connect sealHeights
+    jaw_ctl.leftSealHeight >> lf_pinch.midVal
+    jaw_ctl.leftSealHeight >> lf_sneer.midVal
+    jaw_ctl.leftSealHeight >> lf_side.midVal
+    jaw_ctl.rightSealHeight >> rt_pinch.midVal
+    jaw_ctl.rightSealHeight >> rt_sneer.midVal
+    jaw_ctl.rightSealHeight >> rt_side.midVal
+    # for center, use average between both sides
+    ct_avg_pma = pm.createNode('plusMinusAverage', n='CT_stickyLips_avg_pma')
+    ct_avg_pma.operation.set(3)
+    jaw_ctl.leftSealHeight >> ct_avg_pma.input3D[0].i3x
+    jaw_ctl.rightSealHeight >> ct_avg_pma.input3D[1].i3x
+    ct_avg_pma.output3D.o3x >> ct_stick.midVal
+    
+    pm.group(lf_pinch, lf_side, lf_sneer,
+             rt_pinch, rt_side, rt_sneer,
+             ct_stick, n='CT_stickylips_grp')
+
 
 import pymel.core.nodetypes as nt
 def patchOldSticky():
@@ -414,17 +500,9 @@ class Sticky():
         low_sticky.rotate >> low_bnd_sticky.rotate
         """
         pm.select(master)
+        
+        return master
 
-        
-        
-
-        
-        
-        
-        
-        
-    
-    
     def populateData(self, name, up_bnd, low_bnd, center):
         '''
         '''

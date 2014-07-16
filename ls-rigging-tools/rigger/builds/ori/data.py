@@ -14,6 +14,18 @@ def addRightSideToList(l):
             toAdd.append(item.replace('LT_', 'RT_'))
     return l + toAdd
 
+# to switch off an action,
+# just add '-' or something so it won't run
+build_actions = ['-bind',
+                 '-sec_motion_system',
+                 '-primary_ctl_system_first',
+                 '-primary_ctl_system_second',
+                 '-load_weights',
+                 '-clean',
+                 '-surface_constraint',
+                 '-eyes',
+                 'eyeballs']
+
 # list of priCtls for first pass
 # order is important
 # those created earlier can be affected by those created later

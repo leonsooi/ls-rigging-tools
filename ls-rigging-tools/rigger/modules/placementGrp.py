@@ -10,6 +10,23 @@ import pymel.core as pm
 import rigger.modules.eye as eye
 import rigger.utils.xform as xform
 
+def updatePlacementGrpAttrFromSel(pGrp, attrName):
+    '''
+    '''
+    sel = pm.ls(sl=True, fl=True)
+    updatePlacementGrpAttr(pGrp, attrName, sel)
+
+def updatePlacementGrpAttr(pGrp, attrName, val):
+    '''
+    attrName already needs to be there (created by UI)
+    val should be a string array (of pynodes)
+    '''
+    try:
+        attr = pGrp.attr(attrName)
+        attr.set(len(val), *val, type='stringArray')
+    except:
+        print attrName + ' not found'
+
 def savePlacementGrpToDict(pGrp):
     '''
     returns dictionary with all information about a pGrp
