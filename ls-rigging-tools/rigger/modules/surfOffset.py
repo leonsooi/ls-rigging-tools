@@ -8,10 +8,21 @@ import pymel.core as pm
 def addOffset(node):
     '''
     - add a grp above node
-    - add a nurbs plane under grp's parent
+    - add a nurbs plane under grp's parent (get the same local space)
+    - unparent nurbs plane to world space (or whichever deformer space - e.g. headLattice)
     - add pointOnSurfaceInfo to get position and orientation for grp
     - use aimconstraint to convert vectors to orientation
     - return grp as offset
+    
+    example use for mathilda:
+    import rigger.modules.surfOffset as surfOffset
+    reload(surfOffset)
+    nodes = pm.ls(sl=True)
+    offsets = []
+    for n in nodes:
+        offsetGrp = surfOffset.addOffset(n)
+        offsets.append(offsetGrp[1])
+    pm.select(offsets)
     '''
     nodeMatrix = node.getMatrix(worldSpace=True)
     offsetGrp = pm.group(em=True, n=node+'_surfOffset_grp')
@@ -24,8 +35,11 @@ def addOffset(node):
     # nurbs plane
     plane = pm.nurbsPlane(n=node+'_surfOffset_srf', ch=False, 
                           degree=1, axis=(0,1,0))[0]
-    plane.setMatrix(nodeMatrix, worldSpace=True)
-    parentNode | plane
+    # parentNode | plane # don't
+    # use separate hierachy
+    planeGrp = pm.group(plane, n=node+'_surfOffsetSrf_grp')
+    planeHm = pm.group(planeGrp, n=node+'_surfOffsetSrf_hm')
+    planeHm.setMatrix(nodeMatrix, worldSpace=True)
     
     # point on surface info
     posi = pm.createNode('pointOnSurfaceInfo', n=node+'_surfOffset_posi')

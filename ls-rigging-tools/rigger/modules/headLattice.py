@@ -55,8 +55,10 @@ def createLatticeControls():
     lat = nt.Transform(u'CT_headLattice_dfmLattice')
     
     # defining lattice points  
-    deformPoints = {'CT_headUpper': [lat.pt[0:1][3][0:1], lat.pt[0:1][4:8][0:1]],
-                    'CT_headLower': [lat.pt[0:1][2][0:1], lat.pt[0:1][0:1][0:1]]}
+    deformPoints = {'CT_headUpperA': [lat.pt[0:1][8][0:1], []],
+                    'CT_headUpperB': [lat.pt[0:1][9][0:1], lat.pt[0:1][10:15][0:1]],
+                    'CT_headLowerA': [lat.pt[0:1][7][0:1], []],
+                    'CT_headLowerB': [lat.pt[0:1][6][0:1], lat.pt[0:1][0:5][0:1]]}
     
     
     # create clusters
