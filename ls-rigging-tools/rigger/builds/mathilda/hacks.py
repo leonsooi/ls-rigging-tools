@@ -5,6 +5,38 @@ Created on Jul 14, 2014
 '''
 import pymel.core as pm
 import pymel.core.nodetypes as nt
+from pymel.core.language import Mel
+import utils.rigging as rt
+mel = Mel()
+
+def faceEvaluationSwitch():
+    '''
+    find all deformers on geos
+    when switchAttr = False,
+    set nodes to HasNoEffect
+    '''
+    geos = [nt.Transform(u'FACE:LT_eyelashes_geo'),
+            nt.Transform(u'FACE:RT_eyelashes_geo'),
+            nt.Transform(u'FACE:CT_face_geo'),
+            nt.Transform(u'CT_face_geo_lattice'),
+            nt.Transform(u'CT_face_geo_latticeWeights')]
+    
+    # add switch to face ctrl
+    faceCtl = pm.PyNode('FACE:CT_face_ctrl')
+    faceCtl.addAttr('disableFace', at='bool', dv=0)
+    faceCtl.attr('disableFace').showInChannelBox(True)
+    
+    for geo in geos:
+        dfmNames = mel.findRelatedDeformer(geo)
+        for dfmName in dfmNames:
+            dfm = pm.PyNode(dfmName)
+            faceCtl.attr('disableFace') >> dfm.nodeState
+            
+    # also hide inner mouth geo
+    mouthGeoGrp = pm.PyNode('FACE:CT_mouth_geo_grp')
+    rt.connectSDK(faceCtl.attr('disableFace'), 
+                  mouthGeoGrp.v, {0:1, 1:0})
+        
 
 def addJacketCollarNoRotBinds():
     # add collar joint no-rotate

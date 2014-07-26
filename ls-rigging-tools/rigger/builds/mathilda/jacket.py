@@ -8,6 +8,7 @@ import pymel.core.nodetypes as nt
 import pymel.core.datatypes as dt
 import utils.rigging as rt
 import rigger.utils.modulate as modulate
+reload(modulate)
 
 def addCtlsToJointChain(jntPrefix, name=''):
     '''
@@ -238,8 +239,194 @@ def setVertJointChainsTwist():
         hdl.dWorldUpAxis.set(4)
         startObject.worldMatrix >> hdl.dWorldUpMatrix
         endObject.worldMatrix >> hdl.dWorldUpMatrixEnd
-        
 
+def addCurveLengthRatioGlobalScale(crv, scaleAttr):
+    '''
+    patches addCurveLengthRatioAttr to globalScale
+    '''
+    crv.addAttr('globalScale', k=True, dv=1, min=0.001)
+    scaleAttr >> crv.attr('globalScale')
+    
+    # assume lengthRatio attr was already created
+    md = crv.attr('lengthRatio').inputs()[0]
+    
+    # modulate input1X by scale
+    currInput = md.input1X.get()
+    modScale = modulate.multiplyInput(md.input1X, 1, '_scale')
+    scaleAttr >> modScale
+
+def addCurveLengthRatioAttr(crv):
+    '''
+    crv - transform of a nurbsCurve
+    add 'lengthRatio' attribute to crv, where
+    lengthRatio = origLength / currLength
+    
+    e.g.:
+    import rigger.builds.mathilda.jacket as jacket
+    reload(jacket)
+    allCrvs = pm.ls(sl=True)
+    for crv in allCrvs:
+        jacket.addCurveLengthRatioAttr(crv)
+    '''
+    origLength = crv.length()
+    cif = pm.createNode('curveInfo', n=crv+'_lengthRatio_cif')
+    crv.worldSpace[0] >> cif.inputCurve
+    md = pm.createNode('multiplyDivide', n=crv+'_lengthRatio_md')
+    md.input1X.set(origLength)
+    md.operation.set(2)
+    cif.arcLength >> md.input2X
+    crv.addAttr('lengthRatio', k=True)
+    md.outputX >> crv.attr('lengthRatio')
+    pm.select(crv)
+    
+def jacketVertCrvPatch(crv):
+    '''
+    previously, the vert crvs are driven by pmms
+    driven by joints driven by ikSplines driven by hori crvs
+    
+    this will change it to be driven by motionPaths on the hori crvs,
+    which may hopefully be faster than ikSplines
+    '''
+    for cv in crv.cv[:]:
+        pmm = cv.connections()[0]
+        # first 4 tokens of the name gives us the hori crv
+        horiCrvName = '_'.join(pmm.name().split('_')[:4])
+        horiCrv = pm.PyNode(horiCrvName)
+        connectVertCrvCVToHoriCrv(cv, horiCrv)
+            
+def connectVertCrvCVToHoriCrv(cv, horiCrv):
+    '''
+    get closest pt to cv on horiCrv
+    get param, get length, get percentage along length (for motionPath)
+    multiply percentage by horiCrv.lengthRatio
+    '''
+    pt = cv.getPosition()
+    param = horiCrv.getParamAtPoint(pt)
+    ptLength = findLengthFromParam(horiCrv, param)
+    totalLength = horiCrv.length()
+    lengthPercent = ptLength / totalLength
+    
+    # multiply lengthPercent
+    mdl = pm.createNode('multDoubleLinear', n=horiCrv+'_cv%d'%cv.index())
+    mdl.input1.set(lengthPercent)
+    horiCrv.lengthRatio >> mdl.input2
+    
+    # percentage used for motionPath uVal
+    mp = pm.createNode('motionPath', n=horiCrv+'_mp%d'%cv.index())
+    horiCrv.worldSpace[0] >> mp.gp
+    mdl.output >> mp.uValue
+    mp.fractionMode.set(True)
+    mp.ac >> cv
+    
+def jacketCtlPatch():
+    '''
+    previously ctls were driven matrices by joint's matrix
+    joint were driven by ikSplines driven by vert crvs
+    
+    ctls will still be driven by matrices,
+    but will use locator matrices instead
+    locators will be driven by motionpaths
+    
+    DONT PATCH THIS FOR MATHILDA
+    the speed improvement is negligible
+    possibly because the motion path alignment ends up
+    using the same amt of computes as iksplines
+    '''
+    # set up crvs to calculate lengths
+    jacketVertCrvsGrp = nt.Transform(u'CT_jacketVertCrvs_grp')
+    allVertCrvs = [n for n in jacketVertCrvsGrp.getChildren()
+                    if '_crv' in n.name()]
+    for crv in allVertCrvs:
+        addCurveLengthRatioAttr(crv)
+        addCurveLengthRatioGlobalScale(crv, 
+                                       pm.PyNode('Mathilda_root_ctrl.masterScale'))
+    
+    # set up locators to replace joints
+    jacketCtlGrp = nt.Transform(u'CT_jacket_ctls_grp')
+    allJacketCths = [n for n in jacketCtlGrp.getChildren(ad=True)
+                     if '_cth' in n.name()]
+    newLocs = []
+    for eachCth in allJacketCths:
+        cthId = int(eachCth.name().split('_')[1][-1])
+        # get driver jnt (with same id at the end)
+        driverJnt = [jnt for jnt in eachCth.listHistory(type='joint')
+                     if jnt[-1] == str(cthId)][0]
+        # remove last two tokens to get curve name
+        vertCrv = '_'.join(driverJnt.split('_')[:-2])
+        vertCrv = pm.PyNode(vertCrv)
+        newLocs.append(addLocToVertCrv(eachCth, vertCrv, driverJnt))
+    locGrp = pm.group(newLocs, n='CT_jacketVertCrvsLoc_grp')
+        
+    # replace joint matrix with locator matrix
+    allVertJntsGrp = pm.PyNode('CT_jacketVertCrvsJoints_grp')
+    allVertJnts = allVertJntsGrp.getChildren(ad=True, type='joint')
+    for jnt in allVertJnts:
+        # find substitute loc
+        locName = jnt.replace('_jnt_', '_loc_')
+        if pm.objExists(locName):
+            loc = pm.PyNode(locName)
+            substituteJointWithLoc(jnt, loc)
+        else:
+            # no loc for this joint
+            pass
+    
+def substituteJointWithLoc(jnt, loc):
+    '''
+    get all outgoing connections for jnt's worldMatrix
+    replace them with loc's worldMatrix
+    '''
+    outPlugs = jnt.worldMatrix[0].outputs(p=True)
+    for plug in outPlugs:
+        loc.worldMatrix[0] >> plug
+
+def addLocToVertCrv(cth, vertCrv, driverJnt):
+    '''
+    get closest pt to ctl on vertCrv
+    get param, get length, get percentage along length (for motionPath)
+    multiply percentage by vertCrv.lengthRatio
+    
+    return loc
+    '''
+    cthId = int(cth.name().split('_')[1][-1])
+    
+    pt = driverJnt.getTranslation(space='world')
+    param = vertCrv.getParamAtPoint(pt)
+    ptLength = findLengthFromParam(vertCrv, param)
+    totalLength = vertCrv.length()
+    lengthPercent = ptLength / totalLength
+    
+    # multiply lengthPercent
+    mdl = pm.createNode('multDoubleLinear', 
+                        n=vertCrv+'_md_'+str(cthId))
+    mdl.input1.set(lengthPercent)
+    vertCrv.lengthRatio >> mdl.input2
+    
+    # percentage used for motionPath uVal
+    mp = pm.createNode('motionPath', 
+                       n=vertCrv+'_mp_'+str(cthId))
+    vertCrv.worldSpace[0] >> mp.gp
+    mdl.output >> mp.uValue
+    mp.fractionMode.set(True)
+    # aim settings for motionPath
+    aimObjects = {0: nt.Joint(u'Mathilda_spine_end_jnt'),
+                    2: nt.Joint(u'Mathilda_spine_hi_jnt'),
+                    4: nt.Joint(u'Mathilda_spine_mid_jnt'),
+                    6: nt.Joint(u'Mathilda_hip_jnt')}
+    aimObj = aimObjects[cthId]
+    mp.wut.set(1) # object up
+    aimObj.worldMatrix >> mp.worldUpMatrix
+    mp.frontAxis.set(0) # X
+    mp.upAxis.set(2) # Z
+    mp.inverseUp.set(True)
+    
+    # create locator to substitute for joint
+    loc = pm.spaceLocator(n=vertCrv+'_loc_'+str(cthId))
+    mp.ac >> loc.t
+    mp.r >> loc.r
+    
+    return loc
+    
+    
 def findLengthFromParam(crv, param):
     '''
     MFnNurbsCurve has findParamFromLength, but not the other way!
@@ -247,9 +434,16 @@ def findLengthFromParam(crv, param):
     then get the whole length of the new curve
     '''
     firstCrv, secondCrv, node = pm.detachCurve(crv.u[param], ch=True, rpo=False)
-    length = firstCrv.length()
-    pm.undo()
-    return length
+    try:
+        length = firstCrv.length()
+        pm.undo()
+        return length
+    except RuntimeError as e:
+        print e
+        print 'param may be 0'
+        pm.undo()
+        return 0
+        
 
 def addJointChainToCVs(crv, startCV, endCV):
     '''

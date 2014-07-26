@@ -29,7 +29,7 @@ def multiplyInput(attr, dv, suffix=''):
     if inPlug:
         inPlug >> mdl.input1
     else:
-        mdl.input1.set(1)
+        mdl.input1.set(attr.get())
         
     modAttr >> mdl.input2
     

@@ -22,3 +22,13 @@ def addEyelidNoScaleJoints():
         decMat.ot >> noscale_bnd.t
         decMat.outputRotate >> noscale_bnd.r
         noscale_bnds_grp | noscale_bnd
+        
+def setJointLabels():
+    # set joint labels by second token
+    jnts = pm.ls(sl=True)
+    for jnt in jnts:
+        label = jnt.split('_')[1]
+        jnt.drawLabel.set(True)
+        jnt.attr('type').set('Other')
+        jnt.otherType.set(label)
+        # jnt.drawLabel.set(False)

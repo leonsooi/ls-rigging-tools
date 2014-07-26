@@ -5,8 +5,37 @@ Created on May 11, 2014
 '''
 import pymel.core as pm
 mel = pm.language.Mel()
+import pymel.core.nodetypes as nt
 
 import utils.rigging as rt
+
+def mirror_eyeCurve_weights():
+    '''
+    mirror LT_eye_aimAt_crv_0 to RT_eye_aimAt_crv_0
+    '''
+    lf_crv = nt.Transform(u'LT_eye_aimAt_crv_0')
+    rt_crv = nt.Transform(u'RT_eye_aimAt_crv_0')
+    lf_skn = pm.PyNode(mel.findRelatedSkinCluster(lf_crv))
+    rt_skn = pm.PyNode(mel.findRelatedSkinCluster(rt_crv))
+    
+    def setEyeJointsLabels(joints):
+        for jnt in joints:
+            label = '_'.join(jnt.name().split('_')[1:3])
+            jnt.attr('type').set('Other')
+            jnt.otherType.set(label)
+    
+    lf_infs = pm.skinCluster(lf_crv, q=True, inf=True)
+    setEyeJointsLabels(lf_infs)
+    
+    rt_infs = pm.skinCluster(rt_crv, q=True, inf=True)
+    setEyeJointsLabels(rt_infs)
+    
+    lf_crv.sx.setLocked(False)
+    lf_crv.sx.set(-1)
+    
+    pm.copySkinWeights(ss=lf_skn, ds=rt_skn, sa='closestPoint', ia='label', nm=True)
+    
+    lf_crv.sx.set(1)
 
 def mirror_PyNodes(*args, **kwargs):
     '''

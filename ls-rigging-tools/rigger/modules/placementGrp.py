@@ -12,6 +12,18 @@ import rigger.utils.xform as xform
 
 def updatePlacementGrpAttrFromSel(pGrp, attrName):
     '''
+    example:
+    
+    import rigger.modules.placementGrp as placementGrp
+    reload(placementGrp)
+    
+    pGrp = nt.Transform(u'CT_placement_grp')
+    # mouth loop
+    placementGrp.updatePlacementGrpAttrFromSel(pGrp, 'mouthLipsLoop')
+    # eye loop
+    placementGrp.updatePlacementGrpAttrFromSel(pGrp, 'leftEyelidLoop')
+    
+    pm.select(pGrp.leftEyelidLoop.get())
     '''
     sel = pm.ls(sl=True, fl=True)
     updatePlacementGrpAttr(pGrp, attrName, sel)
