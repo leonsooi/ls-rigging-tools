@@ -171,9 +171,98 @@ def createSurfaceContraint():
     bnds = [pm.PyNode(name) for name in data.slidingBnds]
     
     for bnd in bnds:
-        addSurfaceConstraintToBnd(bnd, surf)
+        # addSurfaceConstraintToBnd(bnd, surf)
+        addSurfaceMatrixConstraintToBnd(bnd, surf)
     
-
+def addSurfaceMatrixConstraintToBnd(bnd, surface):
+    '''
+    similar to addSurfaceConstraintToBnd
+    but done without maya constraints
+    hopefully this will run faster
+    '''
+    secDrv = bnd.getParent()
+    matrix = secDrv.getMatrix(worldSpace=True)
+    
+    # create additional nulls
+    gc = pm.group(em=True, n=bnd.nodeName().replace('_bnd', '_gc'))
+    gc_offset = pm.group(em=True, n=bnd.nodeName().replace('_bnd', '_gc_offset'))
+    acs = pm.group(em=True, n=bnd.nodeName().replace('_bnd', '_acs'))
+    
+    # world space position of secDrv
+    secDrvWs_pmm = pm.createNode('pointMatrixMult', n=bnd.replace('_bnd', '_secDrvWsPmm'))
+    secDrv.worldMatrix >> secDrvWs_pmm.inMatrix
+    
+    # get closest param on surface
+    cpos = pm.createNode('closestPointOnSurface', n=bnd.replace('_bnd', '_cpos'))
+    surface.worldSpace >> cpos.inputSurface
+    secDrvWs_pmm.output >> cpos.inPosition
+    
+    # get position and normal on surface
+    posi = pm.createNode('pointOnSurfaceInfo', n=bnd.replace('_bnd', '_posi'))
+    surface.worldSpace >> posi.inputSurface
+    cpos.parameterU >> posi.parameterU
+    cpos.parameterV >> posi.parameterV
+    
+    # get upAxis (Y) vector of secDrv
+    secDrvUp_pmm = pm.createNode('pointMatrixMult', n=bnd.replace('_bnd', '_secDrvUpPmm'))
+    secDrv.worldMatrix >> secDrvUp_pmm.inMatrix
+    secDrvUp_pmm.inPoint.set(0,1,0)
+    secDrvUp_pmm.vectorMultiply.set(True)
+    
+    # calculate unconstrained axis (X) - cross upAxis by normal
+    vpX = pm.createNode('vectorProduct', n=bnd.replace('_bnd', '_unconstrainedAxis_vpx'))
+    vpX.operation.set(2)
+    vpX.normalizeOutput.set(True)
+    secDrvUp_pmm.output >> vpX.input1
+    posi.normalizedNormal >> vpX.input2
+    
+    # calculate Y vector - cross X by normal
+    vpY = pm.createNode('vectorProduct', n=bnd.replace('_bnd', '_upAxis_vpY'))
+    vpY.operation.set(2)
+    vpY.normalizeOutput.set(True)
+    posi.normalizedNormal >> vpY.input1
+    vpX.output >> vpY.input2
+    
+    # construct a matrix in worldSpace
+    wsMat = pm.createNode('fourByFourMatrix', n=bnd.replace('_bnd', '_wsFbfm'))
+    # x-vector
+    vpX.outputX >> wsMat.in00
+    vpX.outputY >> wsMat.in01
+    vpX.outputZ >> wsMat.in02
+    # y-vector
+    vpY.outputX >> wsMat.in10
+    vpY.outputY >> wsMat.in11
+    vpY.outputZ >> wsMat.in12
+    # z-vector
+    posi.normalizedNormalX >> wsMat.in20
+    posi.normalizedNormalY >> wsMat.in21
+    posi.normalizedNormalZ >> wsMat.in22
+    # position
+    posi.positionX >> wsMat.in30
+    posi.positionY >> wsMat.in31
+    posi.positionZ >> wsMat.in32
+    
+    # multiply matrix into localSpace (under secDrv)
+    lsMat = pm.createNode('multMatrix', n=bnd.replace('_bnd', '_lsMm'))
+    wsMat.output >> lsMat.matrixIn[0]
+    secDrv.worldInverseMatrix[0] >> lsMat.matrixIn[1]
+    
+    # decompose matrix into translates and rotates
+    decMat = pm.createNode('decomposeMatrix', n=bnd.replace('_bnd', '_srfCons_dcm'))
+    lsMat.matrixSum >> decMat.inputMatrix
+    
+    # drive gc transform
+    decMat.outputTranslate >> gc.t
+    decMat.outputRotate >> gc.r
+    
+    # ensure that gc_offset stores offset to secDrv
+    gc_offset.setMatrix(matrix, worldSpace=True)
+    acs.setMatrix(matrix, worldSpace=True)
+    
+    # hierarchy
+    secDrv | gc | gc_offset | acs | bnd
+    
+    
 def addSurfaceConstraintToBnd(bnd, surface):
     '''
     '''

@@ -44,7 +44,7 @@ def getPriCtlFirstPassWeights(bndGrp):
                 priCtlName = '_'.join(attr.attrName().split('_')[:5])
                 if priCtlName not in priCtlMappings.keys():
                     priCtlMappings[priCtlName] = {}
-                priCtlMappings[priCtlName][bnd.name()] = weight
+                priCtlMappings[priCtlName][bnd.name()] = round(weight, 4)
                 
             else:
                 # weight is 0, remove for optimization
