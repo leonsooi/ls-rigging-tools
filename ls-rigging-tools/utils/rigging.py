@@ -538,6 +538,7 @@ def mirrorXfoFromTo(xfo_from, xfo_to):
     grp3 | grp2
     grp3.sx.set(-1)
     grp1.sx.set(-1)
+    '''
     # get original parent of xfo_rt so we can set it back later
     parent_rt = xfo_to.getParent()
     # snap xfo_rt to grp1's xfo
@@ -547,10 +548,14 @@ def mirrorXfoFromTo(xfo_from, xfo_to):
         parent_rt | xfo_to
     else:
         xfo_to.setParent(None)
-        # delete temp nodes
+    '''
+    worldXfo = grp1.getMatrix(worldSpace=True)
+    xfo_to.setMatrix(worldXfo, worldSpace=True)
+    # delete temp nodes
     pm.delete(grp1, grp2, grp3)
     pm.select(xfo_to)
 
+    
 def mirrorXfo(xfo):
     '''
     mirror lf to rt

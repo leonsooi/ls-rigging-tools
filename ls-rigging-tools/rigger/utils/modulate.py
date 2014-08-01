@@ -10,9 +10,12 @@ import pymel.core.nodetypes as nt
 
 import rigger.utils.symmetry as sym
 
-def multiplyInput(attr, dv, suffix=''):
+def multiplyInput(attr, dv, suffix='', unitConversion=False):
     '''
     '''
+    if not isinstance(attr, pm.PyNode):
+        attr = pm.PyNode(attr)
+        
     node = attr.node()
     node.addAttr(attr.attrName()+'_mult'+suffix, k=True, dv=dv)
     modAttr = node.attr(attr.attrName()+'_mult'+suffix)
@@ -30,6 +33,11 @@ def multiplyInput(attr, dv, suffix=''):
         inPlug >> mdl.input1
     else:
         mdl.input1.set(attr.get())
+        
+    if not unitConversion:
+        convertNodes = mdl.input1.inputs(type='unitConversion')
+        for node in convertNodes:
+            node.cf.set(1)
         
     modAttr >> mdl.input2
     

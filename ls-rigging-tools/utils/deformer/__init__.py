@@ -258,6 +258,18 @@ def transferSkinWeights(oldGeo, newGeo):
     
     return newSc
 
+def transferSkinWeightsFromGo():
+    '''
+    transfer skin weights
+    select all destGeos,
+    shift-select srcGeo,
+    run
+    '''
+    sel = mc.ls(os=True)
+    destGeos = sel[:-1]
+    srcGeo = sel[-1]
+    for geo in destGeos:
+        transferSkinWeights(srcGeo, geo)
 
 #===============================================================================
 # BLENDSHAPE WEIGHTS
