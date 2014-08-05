@@ -1,5 +1,30 @@
 import pymel.core as pm
 
+class SortedVertices():
+    '''
+    Data structure for a list of verts sorted by edge flow
+    '''
+    def __init__(self, verts):
+        '''
+        verts - make sure verts list is flattened
+        '''
+        currVert = verts[0]
+        remainingVerts = verts[1:]
+        
+        sortedVerts = []
+        
+        while currVert:
+            sortedVerts.append(currVert)
+            connectedVerts = currVert.connectedVertices()
+            nextVert = None
+            for vert in connectedVerts:
+                if vert in remainingVerts:
+                    nextVert = vert
+                    remainingVerts.remove(vert)
+            currVert = nextVert
+        
+        self.verts = sortedVerts
+
 class VertexLoops():
     '''
     Data structure for a list of vertex loops

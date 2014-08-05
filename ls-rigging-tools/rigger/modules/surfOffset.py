@@ -60,9 +60,13 @@ def addOffset(node):
     posi.position >> offsetGrp.t
     
     return offsetGrp, plane
-    
+
+import maya.cmds as mc
 def addSurfToDeformer(surfs, deformer):
     '''
     '''
     membershipSet = pm.listConnections(deformer, type='objectSet')[0]
-    pm.sets(surfs, add=membershipSet)
+    #pm.sets(surfs, add=membershipSet)
+    surfs = [str(s) for s in surfs]
+    memSet = str(membershipSet)
+    mc.sets(surfs, add=memSet)

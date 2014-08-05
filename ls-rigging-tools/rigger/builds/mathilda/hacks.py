@@ -12,6 +12,259 @@ mel = Mel()
 import rigger.utils.modulate as modulate
 reload(modulate)
 
+def addLowerLipCurls():
+    coeffs = pm.group(em=True, n='CT_lowerLipCurls_add_coeffs')
+    bsp = pm.PyNode('FACE:blendShapeCt_face_geo')
+    
+    coeffs.addAttr('leftPinch', k=True)
+    coeffs.addAttr('leftSneer', k=True)
+    coeffs.addAttr('leftSide', k=True)
+    coeffs.addAttr('leftMid', k=True)
+    coeffs.addAttr('centerMid', k=True)
+    coeffs.addAttr('rightMid', k=True)
+    coeffs.addAttr('rightSide', k=True)
+    coeffs.addAttr('rightSneer', k=True)
+    coeffs.addAttr('rightPinch', k=True)
+    
+    # direct connect main curls
+    jawCtl = pm.PyNode('FACE:CT_jaw_pri_ctrl')
+    rt.connectSDK(jawCtl.leftLowerLipCurl, coeffs.leftPinch, {-1:1, 0:0, 1:-1})
+    rt.connectSDK(jawCtl.leftLowerLipCurl, coeffs.leftSneer, {-1:1, 0:0, 1:-1})
+    rt.connectSDK(jawCtl.leftLowerLipCurl, coeffs.leftSide, {-1:1, 0:0, 1:-1})
+    rt.connectSDK(jawCtl.leftLowerLipCurl, coeffs.leftMid, {-1:1, 0:0, 1:-1})
+    rt.connectSDK(jawCtl.rightLowerLipCurl, coeffs.rightPinch, {-1:1, 0:0, 1:-1})
+    rt.connectSDK(jawCtl.rightLowerLipCurl, coeffs.rightSneer, {-1:1, 0:0, 1:-1})
+    rt.connectSDK(jawCtl.rightLowerLipCurl, coeffs.rightSide, {-1:1, 0:0, 1:-1})
+    rt.connectSDK(jawCtl.rightLowerLipCurl, coeffs.rightMid, {-1:1, 0:0, 1:-1})
+    
+    # average for center
+    pma = pm.createNode('plusMinusAverage', n='CT_lowerLipCurlsMidAvg_pma')
+    pma.operation.set(3)
+    coeffs.leftMid >> pma.input1D[0]
+    coeffs.rightMid >> pma.input1D[1]
+    pma.output1D >> coeffs.centerMid
+    
+    # disconnect secCtl rotateX
+    ctls = [nt.Transform(u'FACE:RT_lower_pinch_lip_ctrl'),
+            nt.Transform(u'FACE:RT_lower_sneer_lip_ctrl'),
+            nt.Transform(u'FACE:RT_lower_side_lip_ctrl'),
+            nt.Transform(u'FACE:CT_lower_lip_ctrl'),
+            nt.Transform(u'FACE:LT_lower_side_lip_ctrl'),
+            nt.Transform(u'FACE:LT_lower_sneer_lip_ctrl'),
+            nt.Transform(u'FACE:LT_lower_pinch_lip_ctrl')]
+    for ctl in ctls:
+        outNode = ctl.r.outputs()[0]
+        ctl.ry >> outNode.ry
+        ctl.rz >> outNode.rz
+        ctl.r // outNode.r
+        
+    # add secCtls to coeffs
+    import rigger.utils.modulate as modulate
+    reload(modulate)
+    import utils.rigging as rt
+    reload(rt)
+    mod = modulate.addInput(coeffs.leftPinch, 0, '_secCtl')
+    rt.connectSDK(ctls[6].rx, mod, {45:-1, 0:0, -45:1})
+    mod = modulate.addInput(coeffs.leftSneer, 0, '_secCtl')
+    rt.connectSDK(ctls[5].rx, mod, {45:-1, 0:0, -45:1})
+    mod = modulate.addInput(coeffs.leftSide, 0, '_secCtl')
+    rt.connectSDK(ctls[4].rx, mod, {45:-1, 0:0, -45:1})
+    mod = modulate.addInput(coeffs.centerMid, 0, '_secCtl')
+    rt.connectSDK(ctls[3].rx, mod, {45:-1, 0:0, -45:1})
+    mod = modulate.addInput(coeffs.rightSide, 0, '_secCtl')
+    rt.connectSDK(ctls[2].rx, mod, {45:-1, 0:0, -45:1})
+    mod = modulate.addInput(coeffs.rightSneer, 0, '_secCtl')
+    rt.connectSDK(ctls[1].rx, mod, {45:-1, 0:0, -45:1})
+    mod = modulate.addInput(coeffs.rightPinch, 0, '_secCtl')
+    rt.connectSDK(ctls[0].rx, mod, {45:-1, 0:0, -45:1})
+    
+    # connect to bsp
+    coeffs.leftPinch >> bsp.lowLipPinchTweak_curl_Lf
+    coeffs.leftSneer >> bsp.lowLipSneerTweak_curl_Lf
+    coeffs.leftSide >> bsp.lowLipSideTweak_curl_Lf
+    coeffs.centerMid >> bsp.lowLipTweak_curl_Ct
+    coeffs.rightSide >> bsp.lowLipSideTweak_curl_Rt
+    coeffs.rightSneer >> bsp.lowLipSneerTweak_curl_Rt
+    coeffs.rightPinch >> bsp.lowLipPinchTweak_curl_Rt
+
+def disableLipCtlsRotateX():
+    '''
+    '''
+    # disable lip controls rotateX
+    # use rotateX to drive 
+    
+    def useSurrogateXfo(ctl, blockChannels=[]):
+        '''
+        reroute priCtl matrix outputs
+        assume priCtl only have local matrix outputs
+        '''
+        xfo = pm.group(em=True, n=ctl+'_surrXfo')
+        ctlParent = ctl.getParent()
+        ctlParent | xfo
+        xfo.setMatrix(pm.dt.Matrix())
+        
+        allChannels = ['tx','ty','tz','rx','ry','rz','sx','sy','sz']
+        for channel in allChannels:
+            if channel not in blockChannels:
+                ctl.attr(channel) >> xfo.attr(channel)
+                
+        # reroute matrix outputs
+        allMatrixPlugs = ctl.matrix.outputs(p=True)
+        for plug in allMatrixPlugs:
+            xfo.matrix >> plug
+            
+    ctls = [nt.Transform(u'FACE:RT_upper_sneer_lip_pri_ctrl'),
+            nt.Transform(u'FACE:CT_upper_lip_pri_ctrl'),
+            nt.Transform(u'FACE:LT_upper_sneer_lip_pri_ctrl'),
+            nt.Transform(u'FACE:LT_lower_sneer_lip_pri_ctrl'),
+            nt.Transform(u'FACE:CT_lower_lip_pri_ctrl'),
+            nt.Transform(u'FACE:RT_lower_sneer_lip_pri_ctrl')]
+    for ctl in ctls:
+        useSurrogateXfo(ctl, ['rx'])
+    
+
+
+def addCenterLipsPriCtls():
+    '''
+    '''
+    import rigger.modules.priCtl as priCtl
+    reload(priCtl)
+    
+    # add upper lip priCtl
+    priBnd = nt.Joint(u'FACE:CT_upper_lip_bnd')
+    secBnds = [nt.Joint(u'FACE:RT_upper_pinch_lip_bnd'),
+                nt.Joint(u'FACE:RT_upper_sneer_lip_bnd'),
+                nt.Joint(u'FACE:RT_upper_side_lip_bnd'),
+                nt.Joint(u'FACE:CT_upper_lip_bnd'),
+                nt.Joint(u'FACE:LT_upper_side_lip_bnd'),
+                nt.Joint(u'FACE:LT_upper_sneer_lip_bnd'),
+                nt.Joint(u'FACE:LT_upper_pinch_lip_bnd')]
+    newCtl = priCtl.addPrimaryCtlToBnd(priBnd)
+    for secBnd in secBnds:
+        priCtl.connectBndToPriCtl(secBnd, newCtl, False)
+        
+    # get all priCtls driving this bnd
+    attachedCtl = priBnd.attr('attached_pri_ctl').get()
+    all_attrs = priBnd.listAttr(ud=True, l=True)
+    all_attrs = [attr for attr in all_attrs if 'pri_ctrl_weights' in attr.name()]
+    all_priCtls = [attr.attrName().replace('_weights','') for attr in all_attrs]
+    
+    # let other priCtl drive the new priCtl
+    for ctl in all_priCtls:
+        # add namespace
+        ctl = 'FACE:'+ctl
+        if ctl != attachedCtl:
+            priCtl.driveAttachedPriCtl(priBnd, pm.PyNode(ctl))
+        else:
+            # don't drive an attached ctl
+            pass
+            
+    # new priCtl should also drive other priCtls      
+    priCtl.driveAttachedPriCtl(nt.Joint(u'FACE:LT_upper_sneer_lip_bnd'), newCtl)
+    priCtl.driveAttachedPriCtl(nt.Joint(u'FACE:RT_upper_sneer_lip_bnd'), newCtl)
+    
+    # add lower lip priCtl
+    priBnd = nt.Joint(u'FACE:CT_lower_lip_bnd')
+    secBnds = [nt.Joint(u'FACE:RT_lower_pinch_lip_bnd'),
+                nt.Joint(u'FACE:RT_lower_sneer_lip_bnd'),
+                nt.Joint(u'FACE:RT_lower_side_lip_bnd'),
+                nt.Joint(u'FACE:CT_lower_lip_bnd'),
+                nt.Joint(u'FACE:LT_lower_side_lip_bnd'),
+                nt.Joint(u'FACE:LT_lower_sneer_lip_bnd'),
+                nt.Joint(u'FACE:LT_lower_pinch_lip_bnd')]
+    newCtl = priCtl.addPrimaryCtlToBnd(priBnd)
+    for secBnd in secBnds:
+        priCtl.connectBndToPriCtl(secBnd, newCtl, False)
+        
+    # get all priCtls driving this bnd
+    attachedCtl = priBnd.attr('attached_pri_ctl').get()
+    all_attrs = priBnd.listAttr(ud=True, l=True)
+    all_attrs = [attr for attr in all_attrs if 'pri_ctrl_weights' in attr.name()]
+    all_priCtls = [attr.attrName().replace('_weights','') for attr in all_attrs]
+    
+    # let other priCtl drive the new priCtl
+    for ctl in all_priCtls:
+        # add namespace
+        ctl = 'FACE:'+ctl
+        if ctl != attachedCtl:
+            priCtl.driveAttachedPriCtl(priBnd, pm.PyNode(ctl))
+        else:
+            # don't drive an attached ctl
+            pass
+            
+    # new priCtl should also drive other priCtls      
+    priCtl.driveAttachedPriCtl(nt.Joint(u'FACE:LT_lower_sneer_lip_bnd'), newCtl)
+    priCtl.driveAttachedPriCtl(nt.Joint(u'FACE:RT_lower_sneer_lip_bnd'), newCtl)
+
+def moveClaviclePivot():
+    '''
+    '''
+    # move clavicle pivot
+    newPos = pm.dt.Vector([-1.06312130585, 91.7071256576, -1.76231053414])
+    moveNode = nt.Transform(u'Mathilda_rt_clavicleTrans_ctrl_zeroFrzGrp')
+    jnt = nt.Joint(u'Mathilda_rt_clavicle_jnt')
+    newPivot = pm.spaceLocator(n='rt_newpivot')
+    newPivot.t.set(newPos)
+    
+    incomingCons = set(jnt.inputs(type='constraint'))
+    outgoingCons = set(jnt.outputs(type='constraint'))
+    outgoingCons = [con for con in outgoingCons if con not in incomingCons]
+    
+    wMatDict = {}
+    # store world matrices for constrainees
+    for con in outgoingCons:
+        dag = con.ctx.outputs()[0]
+        wMat = dag.getMatrix(worldSpace=True)
+        wMatDict[con] = wMat
+    
+    mel.moveJointsMode(True)
+    
+    # assume move node is currently an identity matrix
+    # so we can just use translate for offset
+    newPos = newPivot.getTranslation(space='world')
+    moveNode.setTranslation(newPos, space='world')
+    
+    # restore world matrices for constainees
+    for con in outgoingCons:
+        dag = con.ctx.outputs()[0]
+        wMat = wMatDict[con]
+        dag.setMatrix(wMat, worldSpace=True)
+        pm.parentConstraint(jnt, dag, mo=True, e=True)
+        
+    mel.moveJointsMode(False)
+
+def addFingerRotateControl():
+    
+    sides = ['Mathilda_lf_', 'Mathilda_rt_']
+    fingers = ['index', 'middle', 'ring', 'pinky']
+    sections = {'_b':'Mid', '_c':'Tip'}
+    channels = ['rx', 'rz']
+    
+    for side in sides:
+        for finger in fingers:
+            for jntSec, ctlSec in sections.items():
+                ctl = side + finger + ctlSec + '_fk_ctrl'
+                ctl = pm.PyNode(ctl)
+                jnt = side + finger + jntSec + '_jnt'
+                jnt = pm.PyNode(jnt)
+                for channel in channels:
+                    mod = modulate.addInput(jnt.attr(channel), 0, '_ctlRotate')
+                    ctl.attr(channel) >> mod
+    
+    fingers = ['thumb']
+    channels = ['rx', 'ry']
+    
+    for side in sides:
+        for finger in fingers:
+            for jntSec, ctlSec in sections.items():
+                ctl = side + finger + ctlSec + '_fk_ctrl'
+                ctl = pm.PyNode(ctl)
+                jnt = side + finger + jntSec + '_jnt'
+                jnt = pm.PyNode(jnt)
+                for channel in channels:
+                    mod = modulate.addInput(jnt.attr(channel), 0, '_ctlRotate')
+                    ctl.attr(channel) >> mod
+
 def addEyelidReaders():
     '''
     '''
