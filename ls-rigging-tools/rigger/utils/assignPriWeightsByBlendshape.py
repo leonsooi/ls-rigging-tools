@@ -54,6 +54,8 @@ def assignAllPriWeightsByDelta(corrMesh, priCtl,
     '''
     corrMesh = nt.Mesh(u'smile_correctiveShape')
     priCtl = nt.Transform(u'LT_corner_lip_pri_ctrl')
+    
+    assume neutral position before running
     '''
     bndGrp = nt.Transform(u'CT_bnd_grp')
     baseMesh = nt.Mesh(u'CT_face_geoShape')
@@ -150,6 +152,33 @@ def buildBndVertMap():
         bndVertMap[bnd.name()] = closestVertId
         
     return bndVertMap
+
+def calcBndVectorForBsp(bnd, targetMesh):
+    '''
+    calc vector a bnd needs to move (in local space)
+    assume bnd.bndVertId exists
+    assume bnd is in neutral position (we'll
+    just multiply targetPos into it's current space)
+    
+    import rigger.utils.assignPriWeightsByBlendshape as assignPriWeightsByBlendshape
+    reload(assignPriWeightsByBlendshape)
+    '''
+    vertId  = bnd.bndVertId.get()
+    targetPosition = targetMesh.vtx[vertId].getPosition()
+    invMat = bnd.getMatrix(ws=True).inverse()
+    localPosition= targetPosition * invMat
+    return pm.dt.Vector(localPosition)
+    
+    
         
-    
-    
+def storeBndVertMap(bndVertMap):
+    '''
+    import rigger.utils.assignPriWeightsByBlendshape as assignPriWeightsByBlendshape
+    reload(assignPriWeightsByBlendshape)
+    bndVertMap = assignPriWeightsByBlendshape.buildBndVertMap()
+    assignPriWeightsByBlendshape.storeBndVertMap(bndVertMap)
+    '''
+    for bndName, vertId in bndVertMap.items():
+        bnd = pm.PyNode(bndName)
+        bnd.addAttr('bndVertId', at='short', k=True, dv=vertId)
+        bnd.bndVertId.setLocked(True)

@@ -40,7 +40,7 @@ def setAllAcsPosByDelta():
     
     bndVertMap = assignPriWeightsByBlendshape.buildBndVertMap()
     
-    corrMesh = nt.Mesh(u'RT_lowOutBrow_corrective_bsgShape')
+    corrMesh = nt.Mesh(u'LT_outBrow_negTY_bsgShape')
     
     for bnd in allBnds:
         setAcsPosByDelta(bnd, corrMesh, bndVertMap)

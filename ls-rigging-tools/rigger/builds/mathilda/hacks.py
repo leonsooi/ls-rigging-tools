@@ -12,6 +12,165 @@ mel = Mel()
 import rigger.utils.modulate as modulate
 reload(modulate)
 
+def addLipCurlsSDKs():
+    '''
+    '''
+    # upper lips
+    coeffs = pm.group(em=True, n='CT_upperLipCurls_coeffs')
+    coeffs.addAttr('leftPinch', k=True)
+    coeffs.addAttr('leftSneer', k=True)
+    coeffs.addAttr('leftSide', k=True)
+    coeffs.addAttr('centerMid', k=True)
+    coeffs.addAttr('rightSide', k=True)
+    coeffs.addAttr('rightSneer', k=True)
+    coeffs.addAttr('rightPinch', k=True)
+    rt.connectSDK('FACE:LT_upper_pinch_lip_ctrl.rx',
+    coeffs.leftPinch, {-90:1, 0:0, 90:-1})
+    rt.connectSDK('FACE:LT_upper_sneer_lip_ctrl.rx',
+    coeffs.leftSneer, {-90:1, 0:0, 90:-1})
+    rt.connectSDK('FACE:LT_upper_side_lip_ctrl.rx',
+    coeffs.leftSide, {-90:1, 0:0, 90:-1})
+    rt.connectSDK('FACE:CT_upper_lip_ctrl.rx',
+    coeffs.centerMid, {-90:1, 0:0, 90:-1})
+    rt.connectSDK('FACE:RT_upper_sneer_lip_ctrl.rx',
+    coeffs.rightSneer, {-90:1, 0:0, 90:-1})
+    rt.connectSDK('FACE:RT_upper_side_lip_ctrl.rx',
+    coeffs.rightSide, {-90:1, 0:0, 90:-1})
+    rt.connectSDK('FACE:RT_upper_pinch_lip_ctrl.rx',
+    coeffs.rightPinch, {-90:1, 0:0, 90:-1})
+    
+    priCtls = [nt.Transform(u'FACE:RT_upper_sneer_lip_pri_ctrl'),
+                nt.Transform(u'FACE:CT_upper_lip_pri_ctrl'),
+                nt.Transform(u'FACE:LT_upper_sneer_lip_pri_ctrl')]
+                
+    attrs = ['leftPinch',
+    'leftSneer',
+    'leftSide',
+    'centerMid',
+    'rightSide',
+    'rightSneer',
+    'rightPinch']
+           
+    import rigger.utils.modulate as modulate     
+    for pCtl in priCtls:
+        token = pCtl.split(':')[1].split('_')[0]
+        for attr in attrs:
+            mod = modulate.addInput(coeffs.attr(attr), 0, token)
+            rt.connectSDK(pCtl.rx, mod, {-90:1, 0:0, 90:-1})
+            
+    rt.connectSDK(coeffs.leftPinch, 
+    'FACE:blendShapeCt_face_geo.upLipTweakPinch_curlOut_Lf', {0:0, 1:1})
+    rt.connectSDK(coeffs.leftPinch, 
+    'FACE:blendShapeCt_face_geo.upLipTweakPinch_curlIn_Lf', {0:0, -1:1})
+    
+    rt.connectSDK(coeffs.leftSneer, 
+    'FACE:blendShapeCt_face_geo.upLipTweakSneer_curlOut_Lf', {0:0, 1:1})
+    rt.connectSDK(coeffs.leftSneer, 
+    'FACE:blendShapeCt_face_geo.upLipTweakSneer_curlIn_Lf', {0:0, -1:1})
+    
+    rt.connectSDK(coeffs.leftSide, 
+    'FACE:blendShapeCt_face_geo.upLipTweakSide_curlOut_Lf', {0:0, 1:1})
+    rt.connectSDK(coeffs.leftSide, 
+    'FACE:blendShapeCt_face_geo.upLipTweakSide_curlIn_Lf', {0:0, -1:1})
+    
+    rt.connectSDK(coeffs.centerMid, 
+    'FACE:blendShapeCt_face_geo.upLipTweakMid_curlOut_Ct', {0:0, 1:1})
+    rt.connectSDK(coeffs.centerMid, 
+    'FACE:blendShapeCt_face_geo.upLipTweakMid_curlIn_Ct', {0:0, -1:1})
+    
+    rt.connectSDK(coeffs.rightPinch, 
+    'FACE:blendShapeCt_face_geo.upLipTweakPinch_curlOut_Rt', {0:0, 1:1})
+    rt.connectSDK(coeffs.rightPinch, 
+    'FACE:blendShapeCt_face_geo.upLipTweakPinch_curlIn_Rt', {0:0, -1:1})
+    
+    rt.connectSDK(coeffs.rightSneer, 
+    'FACE:blendShapeCt_face_geo.upLipTweakSneer_curlOut_Rt', {0:0, 1:1})
+    rt.connectSDK(coeffs.rightSneer, 
+    'FACE:blendShapeCt_face_geo.upLipTweakSneer_curlIn_Rt', {0:0, -1:1})
+    
+    rt.connectSDK(coeffs.rightSide, 
+    'FACE:blendShapeCt_face_geo.upLipTweakSide_curlOut_Rt', {0:0, 1:1})
+    rt.connectSDK(coeffs.rightSide, 
+    'FACE:blendShapeCt_face_geo.upLipTweakSide_curlIn_Rt', {0:0, -1:1})
+    
+    # lower lips
+    coeffs = pm.group(em=True, n='CT_lowerLipCurls_coeffs')
+    coeffs.addAttr('leftPinch', k=True)
+    coeffs.addAttr('leftSneer', k=True)
+    coeffs.addAttr('leftSide', k=True)
+    coeffs.addAttr('centerMid', k=True)
+    coeffs.addAttr('rightSide', k=True)
+    coeffs.addAttr('rightSneer', k=True)
+    coeffs.addAttr('rightPinch', k=True)
+    rt.connectSDK('FACE:LT_lower_pinch_lip_ctrl.rx',
+    coeffs.leftPinch, {-90:-1, 0:0, 90:1})
+    rt.connectSDK('FACE:LT_lower_sneer_lip_ctrl.rx',
+    coeffs.leftSneer, {-90:-1, 0:0, 90:1})
+    rt.connectSDK('FACE:LT_lower_side_lip_ctrl.rx',
+    coeffs.leftSide, {-90:-1, 0:0, 90:1})
+    rt.connectSDK('FACE:CT_lower_lip_ctrl.rx',
+    coeffs.centerMid, {-90:-1, 0:0, 90:1})
+    rt.connectSDK('FACE:RT_lower_sneer_lip_ctrl.rx',
+    coeffs.rightSneer, {-90:-1, 0:0, 90:1})
+    rt.connectSDK('FACE:RT_lower_side_lip_ctrl.rx',
+    coeffs.rightSide, {-90:-1, 0:0, 90:1})
+    rt.connectSDK('FACE:RT_lower_pinch_lip_ctrl.rx',
+    coeffs.rightPinch, {-90:-1, 0:0, 90:1})
+    
+    priCtls = [nt.Transform(u'FACE:RT_lower_sneer_lip_pri_ctrl'),
+                nt.Transform(u'FACE:CT_lower_lip_pri_ctrl'),
+                nt.Transform(u'FACE:LT_lower_sneer_lip_pri_ctrl')]
+                
+    attrs = ['leftPinch',
+    'leftSneer',
+    'leftSide',
+    'centerMid',
+    'rightSide',
+    'rightSneer',
+    'rightPinch']
+           
+    import rigger.utils.modulate as modulate     
+    for pCtl in priCtls:
+        token = pCtl.split(':')[1].split('_')[0]
+        for attr in attrs:
+            mod = modulate.addInput(coeffs.attr(attr), 0, token)
+            rt.connectSDK(pCtl.rx, mod, {-90:-1, 0:0, 90:1})
+            
+    rt.connectSDK(coeffs.leftPinch, 
+    'FACE:blendShapeCt_face_geo.lowLipTweakPinch_curlOut_Lf', {0:0, 1:1})
+    rt.connectSDK(coeffs.leftPinch, 
+    'FACE:blendShapeCt_face_geo.lowLipTweakPinch_curlIn_Lf', {0:0, -1:1})
+    
+    rt.connectSDK(coeffs.leftSneer, 
+    'FACE:blendShapeCt_face_geo.lowLipTweakSneer_curlOut_Lf', {0:0, 1:1})
+    rt.connectSDK(coeffs.leftSneer, 
+    'FACE:blendShapeCt_face_geo.lowLipTweakSneer_curlIn_Lf', {0:0, -1:1})
+    
+    rt.connectSDK(coeffs.leftSide, 
+    'FACE:blendShapeCt_face_geo.lowLipTweakSide_curlOut_Lf', {0:0, 1:1})
+    rt.connectSDK(coeffs.leftSide, 
+    'FACE:blendShapeCt_face_geo.lowLipTweakSide_curlIn_Lf', {0:0, -1:1})
+    
+    rt.connectSDK(coeffs.centerMid, 
+    'FACE:blendShapeCt_face_geo.lowLipTweakMid_curlOut_Ct', {0:0, 1:1})
+    rt.connectSDK(coeffs.centerMid, 
+    'FACE:blendShapeCt_face_geo.lowLipTweakMid_curlIn_Ct', {0:0, -1:1})
+    
+    rt.connectSDK(coeffs.rightPinch, 
+    'FACE:blendShapeCt_face_geo.lowLipTweakPinch_curlOut_Rt', {0:0, 1:1})
+    rt.connectSDK(coeffs.rightPinch, 
+    'FACE:blendShapeCt_face_geo.lowLipTweakPinch_curlIn_Rt', {0:0, -1:1})
+    
+    rt.connectSDK(coeffs.rightSneer, 
+    'FACE:blendShapeCt_face_geo.lowLipTweakSneer_curlOut_Rt', {0:0, 1:1})
+    rt.connectSDK(coeffs.rightSneer, 
+    'FACE:blendShapeCt_face_geo.lowLipTweakSneer_curlIn_Rt', {0:0, -1:1})
+    
+    rt.connectSDK(coeffs.rightSide, 
+    'FACE:blendShapeCt_face_geo.lowLipTweakSide_curlOut_Rt', {0:0, 1:1})
+    rt.connectSDK(coeffs.rightSide, 
+    'FACE:blendShapeCt_face_geo.lowLipTweakSide_curlIn_Rt', {0:0, -1:1})
+
 def addLowerLipCurls():
     coeffs = pm.group(em=True, n='CT_lowerLipCurls_add_coeffs')
     bsp = pm.PyNode('FACE:blendShapeCt_face_geo')

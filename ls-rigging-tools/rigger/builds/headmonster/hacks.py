@@ -6,6 +6,117 @@ Created on Jul 13, 2014
 import pymel.core as pm
 import pymel.core.nodetypes as nt
 
+import rigger.modules.priCtl as priCtl
+reload(priCtl)
+
+import rigger.utils.weights as weights
+reload(weights)
+
+def connectEyeDeformerToEyeMover(aimJntsGrp, moverBnd):
+    '''
+    transform eye deformer with eyeMover ctrl
+    '''
+    masterGrp = aimJntsGrp.getParent()
+    consGrp = pm.group(em=True, n=aimJntsGrp+'_PR_SC')
+    moverMat = moverBnd.getMatrix(ws=True)
+    consGrp.setMatrix(moverMat, ws=True)
+    masterGrp | consGrp | aimJntsGrp
+    # constraints
+    pCtl = pm.PyNode(moverBnd.attached_pri_ctl.get())
+    pm.parentConstraint(pCtl, consGrp)
+    pm.scaleConstraint(pCtl, consGrp)
+
+def addBndsToEyeMover():
+    '''
+    '''
+    pBnd = nt.Joint(u'LT__eyeMover_bnd')
+    pCtl = priCtl.addPrimaryCtlToBnd(pBnd)
+    bnds = [nt.Joint(u'LT_inner_eyelid_bnd'),
+            nt.Joint(u'LT_inner_eyeSocket_bnd'),
+            nt.Joint(u'LT_upperInner_eyelid_bnd'),
+            nt.Joint(u'LT_upperInner_eyeSocket_bnd'),
+            nt.Joint(u'LT_upper_eyelid_bnd'),
+            nt.Joint(u'LT_upper_eyeSocket_bnd'),
+            nt.Joint(u'LT_upperOuter_eyelid_bnd'),
+            nt.Joint(u'LT_upperOuter_eyeSocket_bnd'),
+            nt.Joint(u'LT_outer_eyelid_bnd'),
+            nt.Joint(u'LT_outer_eyeSocket_bnd'),
+            nt.Joint(u'LT_lowerOuter_eyeSocket_bnd'),
+            nt.Joint(u'LT_lowerOuter_eyelid_bnd'),
+            nt.Joint(u'LT_lower_eyeSocket_bnd'),
+            nt.Joint(u'LT_lower_eyelid_bnd'),
+            nt.Joint(u'LT_lowerInner_eyeSocket_bnd'),
+            nt.Joint(u'LT_lowerInner_eyelid_bnd'),
+            nt.Joint(u'CT_mid_squint_bnd'),
+            nt.Joint(u'CT_mid_temple_bnd'),
+            nt.Joint(u'LT_outerA_temple_bnd'),
+            nt.Joint(u'LT_outerA_squint_bnd'),
+            nt.Joint(u'LT_upperCorner_cheek_bnd'),
+            nt.Joint(u'LT_upperPinch_outCrease_bnd'),
+            nt.Joint(u'LT_upperSneer_outCrease_bnd'),
+            nt.Joint(u'LT_upperSide_outCrease_bnd'),
+            nt.Joint(u'CT_upper_cheek_bnd'),
+            nt.Joint(u'CT_upper_outCrease_bnd'),
+            nt.Joint(u'LT_upperSide_midCrease_bnd'),
+            nt.Joint(u'LT_upperSneer_midCrease_bnd'),
+            nt.Joint(u'LT_upperPinch_midCrease_bnd'),
+            nt.Joint(u'LT_upperCorner_outCrease_bnd')]
+    for bnd in bnds:
+        priCtl.connectBndToPriCtl(bnd, pCtl, False)
+    
+    bnds = [nt.Joint(u'LT_inner_eyelid_bnd'),
+            nt.Joint(u'LT_upper_eyelid_bnd'),
+            nt.Joint(u'LT_outer_eyelid_bnd'),
+            nt.Joint(u'LT_lower_eyelid_bnd')]
+    for bnd in bnds:
+        priCtl.driveAttachedPriCtl(bnd, pCtl)
+        
+    # same thing for right side
+    pBnd = nt.Joint(u'RT__eyeMover_bnd')
+    pCtl = priCtl.addPrimaryCtlToBnd(pBnd)
+    bnds = [nt.Joint(u'RT_inner_eyelid_bnd'),
+            nt.Joint(u'RT_inner_eyeSocket_bnd'),
+            nt.Joint(u'RT_upperInner_eyelid_bnd'),
+            nt.Joint(u'RT_upperInner_eyeSocket_bnd'),
+            nt.Joint(u'RT_upper_eyelid_bnd'),
+            nt.Joint(u'RT_upper_eyeSocket_bnd'),
+            nt.Joint(u'RT_upperOuter_eyelid_bnd'),
+            nt.Joint(u'RT_upperOuter_eyeSocket_bnd'),
+            nt.Joint(u'RT_outer_eyelid_bnd'),
+            nt.Joint(u'RT_outer_eyeSocket_bnd'),
+            nt.Joint(u'RT_lowerOuter_eyeSocket_bnd'),
+            nt.Joint(u'RT_lowerOuter_eyelid_bnd'),
+            nt.Joint(u'RT_lower_eyeSocket_bnd'),
+            nt.Joint(u'RT_lower_eyelid_bnd'),
+            nt.Joint(u'RT_lowerInner_eyeSocket_bnd'),
+            nt.Joint(u'RT_lowerInner_eyelid_bnd'),
+            nt.Joint(u'CT_mid_squint_bnd'),
+            nt.Joint(u'CT_mid_temple_bnd'),
+            nt.Joint(u'RT_outerA_temple_bnd'),
+            nt.Joint(u'RT_outerA_squint_bnd'),
+            nt.Joint(u'RT_upperCorner_cheek_bnd'),
+            nt.Joint(u'RT_upperPinch_outCrease_bnd'),
+            nt.Joint(u'RT_upperSneer_outCrease_bnd'),
+            nt.Joint(u'RT_upperSide_outCrease_bnd'),
+            nt.Joint(u'CT_upper_cheek_bnd'),
+            nt.Joint(u'CT_upper_outCrease_bnd'),
+            nt.Joint(u'RT_upperSide_midCrease_bnd'),
+            nt.Joint(u'RT_upperSneer_midCrease_bnd'),
+            nt.Joint(u'RT_upperPinch_midCrease_bnd'),
+            nt.Joint(u'RT_upperCorner_outCrease_bnd')]
+    for bnd in bnds:
+        priCtl.connectBndToPriCtl(bnd, pCtl, False)
+    
+    bnds = [nt.Joint(u'RT_inner_eyelid_bnd'),
+            nt.Joint(u'RT_upper_eyelid_bnd'),
+            nt.Joint(u'RT_outer_eyelid_bnd'),
+            nt.Joint(u'RT_lower_eyelid_bnd')]
+    for bnd in bnds:
+        priCtl.driveAttachedPriCtl(bnd, pCtl)
+    
+    # zero scale weights for DQ skinning
+    weights.zeroAllMatrixScaleWeights()
+
 def addEyelidNoScaleJoints():
     # eyelid no-scale joints
     scaleNull = nt.Transform(u'null2')

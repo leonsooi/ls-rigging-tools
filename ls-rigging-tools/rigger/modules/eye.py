@@ -287,7 +287,7 @@ def createDriverEyelidJoint(startPos, endPos, name):
 def constructEyelidsDeformer(name, eyePivot, edgeLoop):
     
     pm.select(edgeLoop, r=True)
-    crv = pm.polyToCurve(form=1, degree=3, ch=False)[0]
+    crv = pm.polyToCurve(form=1, degree=1, ch=False)[0]
     crv = pm.PyNode(crv)
     crv.rename(name + '_aimAt_crv_0')
     

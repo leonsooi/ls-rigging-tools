@@ -9,6 +9,58 @@ import pymel.core.nodetypes as nt
 import rigger.lib.curve as lcrv
 reload(lcrv)
 
+def setMatrixWeightsFromDict(wdict):
+    '''
+    pass in a dictionary
+    {bndName: (attr: val)}
+    '''
+    pm.select(cl=True)
+    for bndName, attrsAndVals in wdict.items():
+        try:
+            bnd = pm.PyNode(bndName)
+            for attr, val in attrsAndVals:
+                try:
+                    attr = pm.PyNode(attr)
+                    if attr.isFreeToChange() == 0:
+                        attr.set(val)
+                except pm.MayaObjectError as e:
+                    print e
+            pm.select(bnd, add=True)
+        except pm.MayaObjectError as e:
+            print e 
+
+def getAllMatrixWeightsOnSelectedBnds():
+    '''
+    returns a dictionary
+    {bndName: (attr: val)}
+    '''
+    selBnds = pm.ls(sl=True)
+    retDict = {}
+    for bnd in selBnds:
+        attrs = getAllMatrixWeightsAttrsOnBnd(bnd)
+        attrsAndVals = [(attr.name(), attr.get()) for attr in attrs]
+        retDict[bnd.name()] = attrsAndVals
+    return retDict 
+
+def getAllMatrixWeightsAttrsOnBnd(bnd):
+    all_attrs = bnd.listAttr(ud=True, u=True)
+    all_attrs = [attr for attr in all_attrs if 'pri_ctrl_weight' in attr.name()]
+    all_attrs = [attr for attr in all_attrs if attr.isFreeToChange() == 0]
+    return all_attrs
+
+def zeroAllMatrixScaleWeights():
+    '''
+    do this is using DQ skinning
+    '''
+    bndGrp = pm.PyNode('CT_bnd_grp')
+    allBnds = bndGrp.getChildren(ad=True, type='joint')
+    
+    for bnd in allBnds:
+        all_attrs = getAllMatrixWeightsAttrsOnBnd(bnd)
+        scale_attrs = [attr for attr in all_attrs if 'weight_s' in attr.name(0)]
+        for attr in scale_attrs:
+            attr.set(0)
+
 def bindSpliceBetweenJoints(startJnt, endJnt, crv, startIndex, endIndex, targetCrv, skn):
     '''
     startJnt = upperBnds[0]
@@ -36,22 +88,24 @@ def bindSpliceBetweenJoints(startJnt, endJnt, crv, startIndex, endIndex, targetC
         pm.skinPercent(skn, eachCV, tv=((startJnt, 1-weight),(endJnt, weight)))
 
 
-def setEyelidLoopWeights(prefix):
+def setEyelidLoopWeights(prefix, upperBnds=None, lowerBnds=None):
     # define data
     drvCrv = pm.PyNode(prefix+'_eye_aimAt_crv_0')
     
-    upperBnds = [nt.Joint(prefix+'_inner_eyelid_bnd'),
-                 nt.Joint(prefix+'_innerUpper_eyelid_bnd'),
-                 nt.Joint(prefix+'_upper_eyelid_bnd'),
-                 nt.Joint(prefix+'_outerUpper_eyelid_bnd'),
-                 nt.Joint(prefix+'_outer_eyelid_bnd')]
-    lowerBnds = [nt.Joint(prefix+'_inner_eyelid_bnd'),
-                 nt.Joint(prefix+'_innerLower_eyelid_bnd'),
-                 nt.Joint(prefix+'_lower_eyelid_bnd'),
-                 nt.Joint(prefix+'_outerLower_eyelid_bnd'),
-                 nt.Joint(prefix+'_outer_eyelid_bnd')]
+    if not upperBnds:
+        upperBnds = [nt.Joint(prefix+'_inner_eyelid_bnd'),
+                     nt.Joint(prefix+'_innerUpper_eyelid_bnd'),
+                     nt.Joint(prefix+'_upper_eyelid_bnd'),
+                     nt.Joint(prefix+'_outerUpper_eyelid_bnd'),
+                     nt.Joint(prefix+'_outer_eyelid_bnd')]
+    if not lowerBnds:
+        lowerBnds = [nt.Joint(prefix+'_inner_eyelid_bnd'),
+                     nt.Joint(prefix+'_innerLower_eyelid_bnd'),
+                     nt.Joint(prefix+'_lower_eyelid_bnd'),
+                     nt.Joint(prefix+'_outerLower_eyelid_bnd'),
+                     nt.Joint(prefix+'_outer_eyelid_bnd')]
     
-    setEyelidControlsWeights(prefix)
+    setEyelidControlsWeights(prefix, upperBnds, lowerBnds)
     
     # map bnds to CV index
     upperBndTable = {}
@@ -96,18 +150,20 @@ def setEyelidLoopWeights(prefix):
     
     pm.delete(targetCrv)
 
-def setEyelidControlsWeights(prefix):
+def setEyelidControlsWeights(prefix, upperBnds=None, lowerBnds=None):
     # define all data - hard coded
-    upperBnds = [nt.Joint(prefix+'_inner_eyelid_bnd'),
-                 nt.Joint(prefix+'_innerUpper_eyelid_bnd'),
-                 nt.Joint(prefix+'_upper_eyelid_bnd'),
-                 nt.Joint(prefix+'_outerUpper_eyelid_bnd'),
-                 nt.Joint(prefix+'_outer_eyelid_bnd')]
-    lowerBnds = [nt.Joint(prefix+'_inner_eyelid_bnd'),
-                 nt.Joint(prefix+'_innerLower_eyelid_bnd'),
-                 nt.Joint(prefix+'_lower_eyelid_bnd'),
-                 nt.Joint(prefix+'_outerLower_eyelid_bnd'),
-                 nt.Joint(prefix+'_outer_eyelid_bnd')]
+    if not upperBnds:
+        upperBnds = [nt.Joint(prefix+'_inner_eyelid_bnd'),
+                     nt.Joint(prefix+'_innerUpper_eyelid_bnd'),
+                     nt.Joint(prefix+'_upper_eyelid_bnd'),
+                     nt.Joint(prefix+'_outerUpper_eyelid_bnd'),
+                     nt.Joint(prefix+'_outer_eyelid_bnd')]
+    if not lowerBnds:
+        lowerBnds = [nt.Joint(prefix+'_inner_eyelid_bnd'),
+                     nt.Joint(prefix+'_innerLower_eyelid_bnd'),
+                     nt.Joint(prefix+'_lower_eyelid_bnd'),
+                     nt.Joint(prefix+'_outerLower_eyelid_bnd'),
+                     nt.Joint(prefix+'_outer_eyelid_bnd')]
     upperCtls = [pm.PyNode(node.name().replace('_bnd', '_ctrl')) for node in upperBnds]
     lowerCtls = [pm.PyNode(node.name().replace('_bnd', '_ctrl')) for node in lowerBnds]
     drvCrv = pm.PyNode(prefix+'_eye_aimAt_crv_0')

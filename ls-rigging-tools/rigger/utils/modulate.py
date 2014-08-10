@@ -10,6 +10,33 @@ import pymel.core.nodetypes as nt
 
 import rigger.utils.symmetry as sym
 
+def removeModulator(attr):
+    '''
+    node = pm.ls(sl=True)[0]
+    attr = node.rz
+    '''
+    inPlug = attr.inputs(p=True)[0]
+    
+    toDelete = []
+    if type(inPlug.node()) is pm.nt.UnitConversion:
+        toDelete.append(inPlug)
+        inPlug = inPlug.node().input.inputs(p=True)[0]
+        
+    # assume inPlug's node is an adl or mdl
+    # input1 is the original connection
+    origPlug = inPlug.node().input1.inputs(p=True)[0]
+    # input2 is the modulation attr
+    modPlug = inPlug.node().input2.inputs(p=True)[0]
+    
+    # restore orig connection
+    origPlug >> attr
+    
+    # delete unwanted nodes
+    pm.delete(inPlug.node(), toDelete)
+    
+    # remove mod attr
+    pm.deleteAttr(modPlug)
+
 def multiplyInput(attr, dv, suffix='', unitConversion=False):
     '''
     '''

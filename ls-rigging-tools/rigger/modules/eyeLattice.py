@@ -10,6 +10,42 @@ import rigger.lib.controls as controls
 import rigger.modules.localReader as localReader
 reload(localReader)
 
+def buildEyeShaper():
+    createLattice([nt.Transform(u'LT_eyeball_geo'),
+                    nt.Transform(u'RT_eyeball_geo')], 
+                    [nt.Mesh(u'CT_face_geoShape'),
+                    nt.Mesh(u'LT_brow_geoShape'),
+                    nt.Mesh(u'RT_brow_geoShape')])
+    
+    # add placement locs
+    pGrp = nt.Transform(u'CT_eyeLattice_placement_grp')
+    import rigger.modules.placementGrp as placementGrp
+    reload(placementGrp)
+    placementGrp.mirrorAllPlacements(pGrp)
+    
+    # create bnds
+    import rigger.modules.face as face
+    bndGrp = face.createBndsFromPlacement(pGrp)
+    # motion sys
+    # mesh is passed in for legacy reasons
+    face.buildSecondaryControlSystem(pGrp, bndGrp, mesh=None)
+    
+    priCtlMappings = {'LT_midUp_eyeShaper_pri_ctrl': {u'LT_inUp_eyeShaper_bnd':1,
+                                                        u'LT_midUp_eyeShaper_bnd':1,
+                                                        u'LT_outUp_eyeShaper_bnd':1},
+    'LT_midLow_eyeShaper_pri_ctrl': {u'LT_inLow_eyeShaper_bnd':1,
+                                                        u'LT_midLow_eyeShaper_bnd':1,
+                                                        u'LT_outLow_eyeShaper_bnd':1},
+    'RT_midUp_eyeShaper_pri_ctrl': {u'RT_inUp_eyeShaper_bnd':1,
+                                                        u'RT_midUp_eyeShaper_bnd':1,
+                                                        u'RT_outUp_eyeShaper_bnd':1},
+    'RT_midLow_eyeShaper_pri_ctrl': {u'RT_inLow_eyeShaper_bnd':1,
+                                                        u'RT_midLow_eyeShaper_bnd':1,
+                                                        u'RT_outLow_eyeShaper_bnd':1}}
+    import rigger.modules.priCtl as priCtl
+    reload(priCtl)
+    priCtl.setupPriCtlSecondPass(priCtlMappings)
+
 def createLattice(eyeGeos, faceGeos):
     '''
     eyeGeos - list of meshes for eye etc (define bounding box for lattice)

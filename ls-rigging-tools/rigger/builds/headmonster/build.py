@@ -120,6 +120,7 @@ def addStickyLips():
     sticky.addStickyToFRS()
     
 def buildEyeRig(pGrp):
+    
     #--------------------------------------------------------- ADD LEFT EYE DEFORMER
     edgeLoop = [pm.PyNode(edge) for edge in pGrp.leftEyelidLoop.get()]
     eyePivot = pm.PyNode('LT_eyeball_geo')
@@ -142,8 +143,24 @@ def buildEyeRig(pGrp):
     eyePivot = pm.PyNode('RT_eyeball_geo')
     eye.buildEyeRigCmd('RT_eye', eyePivot, edgeLoop, rigidLoops, falloffLoops)
     
-    weights.setEyelidLoopWeights('LT')
-    weights.setEyelidLoopWeights('RT')
+
+    def assignEyelidBndNames(prefix):
+
+        upperBnds = [nt.Joint(prefix+'_inner_eyelid_bnd'),
+                     nt.Joint(prefix+'_upperInner_eyelid_bnd'),
+                     nt.Joint(prefix+'_upper_eyelid_bnd'),
+                     nt.Joint(prefix+'_upperOuter_eyelid_bnd'),
+                     nt.Joint(prefix+'_outer_eyelid_bnd')]
+        lowerBnds = [nt.Joint(prefix+'_inner_eyelid_bnd'),
+                     nt.Joint(prefix+'_lowerInner_eyelid_bnd'),
+                     nt.Joint(prefix+'_lower_eyelid_bnd'),
+                     nt.Joint(prefix+'_lowerOuter_eyelid_bnd'),
+                     nt.Joint(prefix+'_outer_eyelid_bnd')]
+        return upperBnds, lowerBnds
+    upperBnds, lowerBnds = assignEyelidBndNames('LT')
+    weights.setEyelidLoopWeights('LT', upperBnds, lowerBnds)
+    upperBnds, lowerBnds = assignEyelidBndNames('RT')
+    weights.setEyelidLoopWeights('RT', upperBnds, lowerBnds)
     
     
 
