@@ -4,10 +4,12 @@ Created on Feb 14, 2014
 @author: Leon
 '''
 
+from ngSkinTools.mllInterface import MllInterface
 import cgm.lib.curves as curves
-import cgm.lib.rigging as cgmrigging
 import cgm.lib.position as cgmPos
+import cgm.lib.rigging as cgmrigging
 import maya.cmds as mc
+import ngSkinToolsPlus.lib.weights as ngWeights
 import pymel.core as pm
 import pymel.core.nodetypes as nt
 import rigger.modules.eye as eye
@@ -15,10 +17,8 @@ import utils.rigging as rt
 reload(eye)
 reload(rt)
 
-import ngSkinToolsPlus.lib.weights as ngWeights
 reload(ngWeights)
 
-from ngSkinTools.mllInterface import MllInterface
 
 
 mel = pm.language.Mel()
@@ -636,6 +636,222 @@ def buildPrimaryControlSystem():
     
     pm.progressWindow(e=True, step=1, status='Create driver for nose_mover')
     # NOSE_MOVER
+    priCtl = addPrimaryCtlToBnd(pm.PyNode('CT_noseMover_bnd'))
+    allPriCtls.append(priCtl)
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'CT_noseMover_bnd'),
+                                    nt.Joint(u'CT_noseTip_bnd'),
+                                    nt.Joint(u'LT_nostril_bnd'),
+                                    nt.Joint(u'CT_philtrum_bnd'),
+                                    nt.Joint(u'LT_philtrum_bnd'),
+                                    nt.Joint(u'LT_up_crease_bnd'),
+                                    nt.Joint(u'LT_in_philtrum_bnd'),
+                                    nt.Joint(u'RT_nostril_bnd'),
+                                    nt.Joint(u'RT_philtrum_bnd'),
+                                    nt.Joint(u'RT_up_crease_bnd'),
+                                    nt.Joint(u'RT_in_philtrum_bnd')])
+    
+    pm.progressWindow(e=True, step=1, status='Create driver for mouth_mover')
+    # MOUTH_MOVER
+    priCtl = addPrimaryCtlToBnd(pm.PyNode('CT_mouthMover_bnd'))
+    allPriCtls.append(priCtl)
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_corner_lip_bnd'),
+                                     nt.Joint(u'RT_upper_pinch_lip_bnd'),
+                                     nt.Joint(u'RT_upper_sneer_lip_bnd'),
+                                     nt.Joint(u'CT_upper_lip_bnd'),
+                                     nt.Joint(u'LT_upper_sneer_lip_bnd'),
+                                     nt.Joint(u'LT_upper_pinch_lip_bnd'),
+                                     nt.Joint(u'LT_corner_lip_bnd'),
+                                     nt.Joint(u'LT_lower_pinch_lip_bnd'),
+                                     nt.Joint(u'LT_lower_sneer_lip_bnd'),
+                                     nt.Joint(u'CT_lower_lip_bnd'),
+                                     nt.Joint(u'RT_lower_sneer_lip_bnd'),
+                                     nt.Joint(u'RT_lower_pinch_lip_bnd'),
+                                     nt.Joint(u'RT_low_crease_bnd'),
+                                     nt.Joint(u'RT_sneer_bnd'),
+                                     nt.Joint(u'RT_philtrum_bnd'),
+                                     nt.Joint(u'RT_in_philtrum_bnd'),
+                                     nt.Joint(u'LT_in_philtrum_bnd'),
+                                     nt.Joint(u'LT_philtrum_bnd'),
+                                     nt.Joint(u'LT_sneer_bnd'),
+                                     nt.Joint(u'LT_low_crease_bnd'),
+                                     nt.Joint(u'LT_mid_chin_bnd'),
+                                     nt.Joint(u'CT_mid_chin_bnd'),
+                                     nt.Joint(u'RT_mid_chin_bnd'),
+                                     nt.Joint(u'LT_upper_side_lip_bnd'),
+                                     nt.Joint(u'LT_lower_side_lip_bnd'),
+                                     nt.Joint(u'RT_upper_side_lip_bnd'),
+                                     nt.Joint(u'RT_lower_side_lip_bnd')])
+    
+    pm.progressWindow(e=True, step=1, status='Create driver for eye movers')
+    # EYE
+    '''
+    priCtl, lfEyeHm = createMover('LT_eyeMover_pLoc')
+    allPriCtls.append(priCtl)
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'LT_eyelid_inner_bnd'),
+                                     nt.Joint(u'LT_eyelid_inner_upper_bnd'),
+                                     nt.Joint(u'LT_eyelid_upper_bnd'),
+                                     nt.Joint(u'LT_eyelid_outer_upper_bnd'),
+                                     nt.Joint(u'LT_eyelid_outer_bnd'),
+                                     nt.Joint(u'LT_eyelid_outer_lower_bnd'),
+                                     nt.Joint(u'LT_eyelid_lower_bnd'),
+                                     nt.Joint(u'LT_eyelid_inner_lower_bnd')])
+    
+    priCtl, rtEyeHm = createMover('RT_eyeMover_pLoc')
+    allPriCtls.append(priCtl)
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_eyelid_inner_bnd'),
+                                     nt.Joint(u'RT_eyelid_inner_upper_bnd'),
+                                     nt.Joint(u'RT_eyelid_upper_bnd'),
+                                     nt.Joint(u'RT_eyelid_outer_upper_bnd'),
+                                     nt.Joint(u'RT_eyelid_outer_bnd'),
+                                     nt.Joint(u'RT_eyelid_outer_lower_bnd'),
+                                     nt.Joint(u'RT_eyelid_lower_bnd'),
+                                     nt.Joint(u'RT_eyelid_inner_lower_bnd')])
+'''
+    pm.progressWindow(e=True, step=1, status='Create driver for CT_jaw_bnd')
+    # JAW
+    priCtl = addPrimaryCtlToBnd(pm.PyNode('CT_jaw_bnd'))
+    allPriCtls.append(priCtl)
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'CT_lower_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd'), 
+                                    nt.Joint(u'LT_upper_sneer_lip_bnd'), nt.Joint(u'LT_upper_pinch_lip_bnd'), 
+                                    nt.Joint(u'LT_corner_lip_bnd'), nt.Joint(u'LT_lower_pinch_lip_bnd'), 
+                                    nt.Joint(u'LT_lower_sneer_lip_bnd'), nt.Joint(u'RT_lower_sneer_lip_bnd'), 
+                                    nt.Joint(u'RT_lower_pinch_lip_bnd'), nt.Joint(u'RT_corner_lip_bnd'), 
+                                    nt.Joint(u'RT_upper_pinch_lip_bnd'), nt.Joint(u'RT_upper_sneer_lip_bnd'), 
+                                    nt.Joint(u'CT_mid_chin_bnd'), nt.Joint(u'RT_mid_chin_bnd'), nt.Joint(u'LT_mid_chin_bnd'), 
+                                    nt.Joint(u'LT_chin_bnd'), nt.Joint(u'CT_chin_bnd'), nt.Joint(u'RT_chin_bnd'), 
+                                    nt.Joint(u'LT_sneer_bnd'), nt.Joint(u'LT_mid_crease_bnd'), nt.Joint(u'LT_low_crease_bnd'), 
+                                    nt.Joint(u'LT_low_jaw_bnd'), nt.Joint(u'LT_cheek_bnd'), nt.Joint(u'LT_low_cheek_bnd'), 
+                                    nt.Joint(u'LT_corner_jaw_bnd'), nt.Joint(u'LT_up_jaw_bnd'), nt.Joint(u'RT_philtrum_bnd'), 
+                                    nt.Joint(u'RT_in_philtrum_bnd'), nt.Joint(u'LT_in_philtrum_bnd'), 
+                                    nt.Joint(u'LT_philtrum_bnd'), nt.Joint(u'LT_out_cheek_bnd'), nt.Joint(u'LT_up_cheek_bnd'), 
+                                    nt.Joint(u'RT_sneer_bnd'), nt.Joint(u'RT_mid_crease_bnd'), nt.Joint(u'RT_low_crease_bnd'), 
+                                    nt.Joint(u'RT_low_jaw_bnd'), nt.Joint(u'RT_corner_jaw_bnd'), nt.Joint(u'RT_low_cheek_bnd'), 
+                                    nt.Joint(u'RT_up_jaw_bnd'), nt.Joint(u'RT_cheek_bnd'), nt.Joint(u'RT_up_cheek_bnd'), 
+                                    nt.Joint(u'RT_out_cheek_bnd'), nt.Joint(u'LT_neck_bnd'), nt.Joint(u'RT_neck_bnd'),
+                                    nt.Joint(u'CT_neck_bnd'),
+                                    nt.Joint(u'LT_upper_side_lip_bnd'),
+                                    nt.Joint(u'LT_lower_side_lip_bnd'),
+                                    nt.Joint(u'RT_upper_side_lip_bnd'),
+                                    nt.Joint(u'RT_lower_side_lip_bnd')])
+    
+    allPriCtlHms = [ctl.getParent(-1) for ctl in allPriCtls]
+    pm.group(allPriCtlHms, n='CT_face_primary_ctls_grp') 
+    
+    pm.progressWindow(e=True, endProgress=True)  
+    
+    return allPriCtls
+
+
+"""
+# old method using different "mover jnts"
+# new method above uses pLocs for everything inc. movers
+def buildPrimaryControlSystem():
+    #===========================================================================
+    # Add Primary controls
+    #===========================================================================
+    pm.progressWindow(title='Build Motion System', progress=0, max=17)
+    pm.progressWindow(e=True, step=1, status='Create driver for LT_eyelid_upper_bnd')
+    
+    allPriCtls = []
+    # eyes
+    priCtl = addPrimaryCtlToBnd(pm.PyNode('LT_eyelid_upper_bnd'))
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'LT_eyelid_inner_bnd'),
+                                    nt.Joint(u'LT_eyelid_inner_upper_bnd'),
+                                    nt.Joint(u'LT_eyelid_upper_bnd'),
+                                    nt.Joint(u'LT_eyelid_outer_upper_bnd'),
+                                    nt.Joint(u'LT_eyelid_outer_bnd')])
+    allPriCtls.append(priCtl)
+    
+    pm.progressWindow(e=True, step=1, status='Create driver for LT_eyelid_lower_bnd')
+    priCtl = addPrimaryCtlToBnd(pm.PyNode('LT_eyelid_lower_bnd'))
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'LT_eyelid_inner_bnd'),
+                                    nt.Joint(u'LT_eyelid_inner_lower_bnd'),
+                                    nt.Joint(u'LT_eyelid_lower_bnd'),
+                                    nt.Joint(u'LT_eyelid_outer_lower_bnd'),
+                                    nt.Joint(u'LT_eyelid_outer_bnd')])
+    allPriCtls.append(priCtl)
+    
+    pm.progressWindow(e=True, step=1, status='Create driver for RT_eyelid_upper_bnd')
+    priCtl = addPrimaryCtlToBnd(pm.PyNode('RT_eyelid_upper_bnd'))
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_eyelid_inner_bnd'),
+                                    nt.Joint(u'RT_eyelid_inner_upper_bnd'),
+                                    nt.Joint(u'RT_eyelid_upper_bnd'),
+                                    nt.Joint(u'RT_eyelid_outer_upper_bnd'),
+                                    nt.Joint(u'RT_eyelid_outer_bnd')])
+    allPriCtls.append(priCtl)
+    
+    pm.progressWindow(e=True, step=1, status='Create driver for RT_eyelid_lower_bnd')
+    priCtl = addPrimaryCtlToBnd(pm.PyNode('RT_eyelid_lower_bnd'))
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_eyelid_inner_bnd'),
+                                    nt.Joint(u'RT_eyelid_inner_lower_bnd'),
+                                    nt.Joint(u'RT_eyelid_lower_bnd'),
+                                    nt.Joint(u'RT_eyelid_outer_lower_bnd'),
+                                    nt.Joint(u'RT_eyelid_outer_bnd')])
+    allPriCtls.append(priCtl)
+    
+    pm.progressWindow(e=True, step=1, status='Create driver for CT_noseTip_bnd')
+    # nose
+    priCtl = addPrimaryCtlToBnd(pm.PyNode('CT_noseTip_bnd'))
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'CT_noseTip_bnd'), nt.Joint(u'LT_nostril_bnd'), nt.Joint(u'RT_nostril_bnd'), nt.Joint(u'LT_up_crease_bnd'), nt.Joint(u'RT_up_crease_bnd'), nt.Joint(u'LT_philtrum_bnd'), nt.Joint(u'RT_philtrum_bnd'), nt.Joint(u'LT_in_philtrum_bnd'), nt.Joint(u'RT_in_philtrum_bnd')])
+    allPriCtls.append(priCtl)
+    
+    pm.progressWindow(e=True, step=1, status='Create driver for LT_mid_brow_bnd')
+    # brows
+    priCtl = addPrimaryCtlToBnd(pm.PyNode('LT_mid_brow_bnd'))
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'LT_mid_brow_bnd'), nt.Joint(u'LT_in_brow_bnd'), nt.Joint(u'LT_out_brow_bnd'), nt.Joint(u'LT_in_forehead_bnd'), nt.Joint(u'LT_out_forehead_bnd'), nt.Joint(u'LT_in_low_forehead_bnd'), nt.Joint(u'LT_out_low_forehead_bnd'), nt.Joint('CT_brow_bnd')])
+    allPriCtls.append(priCtl)
+    
+    pm.progressWindow(e=True, step=1, status='Create driver for RT_mid_brow_bnd')
+    priCtl = addPrimaryCtlToBnd(pm.PyNode('RT_mid_brow_bnd'))
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_mid_brow_bnd'), nt.Joint(u'RT_in_brow_bnd'), nt.Joint(u'RT_in_forehead_bnd'), nt.Joint(u'RT_out_forehead_bnd'), nt.Joint(u'RT_in_low_forehead_bnd'), nt.Joint(u'RT_out_low_forehead_bnd'), nt.Joint(u'RT_out_brow_bnd'), nt.Joint('CT_brow_bnd')])
+    allPriCtls.append(priCtl)
+    
+    pm.progressWindow(e=True, step=1, status='Create driver for LT_cheek_bnd')
+    # cheeks
+    priCtl = addPrimaryCtlToBnd(pm.PyNode('LT_cheek_bnd'))
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'LT_cheek_bnd'), nt.Joint(u'LT_up_cheek_bnd'), nt.Joint(u'LT_mid_crease_bnd'), nt.Joint(u'LT_up_crease_bnd'), nt.Joint(u'LT_in_cheek_bnd'), nt.Joint(u'LT_squint_bnd'), nt.Joint(u'LT_sneer_bnd'), nt.Joint(u'LT_philtrum_bnd'), nt.Joint(u'LT_low_crease_bnd'), nt.Joint(u'LT_low_cheek_bnd')])
+    allPriCtls.append(priCtl)
+    
+    pm.progressWindow(e=True, step=1, status='Create driver for RT_cheek_bnd')
+    priCtl = addPrimaryCtlToBnd(pm.PyNode('RT_cheek_bnd'))
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_in_cheek_bnd'), nt.Joint(u'RT_up_crease_bnd'), nt.Joint(u'RT_sneer_bnd'), nt.Joint(u'RT_mid_crease_bnd'), nt.Joint(u'RT_philtrum_bnd'), nt.Joint(u'RT_up_cheek_bnd'), nt.Joint(u'RT_cheek_bnd'), nt.Joint(u'RT_low_crease_bnd'), nt.Joint(u'RT_low_cheek_bnd'), nt.Joint(u'RT_squint_bnd')])
+    allPriCtls.append(priCtl)
+    
+    pm.progressWindow(e=True, step=1, status='Create driver for LT_upper_sneer_lip_bnd')
+    # sneers
+    priCtl = addPrimaryCtlToBnd(pm.PyNode('LT_upper_sneer_lip_bnd'))
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'LT_upper_pinch_lip_bnd'), nt.Joint(u'LT_upper_sneer_lip_bnd'), nt.Joint(u'LT_upper_side_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd'), nt.Joint(u'LT_in_philtrum_bnd'), nt.Joint(u'LT_philtrum_bnd'), nt.Joint(u'LT_sneer_bnd')])
+    allPriCtls.append(priCtl)
+    
+    pm.progressWindow(e=True, step=1, status='Create driver for LT_lower_sneer_lip_bnd')
+    priCtl = addPrimaryCtlToBnd(pm.PyNode('LT_lower_sneer_lip_bnd'))
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'CT_lower_lip_bnd'), nt.Joint(u'LT_lower_sneer_lip_bnd'), nt.Joint(u'LT_lower_side_lip_bnd'), nt.Joint(u'LT_lower_pinch_lip_bnd'), nt.Joint(u'LT_mid_chin_bnd'), nt.Joint(u'CT_mid_chin_bnd')])
+    allPriCtls.append(priCtl)
+    
+    pm.progressWindow(e=True, step=1, status='Create driver for RT_upper_sneer_lip_bnd')
+    priCtl = addPrimaryCtlToBnd(pm.PyNode('RT_upper_sneer_lip_bnd'))
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_upper_pinch_lip_bnd'), nt.Joint(u'RT_upper_sneer_lip_bnd'), nt.Joint(u'RT_upper_side_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd'), nt.Joint(u'RT_in_philtrum_bnd'), nt.Joint(u'RT_philtrum_bnd'), nt.Joint(u'RT_sneer_bnd')])
+    allPriCtls.append(priCtl)
+    
+    pm.progressWindow(e=True, step=1, status='Create driver for RT_lower_sneer_lip_bnd')
+    priCtl = addPrimaryCtlToBnd(pm.PyNode('RT_lower_sneer_lip_bnd'))
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'CT_lower_lip_bnd'), nt.Joint(u'RT_lower_sneer_lip_bnd'), nt.Joint(u'RT_lower_side_lip_bnd'), nt.Joint(u'RT_lower_pinch_lip_bnd'), nt.Joint(u'RT_mid_chin_bnd'), nt.Joint(u'CT_mid_chin_bnd')])
+    allPriCtls.append(priCtl)
+    
+    pm.progressWindow(e=True, step=1, status='Create driver for LT_corner_lip_bnd')
+    # nwsf
+    priCtl = addPrimaryCtlToBnd(pm.PyNode('LT_corner_lip_bnd'))
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'LT_corner_lip_bnd'), nt.Joint(u'LT_upper_pinch_lip_bnd'), nt.Joint(u'LT_upper_sneer_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd'), nt.Joint(u'CT_lower_lip_bnd'), nt.Joint(u'LT_lower_sneer_lip_bnd'), nt.Joint(u'LT_lower_pinch_lip_bnd'), nt.Joint(u'CT_mid_chin_bnd'), nt.Joint(u'LT_mid_chin_bnd'), nt.Joint(u'LT_in_philtrum_bnd'), nt.Joint(u'LT_philtrum_bnd'), nt.Joint(u'LT_sneer_bnd'), nt.Joint(u'LT_low_crease_bnd'), nt.Joint(u'LT_mid_crease_bnd'), nt.Joint(u'LT_upper_side_lip_bnd'), nt.Joint(u'LT_lower_side_lip_bnd')])
+    allPriCtls.append(priCtl)
+    
+    pm.progressWindow(e=True, step=1, status='Create driver for RT_corner_lip_bnd')
+    priCtl = addPrimaryCtlToBnd(pm.PyNode('RT_corner_lip_bnd'))
+    connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_corner_lip_bnd'), nt.Joint(u'RT_upper_pinch_lip_bnd'), nt.Joint(u'RT_upper_sneer_lip_bnd'), nt.Joint(u'CT_upper_lip_bnd'), nt.Joint(u'CT_lower_lip_bnd'), nt.Joint(u'RT_lower_sneer_lip_bnd'), nt.Joint(u'RT_lower_pinch_lip_bnd'), nt.Joint(u'CT_mid_chin_bnd'), nt.Joint(u'RT_mid_chin_bnd'), nt.Joint(u'RT_in_philtrum_bnd'), nt.Joint(u'RT_philtrum_bnd'), nt.Joint(u'RT_sneer_bnd'), nt.Joint(u'RT_low_crease_bnd'), nt.Joint(u'RT_mid_crease_bnd'), nt.Joint(u'RT_upper_side_lip_bnd'), nt.Joint(u'RT_lower_side_lip_bnd')])
+    allPriCtls.append(priCtl)
+    
+    
+    pm.progressWindow(e=True, step=1, status='Create driver for nose_mover')
+    # NOSE_MOVER
     priCtl, noseHm = createMover('CT_noseMover_pLoc')
     allPriCtls.append(priCtl)
     connectBndsToPriCtlCmd(priCtl, [nt.Joint(u'RT_nostril_bnd'),
@@ -733,7 +949,7 @@ def buildPrimaryControlSystem():
     pm.progressWindow(e=True, endProgress=True)  
     
     return allPriCtls
-
+"""
 def cleanFaceRig():
     '''
     '''

@@ -26,6 +26,20 @@ bndVertMap = assignPriWeightsByBlendshape.buildBndVertMap()
 import pymel.core as pm
 import pymel.core.nodetypes as nt
 
+import utils.rigging as rt
+
+def setPriWeightsKeys(attrValues, driver, oldDriverValue, newDriverValue):
+    '''
+    attrValues - dictionary {bnd.attr : newValue}
+    current weights are set for oldDriverValue
+    weights from dictionary are set for newDriverValue
+    '''
+    for attr, newWeight in attrValues.items():
+        oldWeight = pm.PyNode(attr).get()
+        rt.connectSDK(driver, attr,
+                      {oldDriverValue:oldWeight,
+                       newDriverValue:newWeight})
+
 def unifyPriWeightsGo():
     '''
     select bnds, shift-select priCtl, run
@@ -58,7 +72,7 @@ def assignAllPriWeightsByDelta(corrMesh, priCtl,
     assume neutral position before running
     '''
     bndGrp = nt.Transform(u'CT_bnd_grp')
-    baseMesh = nt.Mesh(u'CT_face_geoShape')
+    baseMesh = nt.Mesh(u'CT_base_corrective_bsgShape')
     
     bndVertMap = buildBndVertMap()
     
@@ -69,6 +83,69 @@ def assignAllPriWeightsByDelta(corrMesh, priCtl,
                                 baseMesh, corrMesh, 
                                 bndVertMap, calcChannels, avgChannels)
     
+
+def getAllPriWeightsByDelta(baseMesh, targetMesh, priCtl,
+                            calcChannels=('tx','ty','tz')):
+    '''
+    '''
+    bndGrp = nt.Transform(u'CT_bnd_grp')
+    allBnds = bndGrp.getChildren(ad=True, type='joint')
+    
+    attrWeightsMap = {}
+    for bnd in allBnds:
+        
+        d = getPriWeightsByDelta(bnd, priCtl, 
+                                baseMesh, targetMesh, 
+                                calcChannels)
+        if d:
+            attrWeightsMap.update(d)
+    
+    return attrWeightsMap
+
+def getPriWeightsByDelta(bnd, priCtl, baseMesh, corrMesh, 
+                         calcChannels=('tx','ty','tz')):
+    '''
+    calculate bndDelta
+    (if bndDelta is 0, can skip)
+    calculate priCtlDelta
+    calculate ratios for x,y,z translation
+    average ratios for rotate & scale weights
+    
+    return dictionary {attr, weight}
+    '''
+    bndVertId = bnd.bndVertId.get()
+    priCtlBnd = pm.PyNode(priCtl.name().replace('_pri_ctrl', '_bnd'))
+    priCtlVertId = priCtlBnd.bndVertId.get()
+    
+    # calculate deltas
+    bndDelta = calculateVertDelta(bndVertId, baseMesh, corrMesh)
+    priCtlDelta = calculateVertDelta(priCtlVertId, baseMesh, corrMesh)
+    
+    # calculate ratios
+    ratios = {}
+    ratios['tx'] = bndDelta.x / priCtlDelta.x
+    ratios['ty'] = bndDelta.y / priCtlDelta.y
+    ratios['tz'] = bndDelta.z / priCtlDelta.z
+    
+    # print xRatio, yRatio, zRatio
+    
+    # average ratios for rotate & scale
+    avgRatio = (ratios['tx'] + ratios['ty'] + ratios['tz'])/3.0
+    
+    
+    # set weight attrs to dictionary
+    retDict = {}
+    for channel in calcChannels:
+        attrName = priCtl+'_weight_'+channel
+        try:
+            attr = bnd.attr(attrName)
+            retDict[attr.name()] = ratios[channel]
+        except pm.MayaAttributeError as e:
+            # this bind does not have such attr
+            pass
+        
+    if retDict:
+        return retDict
 
 def assignPriWeightsByDelta(bnd, priCtl, baseMesh, corrMesh, 
                             bndVertMap, calcChannels=('tx','ty','tz'),

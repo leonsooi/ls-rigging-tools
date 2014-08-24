@@ -12,6 +12,167 @@ mel = Mel()
 import rigger.utils.modulate as modulate
 reload(modulate)
 
+def fixBendyRibbonsGo():
+    '''
+    '''
+    # left arm
+    cons = [nt.AimConstraint(u'Mathilda_lf_armRibbon_1_loc|rivet1_rivetAimConstraint1'),
+            nt.AimConstraint(u'Mathilda_lf_armRibbon_2_loc|rivet1_rivetAimConstraint1'),
+            nt.AimConstraint(u'Mathilda_lf_armRibbon_3_loc|rivet1_rivetAimConstraint1'),
+            nt.AimConstraint(u'Mathilda_lf_armRibbon_4_loc|rivet1_rivetAimConstraint1'),
+            nt.AimConstraint(u'Mathilda_lf_armRibbon_5_loc|rivet1_rivetAimConstraint1'),
+            nt.AimConstraint(u'Mathilda_lf_armRibbon_6_loc|rivet1_rivetAimConstraint1'),
+            nt.AimConstraint(u'Mathilda_lf_armRibbon_7_loc|rivet1_rivetAimConstraint1')]
+    
+    for con in cons:
+        setBendyConstraintOnRibbon(con, (0,1,0), (-1,0,0), 'tangentU')
+        
+    # right arm
+    cons = [nt.AimConstraint(u'Mathilda_rt_armRibbon_1_loc|rivet1_rivetAimConstraint1'),
+            nt.AimConstraint(u'Mathilda_rt_armRibbon_2_loc|rivet1_rivetAimConstraint1'),
+            nt.AimConstraint(u'Mathilda_rt_armRibbon_3_loc|rivet1_rivetAimConstraint1'),
+            nt.AimConstraint(u'Mathilda_rt_armRibbon_4_loc|rivet1_rivetAimConstraint1'),
+            nt.AimConstraint(u'Mathilda_rt_armRibbon_5_loc|rivet1_rivetAimConstraint1'),
+            nt.AimConstraint(u'Mathilda_rt_armRibbon_6_loc|rivet1_rivetAimConstraint1'),
+            nt.AimConstraint(u'Mathilda_rt_armRibbon_7_loc|rivet1_rivetAimConstraint1')]
+    
+    for con in cons:
+        setBendyConstraintOnRibbon(con, (0,1,0), (-1,0,0), 'tangentU')
+        
+    # left leg
+    
+    cons =[nt.AimConstraint(u'Mathilda_lf_legRibbon_1_loc|rivet1_rivetAimConstraint1'),
+    nt.AimConstraint(u'Mathilda_lf_legRibbon_2_loc|rivet1_rivetAimConstraint1'),
+    nt.AimConstraint(u'Mathilda_lf_legRibbon_3_loc|rivet1_rivetAimConstraint1'),
+    nt.AimConstraint(u'Mathilda_lf_legRibbon_4_loc|rivet1_rivetAimConstraint1'),
+    nt.AimConstraint(u'Mathilda_lf_legRibbon_5_loc|rivet1_rivetAimConstraint1'),
+    nt.AimConstraint(u'Mathilda_lf_legRibbon_6_loc|rivet1_rivetAimConstraint1'),
+    nt.AimConstraint(u'Mathilda_lf_legRibbon_7_loc|rivet1_rivetAimConstraint1')]
+    
+    for con in cons:
+        setBendyConstraintOnRibbon(con, (0,1,0), (-1,0,0), 'tangentU')
+        
+    # right leg
+    cons =[nt.AimConstraint(u'Mathilda_rt_legRibbon_1_loc|rivet1_rivetAimConstraint1'),
+    nt.AimConstraint(u'Mathilda_rt_legRibbon_2_loc|rivet1_rivetAimConstraint1'),
+    nt.AimConstraint(u'Mathilda_rt_legRibbon_3_loc|rivet1_rivetAimConstraint1'),
+    nt.AimConstraint(u'Mathilda_rt_legRibbon_4_loc|rivet1_rivetAimConstraint1'),
+    nt.AimConstraint(u'Mathilda_rt_legRibbon_5_loc|rivet1_rivetAimConstraint1'),
+    nt.AimConstraint(u'Mathilda_rt_legRibbon_6_loc|rivet1_rivetAimConstraint1'),
+    nt.AimConstraint(u'Mathilda_rt_legRibbon_7_loc|rivet1_rivetAimConstraint1')]
+    
+    for con in cons:
+        setBendyConstraintOnRibbon(con, (0,1,0), (-1,0,0), 'tangentU')
+
+def setBendyConstraintOnRibbon(con, aimVec, upVec, tangent):
+    '''
+    con - nt.AimConstraint
+    aimVector - vector to align to normal
+    upVector - vector to align to tangent
+    tangent - 'tangentU' or 'tangentV'
+    '''
+    con.aimVector.set(aimVec)
+    con.upVector.set(upVec)
+    posi = con.worldUpVector.inputs()[0]
+    posi.attr(tangent) >> con.worldUpVector
+
+def addEyelashCollidersGo():
+    '''
+    '''
+    '''
+    # left side
+    browCrv = pm.PyNode(u'LT_eyeBrowCollide_crv')
+    bnds = [nt.Joint(u'FACE:LT_eye_aimAt_bnd_19'),
+            nt.Joint(u'FACE:LT_eye_aimAt_bnd_18'),
+            nt.Joint(u'FACE:LT_eye_aimAt_bnd_17'),
+            nt.Joint(u'FACE:LT_eye_aimAt_bnd_16'),
+            nt.Joint(u'FACE:LT_eye_aimAt_bnd_15'),
+            nt.Joint(u'FACE:LT_eye_aimAt_bnd_14'),
+            nt.Joint(u'FACE:LT_eye_aimAt_bnd_13'),
+            nt.Joint(u'FACE:LT_eye_aimAt_bnd_12'),
+            nt.Joint(u'FACE:LT_eye_aimAt_bnd_11'),
+            nt.Joint(u'FACE:LT_eye_aimAt_bnd_10'),
+            nt.Joint(u'FACE:LT_eye_aimAt_bnd_9')]
+    
+    allGrps = pm.group(em=True, n='LT_eyelashColliders_grp')
+    for bnd in bnds:
+        grp = addEyelashCollider(bnd, browCrv)
+        bndId = bnd.name().split('_')[-1]
+        attrName = 'rotateLimit'+bndId
+        allGrps.addAttr(attrName, k=True, dv=10)
+        allGrps.attr(attrName) >> grp.minRotate
+        allGrps | grp'''
+    
+    # right side
+    browCrv = pm.PyNode(u'RT_eyeBrowCollide_crv')
+    bnds = [nt.Joint(u'FACE:RT_eye_aimAt_bnd_19'),
+            nt.Joint(u'FACE:RT_eye_aimAt_bnd_18'),
+            nt.Joint(u'FACE:RT_eye_aimAt_bnd_17'),
+            nt.Joint(u'FACE:RT_eye_aimAt_bnd_16'),
+            nt.Joint(u'FACE:RT_eye_aimAt_bnd_15'),
+            nt.Joint(u'FACE:RT_eye_aimAt_bnd_14'),
+            nt.Joint(u'FACE:RT_eye_aimAt_bnd_13'),
+            nt.Joint(u'FACE:RT_eye_aimAt_bnd_12'),
+            nt.Joint(u'FACE:RT_eye_aimAt_bnd_11'),
+            nt.Joint(u'FACE:RT_eye_aimAt_bnd_10'),
+            nt.Joint(u'FACE:RT_eye_aimAt_bnd_9')]
+    
+    allGrps = pm.group(em=True, n='RT_eyelashColliders_grp')
+    for bnd in bnds:
+        grp = addEyelashCollider(bnd, browCrv)
+        bndId = bnd.name().split('_')[-1]
+        attrName = 'rotateLimit'+bndId
+        allGrps.addAttr(attrName, k=True, dv=10)
+        allGrps.attr(attrName) >> grp.minRotate
+        allGrps | grp
+
+
+def addEyelashCollider(bnd, browCrv):
+    '''
+    browCrv = pm.PyNode(u'LT_eyeBrowCollide_crv')
+    bnd = pm.PyNode('FACE:LT_eye_aimAt_bnd_16')
+    '''
+    childGrp = bnd.getChildren()[0]
+    # create vertCrv
+    vertCrv = pm.curve(p=((0,-10,0),(0,10,0)), n=bnd+'_vertCrv', d=1)
+    # constrain to bnd
+    pm.pointConstraint(bnd, vertCrv)
+    # intersect
+    crvInt = pm.createNode('curveIntersect', n=bnd+'_collider_int')
+    browCrv.worldSpace >> crvInt.inputCurve1
+    vertCrv.worldSpace >> crvInt.inputCurve2
+    crvInt.useDirection.set(True)
+    # calculate direction of bnd's x-axis
+    mat = bnd.getMatrix(ws=True)
+    dir = pm.dt.Vector(1,0,0) * mat
+    crvInt.direction.set(dir)
+    # get point on crv
+    poci = pm.createNode('pointOnCurveInfo', n=bnd+'_collider_poci')
+    browCrv.worldSpace >> poci.inputCurve
+    crvInt.parameter1[0] >> poci.parameter
+    # aim loc
+    aimLoc = pm.spaceLocator(n=bnd+'_collide_aimLoc')
+    aimLoc.localScale.set(0.1,0.1,0.1)
+    poci.position >> aimLoc.t
+    # limit null
+    limitNull = pm.group(em=True, n=bnd+'_collider_limit')
+    bnd | limitNull
+    limitNull.setMatrix(pm.dt.Matrix())
+    # aim to aimLoc
+    pm.aimConstraint(aimLoc, limitNull, aim=(1,0,0), 
+    wuo=bnd, wu=(0,1,0), u=(0,1,0), wut='objectrotation')
+    # limit childGrp while keeping bnd's orientation
+    limitNull | childGrp
+    pm.orientConstraint(bnd, childGrp)
+    childGrp.minRotZLimit.set(10)
+    childGrp.minRotZLimitEnable.set(True)
+    # cleanup
+    grp = pm.group(vertCrv, aimLoc, n=bnd+'_collide_grp')
+    grp.addAttr('minRotate', k=True, dv=10)
+    grp.minRotate >> childGrp.minRotZLimit
+    
+    return grp
+
 def addLipCurlsSDKs():
     '''
     '''

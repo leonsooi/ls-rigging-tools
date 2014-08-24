@@ -19,11 +19,11 @@ def addRightSideToList(l):
 build_actions = ['-bind',
                  '-sec_motion_system',
                  '-primary_ctl_system_first',
-                 '-primary_ctl_system_second',
+                 'primary_ctl_system_second',
                  '-load_weights',
                  '-clean',
                  '-eyes',
-                 'eyeballs']
+                 '-eyeballs']
 
 # list of priCtls for first pass
 # order is important

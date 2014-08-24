@@ -38,17 +38,17 @@ def setAllAcsPosByDelta():
                and 'CT__base' not in bnd.name()
                and 'CT__jaw' not in bnd.name()]
     
-    bndVertMap = assignPriWeightsByBlendshape.buildBndVertMap()
+    # bndVertMap = assignPriWeightsByBlendshape.buildBndVertMap()
     
-    corrMesh = nt.Mesh(u'LT_outBrow_negTY_bsgShape')
+    corrMesh = nt.Mesh(u'CT_face_geo2Shape')
     
     for bnd in allBnds:
-        setAcsPosByDelta(bnd, corrMesh, bndVertMap)
+        setAcsPosByDelta(bnd, corrMesh)
 
-def setAcsPosByDelta(bnd, corrMesh, bndVertMap):
+def setAcsPosByDelta(bnd, corrMesh):
     '''
     '''
-    bndVertId = bndVertMap[bnd.name()]
+    bndVertId = bnd.bndVertId.get()
     sdkDag = pm.PyNode(bnd.replace('_bnd','_sdk'))
     
     destPos = corrMesh.vtx[bndVertId].getPosition()

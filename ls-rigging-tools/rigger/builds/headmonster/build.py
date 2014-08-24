@@ -190,6 +190,32 @@ def createSurfaceContraint():
     for bnd in bnds:
         # addSurfaceConstraintToBnd(bnd, surf)
         addSurfaceMatrixConstraintToBnd(bnd, surf)
+        
+def getSurfaceConstraintOffsets():
+    '''
+    do this before editing the surface
+    returns a list of ws-xforms of all gc_offsets
+    so they can be restored after changing the surface
+    '''
+    bnds = [pm.PyNode(name) for name in data.slidingBnds]
+    gc_offsets = [bnd.replace('_bnd','_gc_offset') for bnd in bnds]
+    
+    wsXformsDict = {}
+    for gc_offset in gc_offsets:
+        mat = pm.PyNode(gc_offset).getMatrix(ws=True)
+        wsXformsDict[gc_offset] = mat
+        
+    return wsXformsDict
+        
+def setSurfaceConstraintOffsets(wsXformsDict):
+    '''
+    do this after editing the surface
+    restore all gc_offsets to ws-xforms
+    '''
+    for name, mat in wsXformsDict.items():
+        gc_offset = pm.PyNode(name)
+        gc_offset.setMatrix(mat, ws=True)
+    
     
 def addSurfaceMatrixConstraintToBnd(bnd, surface):
     '''

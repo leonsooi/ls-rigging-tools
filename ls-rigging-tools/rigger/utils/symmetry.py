@@ -20,7 +20,10 @@ def mirror_eyeCurve_weights():
     
     def setEyeJointsLabels(joints):
         for jnt in joints:
-            label = '_'.join(jnt.name().split('_')[1:3])
+            ### change the label
+            
+            #label = '_'.join(jnt.name().split('_')[1:3])
+            label = '_'.join(jnt.name().split('_')[1:4])
             jnt.attr('type').set('Other')
             jnt.otherType.set(label)
     
