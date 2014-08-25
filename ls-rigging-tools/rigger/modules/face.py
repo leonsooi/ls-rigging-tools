@@ -412,6 +412,18 @@ def addSecondaryCtls():
     
 # addSecondaryCtls()
 
+def createBndFromPlacementLoc(pLoc, bndGrp):
+    '''
+    '''
+    pm.select(cl=True)
+    xfo = pLoc.getMatrix(worldSpace=True)
+    jnt = pm.joint(n=pLoc.replace('pLoc', 'bnd'))
+    jnt.setMatrix(xfo)
+    scale = pLoc.localScaleX.get()
+    jnt.radius.set(scale)
+    bndGrp | jnt
+    return jnt
+
 def createBndsFromPlacement(placementGrp):
     '''
     placementGrp [PyNode.Transform] - parent of placement locs and attrs
@@ -468,6 +480,27 @@ def getParamFromCV(cv):
     cPt = crv.closestPoint(pos)
     param = crv.getParamAtPoint(cPt)
     return param
+
+def addSecondaryControlSystemToBnd(bnd):
+    '''
+    '''
+    # add hierarchy for secDrv and priDrv
+    bndHm = pm.PyNode(cgmrigging.groupMeObject(str(bnd), parent=True, maintainParent=True))
+    bndHm.rename(bnd.replace('_bnd', '_bnd_hm'))
+    priDrv = pm.PyNode(cgmrigging.groupMeObject(str(bnd), parent=True, maintainParent=True))
+    priDrv.rename(bnd.replace('_bnd', '_priDrv_bnd'))
+    secDrv = pm.PyNode(cgmrigging.groupMeObject(str(bnd), parent=True, maintainParent=True))
+    secDrv.rename(bnd.replace('_bnd', '_secDrv_bnd'))  
+    # reset joint orient
+    bnd.r.set(0, 0, 0)
+    bnd.jointOrient.set(0, 0, 0)
+    # control
+    cth = addSecondaryCtlToBnd(bnd)
+    # motion
+    ms = addMotionSystemToBnd(bnd)
+    return cth, ms
+    
+
 
 def buildSecondaryControlSystem(placementGrp, bndGrp, mesh):
     '''

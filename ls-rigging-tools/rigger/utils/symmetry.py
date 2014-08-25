@@ -13,8 +13,8 @@ def mirror_eyeCurve_weights():
     '''
     mirror LT_eye_aimAt_crv_0 to RT_eye_aimAt_crv_0
     '''
-    lf_crv = nt.Transform(u'LT_eye_aimAt_crv_0')
-    rt_crv = nt.Transform(u'RT_eye_aimAt_crv_0')
+    lf_crv = nt.Transform(u'LT_eyelidsIn_aimAt_crv_0')
+    rt_crv = nt.Transform(u'RT_eyelidsIn_aimAt_crv_0')
     lf_skn = pm.PyNode(mel.findRelatedSkinCluster(lf_crv))
     rt_skn = pm.PyNode(mel.findRelatedSkinCluster(rt_crv))
     
@@ -22,8 +22,8 @@ def mirror_eyeCurve_weights():
         for jnt in joints:
             ### change the label
             
-            #label = '_'.join(jnt.name().split('_')[1:3])
-            label = '_'.join(jnt.name().split('_')[1:4])
+            label = '_'.join(jnt.name().split('_')[1:3])
+            #label = '_'.join(jnt.name().split('_')[1:4])
             jnt.attr('type').set('Other')
             jnt.otherType.set(label)
     

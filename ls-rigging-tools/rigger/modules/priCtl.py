@@ -159,6 +159,13 @@ def driveAttachedPriCtl(bnd, priCtl):
     
     return eachChannel
 
+def connectBndsToPriCtl(bnds, priCtl, simplify=False, dv=1):
+    '''
+    bnds - list of bnds to connect to pCtl
+    '''
+    for bnd in bnds:
+        connectBndToPriCtl(bnd, priCtl, simplify, dv)
+
 def connectBndToPriCtl(bnd, priCtl, simplify=False, dv=1):
     '''
     bnd = pm.PyNode('lf_nostrilf_bnd')
