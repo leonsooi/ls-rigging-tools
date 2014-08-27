@@ -28,43 +28,45 @@ build_actions = ['place',
 
 # this list of lists is passed to the UI context while placing placers
 baseFilePath = r'C:\Users\Leon\Pictures\FRS\Images\human\\'
-# direct placers
-placerMappings = [['Center Brow', 'CT__brow'],
-                  ['Left Inner Brow', 'LT_in_brow'],
-                   ['Left Middle Brow', 'LT_mid_brow'],
-                   ['Left Outer Brow', 'LT_out_brow'],
-                   ['Left Inner Forehead', 'LT_in_forehead'],
-                   ['Left Outer Forehead', 'LT_out_forehead'],
-                   ['Left Temple', 'LT__temple'],
-                   ['Center Nose Bridge', 'CT__noseBridge'],
-                   ['Center Nose Tip', 'CT__noseTip'],
-                   ['Left Nostril', 'LT__nostril'],
-                   ['Center Philtrum', 'LT_in_philtrum'],
-                   ['Left Philtrum', 'LT__philtrum'],
-                   ['Left Inner Cheek', 'LT_in_cheek'],
-                   ['Left Upper Cheek', 'LT_up_cheek'],
-                   ['Left Squint', 'LT__squint'],
-                   ['Left Upper Crease', 'LT_up_crease'],
-                   ['Left Middle Crease', 'LT_mid_crease'],
-                   ['Left Lower Crease', 'LT_low_crease'],
-                   ['Left Middle Cheek', 'LT_mid_cheek'],
-                   ['Left Lower Cheek', 'LT_low_cheek'],
-                   ['Left Upper Jaw', 'LT_up_jaw'],
-                   ['Left Jaw Corner', 'LT_corner_jaw'],
-                   ['Left Lower Jaw', 'LT_low_jaw'],
-                   ['Left Chin', 'LT__chin'],
-                   ['Left Mid Chin', 'LT_mid_chin'],
-                   ['Center Chin', 'CT__chin'],
-                   ['Center Mid Chin', 'CT_mid_chin'],
-                   ['Center Neck', 'CT__neck'],
-                   ['Left Neck', 'LT__neck']]
+# direct placers ['label', '3-token-name', bindType, orientType]
+# bindType - direct, indirect, independent, surface
+# orientType - user, normalPrimary, normalSecondary, world
+placerMappings = [['Center Brow', 'CT__brow', 0, 1],
+                  ['Left Inner Brow', 'LT_in_brow', 0, 1],
+                   ['Left Middle Brow', 'LT_mid_brow', 0, 1],
+                   ['Left Outer Brow', 'LT_out_brow', 0, 1],
+                   ['Left Inner Forehead', 'LT_in_forehead', 0, 1],
+                   ['Left Outer Forehead', 'LT_out_forehead', 0, 1],
+                   ['Left Temple', 'LT__temple', 0, 1],
+                   ['Center Nose Bridge', 'CT__noseBridge', 0, 3],
+                   ['Center Nose Tip', 'CT__noseTip', 0, 3],
+                   ['Left Nostril', 'LT__nostril', 0, 3],
+                   ['Center Philtrum', 'LT_in_philtrum', 0, 1],
+                   ['Left Philtrum', 'LT__philtrum', 0, 1],
+                   ['Left Inner Cheek', 'LT_in_cheek', 0, 2],
+                   ['Left Upper Cheek', 'LT_up_cheek', 0, 2],
+                   ['Left Squint', 'LT__squint', 0, 2],
+                   ['Left Upper Crease', 'LT_up_crease', 0, 1],
+                   ['Left Middle Crease', 'LT_mid_crease', 0, 1],
+                   ['Left Lower Crease', 'LT_low_crease', 0, 1],
+                   ['Left Middle Cheek', 'LT_mid_cheek', 0, 2],
+                   ['Left Lower Cheek', 'LT_low_cheek', 0, 2],
+                   ['Left Upper Jaw', 'LT_up_jaw', 0, 1],
+                   ['Left Jaw Corner', 'LT_corner_jaw', 0, 1],
+                   ['Left Lower Jaw', 'LT_low_jaw', 0, 1],
+                   ['Left Chin', 'LT__chin', 0, 1],
+                   ['Left Mid Chin', 'LT_mid_chin', 0, 1],
+                   ['Center Chin', 'CT__chin', 0, 1],
+                   ['Center Mid Chin', 'CT_mid_chin', 0, 1],
+                   ['Center Neck', 'CT__neck', 0, 1],
+                   ['Left Neck', 'LT__neck', 0, 1]]
 
 
 # placers will be added after UI-placement is completed
 # {moverName: [pLocName, pLocName, ...]}
-indirectMappings = {'CT__jaw': ['LT_up_jaw_pLoc', 'RT_up_jaw_pLoc'],
+independentMappings = {'CT__jaw': ['LT_up_jaw_pLoc'],
                     'CT__mouthMover': ['CT_upper_lip_pLoc', 'CT_lower_lip_pLoc'],
-                    'CT__base': ['LT_corner_jaw_pLoc', 'RT_corner_jaw_pLoc']}
+                    'CT__base': ['LT__neck_pLoc']}
 
 # list of priCtls for first pass
 # order is important

@@ -27,6 +27,9 @@ reload(context)
 import rigger.utils.weights as weights
 reload(weights)
 
+import rigger.modules.placementGrp as placementGrp
+reload(placementGrp)
+
 from ngSkinTools.mllInterface import MllInterface
 from ngSkinTools.importExport import XmlImporter
 
@@ -47,7 +50,7 @@ class newUI(pm.uitypes.Window):
     lf_eye = pm.PyNode('LT_eyeball_geo')
     rt_eye = pm.PyNode('RT_eyeball_geo')
     '''
-    def __new__(cls, baseFilePath, placerMapping, meshNames):
+    def __new__(cls, baseFilePath, placerMapping, indMapping, meshNames):
         '''
         delete old window and create new instance
         '''
@@ -58,12 +61,13 @@ class newUI(pm.uitypes.Window):
 
         return pm.uitypes.Window.__new__(cls, self)
     
-    def __init__(self, baseFilePath, placerMapping, meshNames):
+    def __init__(self, baseFilePath, placerMapping, indMapping, meshNames):
         '''
         create UI and init vars
         '''
         self.imageRefPath = baseFilePath
         self.placerMapping = placerMapping
+        self.indMapping = indMapping
         self.mesh = meshNames['face']
         self.lf_eye = meshNames['leftEye']
         self.rt_eye = meshNames['rightEye']
@@ -135,6 +139,8 @@ class newUI(pm.uitypes.Window):
         self.btn_jntScrollRt.setEnable(True)
         
         self.placementGrp = pm.group(n='CT_placement_grp', em=True)
+        self.placementGrp.addAttr('locScale', at='float', dv=1.0)
+        self.placementGrp.locScale.set(cb=True)
         
         jntPlacementContext = context.FaceJointPlacementContext(self.mesh, self, self.placementGrp)
         jntPlacementContext.runContext()
@@ -154,6 +160,8 @@ class newUI(pm.uitypes.Window):
             self.placementGrp.attr('mouthLipsLoop').set(len(sel), *sel, type='stringArray')
             pm.select(cl=True)
             
+            placementGrp.addMouthLoopPlacements(self.placementGrp)
+            
         elif self.txt_jntCurrent.getLabel() == 'Select left eyelid loop':
             # READY!
             self.txt_jntCurrent.setLabel('Ready to Build!')
@@ -168,8 +176,10 @@ class newUI(pm.uitypes.Window):
             self.placementGrp.addAttr('leftEyelidLoop', dt='stringArray')
             self.placementGrp.attr('leftEyelidLoop').set(len(sel), *sel, type='stringArray')
             
-            pm.select(cl=True)
+            placementGrp.addEyeLoopPlacements(self.placementGrp)
             
+            placementGrp.addIndependentPlacers(self.placementGrp, self.indMapping)
+            '''
             # create independent locs that can be adjusted
             # JAW
             pos = pm.PyNode('LT_up_jaw_pLoc').getRotatePivot(space='world')
@@ -210,8 +220,10 @@ class newUI(pm.uitypes.Window):
             placementLoc.addAttr('bindType', k=True, at='enum', en='direct=0:indirect=1:independent=2', dv=2)
             self.placementGrp | placementLoc
             
-            
-            pm.select(cl=True)
+            '''
+            placementGrp.snapPlacementsToMesh(self.placementGrp)
+            placementGrp.mirrorAllPlacements(self.placementGrp)
+            placementGrp.orientAllPlacements(self.placementGrp)
             
             
     def buildRig(self):

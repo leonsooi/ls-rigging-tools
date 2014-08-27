@@ -9,6 +9,9 @@ import pymel.core as pm
 import spPaint3dContext as spc
 import spPaint3dGui as spg
 
+import rigger.modules.placementGrp as placementGrp
+reload(placementGrp)
+
 
 class FaceJointPlacementContext():
     """
@@ -62,7 +65,11 @@ class FaceJointPlacementContext():
         pm.select(cl=True)
         
         jntName = self.jointsList[self.jointIndex-1][1]
-        
+        bindType = self.jointsList[self.jointIndex-1][2]
+        orientType = self.jointsList[self.jointIndex-1][3]
+        placementGrp.addPlacementLoc(self.grp, jntName, 
+                                     position, bindType, orientType)
+        '''
         if 'CT_' in jntName:
             position[0] = 0.0
         
@@ -73,7 +80,7 @@ class FaceJointPlacementContext():
         placementLoc.addAttr('bindType', k=True, at='enum', en='direct=0:indirect=1:independent=2', dv=0)
         placementLoc.addAttr('orientType', k=True, at='enum', en='user=0:sliding=1:normal=2', dv=1)
         self.grp | placementLoc
-        
+        '''
         # set camera to focus on new placementLoc
         self.camera.tumblePivot.set(position)
         
@@ -91,7 +98,7 @@ class FaceJointPlacementContext():
         '''
         Calls UI to show the next joint's reference
         '''
-        currentJointName, refPath = self.jointsList[self.jointIndex]
+        currentJointName, refPath = self.jointsList[self.jointIndex][:2]
         fullRefPath = self.ui.imageRefPath + r"%s.jpg" % refPath
         pm.image(self.ui.img_jntReference, image=fullRefPath, e=True)
         self.ui.txt_jntCurrent.setLabel(currentJointName)

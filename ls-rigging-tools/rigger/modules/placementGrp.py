@@ -11,6 +11,23 @@ import rigger.modules.face as face
 reload(face)
 import rigger.modules.eye as eye
 import rigger.utils.xform as xform
+import utils.rigging as rt
+
+def orientAllPlacements(pGrp):
+    '''
+    '''
+    locs = [loc for loc in pGrp.getChildren()
+            if loc.hasAttr('orientType')]
+    mesh = pm.PyNode(pGrp.mouthLipsLoop.get()[0]).node()
+    
+    for loc in locs:
+        if loc.orientType.get() == 1:
+            rt.alignTransformToMesh(loc, mesh, 'sliding')
+        elif loc.orientType.get() == 2:
+            rt.alignTransformToMesh(loc, mesh, 'normal')
+        else:
+            # leave at world or user
+            pass
 
 def updatePlacementGrpAttrFromSel(pGrp, attrName):
     '''
@@ -82,26 +99,39 @@ def savePlacementDictToJSON(pDict, jsonPath):
 def mirrorAllPlacements(pGrp):
     '''
     '''
-    leftLocs = [loc for loc in pGrp.getChildren()
+    locs = [loc for loc in pGrp.getChildren()
+            if loc.hasAttr('bindType')]
+    leftLocs = [loc for loc in locs
                 if 'LT_' in loc.name()]
     
     for eachLeftLoc in leftLocs:
+        # get data to transfer to RT side
+        bindType = eachLeftLoc.bindType.get()
+        orientType = eachLeftLoc.orientType.get()
+        pt = eachLeftLoc.t.get()
+        rightlocName = eachLeftLoc.replace('LT_','RT_')
         try:
-            eachRightLoc = pm.PyNode(eachLeftLoc.replace('LT_','RT_'))
+            eachRightLoc = pm.PyNode(rightlocName)
             # rightLoc already exists
         except pm.MayaObjectError:
             # need to create rightLoc
-            eachRightLoc = pm.duplicate(eachLeftLoc, n=eachLeftLoc.replace('LT_', 'RT_'))[0]
+            rightlocName = rightlocName.replace('_pLoc','')
+            eachRightLoc = addPlacementLoc(pGrp, rightlocName, pt,
+                                           bindType, orientType)
             
         # just modify xforms
         xform.mirrorFromTo(eachLeftLoc, eachRightLoc)
+        eachRightLoc.bindType.set(bindType)
+        eachRightLoc.orientType.set(orientType)
             
 def snapPlacementsToMesh(pGrp):
     '''
     using closest vert (not closest point)
     '''
     locs = [loc for loc in pGrp.getChildren()
-            if loc.bindType.get() != 2] # don't snap independent locs
+            if loc.hasAttr('bindType')]
+    locs = [loc for loc in locs 
+            if loc.bindType.get() == 0] # only snap direct locs
 
     mesh = pm.PyNode(pGrp.mouthLipsLoop.get()[0]).node()
     
@@ -209,14 +239,44 @@ def previewLoop(pGrp, loopAttr):
     loop = [pm.PyNode(node) for node in pGrp.attr(loopAttr).get()]
     pm.select(loop, r=True)
     crv = pm.PyNode(pm.polyToCurve(form=1, degree=1, ch=False)[0])
+
+def getAveragePositionBetweenLocs(locs):
+    '''
+    '''
+    allPts = [pm.PyNode(loc).getTranslation(ws=True) for loc in locs]
+    avgPt = sum(allPts) / len(locs)
+    return avgPt
+
+def addIndependentPlacers(pGrp, mapping):
+    '''
+    '''
+    for indPlacerName, refPlacers in mapping.items():
+        avgPt = getAveragePositionBetweenLocs(refPlacers)
+        addPlacementLoc(pGrp, indPlacerName, avgPt, 2, 3)
     
-def addPlacementLoc(pGrp, pName, pt, bindType):
+
+def addPlacementLoc(pGrp, pName, pt, bindType=0, orientType=0):
     '''
     bindType - 0 (direct), 1 (indirect), 2 (independent)
     '''
     newPLoc = pm.spaceLocator(n=pName + '_pLoc')
     newPLoc.t.set(pt)
     newPLoc.addAttr('bindType', k=True, at='enum', en='direct=0:indirect=1:independent=2', dv=bindType)
+    newPLoc.addAttr('orientType', k=True, at='enum', en='user=0:normalPrimary=1:normalSecondary=2:world=3', dv=orientType)
+    
+    # connect scale
+    try:
+        pGrp.locScale >> newPLoc.localScaleX
+        pGrp.locScale >> newPLoc.localScaleY
+        pGrp.locScale >> newPLoc.localScaleZ
+    except pm.MayaObjectError as e:
+        print e
+        
+    # if CT_, TX must be 0
+    if 'CT_' in pName:
+        newPLoc.tx.set(0)
+        newPLoc.tx.set(l=True)
+        
     pGrp | newPLoc
     return newPLoc
 
@@ -319,6 +379,7 @@ def addEyeLoopPlacements(pGrp, overrideCornerCVs=None):
     pm.select(loop, r=True)
     crv = pm.PyNode(pm.polyToCurve(form=1, degree=1, ch=False,
                                    n=pGrp+'_eyeLoopCrv')[0])
+    crv.v.set(False)
     pGrp | crv
     
     cornerCVs = eye.returnInUpOutLowCVsOnCurve(crv)  # in, up, out, low
@@ -445,6 +506,7 @@ def addMouthLoopPlacements(pGrp):
     pm.select(loop, r=True)
     crv = pm.PyNode(pm.polyToCurve(form=1, degree=1, ch=False,
                                    n=pGrp+'_mouthLipLoopCrv')[0])
+    crv.v.set(False)
     pGrp | crv
     
     upPt = crv.closestPoint(upperPos)

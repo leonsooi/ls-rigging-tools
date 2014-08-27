@@ -19,8 +19,9 @@ def place():
     '''
     mel.cgmToolbox()
     placerMappings = data.placerMappings
+    indMappings = data.independentMappings
     baseFilePath = data.baseFilePath
     meshNames = {'face':'CT_face_geo',
                  'leftEye':'LT_eyeball_geo',
                  'rightEye':'RT_eyeball_geo'}
-    win = fui.newUI(baseFilePath, placerMappings, meshNames)
+    win = fui.newUI(baseFilePath, placerMappings, indMappings, meshNames)
