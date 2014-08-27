@@ -16,14 +16,55 @@ def addRightSideToList(l):
 
 # to switch off an action,
 # just add '-' or something so it won't run
-build_actions = ['-bind',
+build_actions = ['place',
+                 '-bind',
                  '-sec_motion_system',
                  '-primary_ctl_system_first',
-                 'primary_ctl_system_second',
+                 '-primary_ctl_system_second',
                  '-load_weights',
                  '-clean',
                  '-eyes',
                  '-eyeballs']
+
+# this list of lists is passed to the UI context while placing placers
+baseFilePath = r'C:\Users\Leon\Pictures\FRS\Images\human\\'
+# direct placers
+placerMappings = [['Center Brow', 'CT__brow'],
+                  ['Left Inner Brow', 'LT_in_brow'],
+                   ['Left Middle Brow', 'LT_mid_brow'],
+                   ['Left Outer Brow', 'LT_out_brow'],
+                   ['Left Inner Forehead', 'LT_in_forehead'],
+                   ['Left Outer Forehead', 'LT_out_forehead'],
+                   ['Left Temple', 'LT__temple'],
+                   ['Center Nose Bridge', 'CT__noseBridge'],
+                   ['Center Nose Tip', 'CT__noseTip'],
+                   ['Left Nostril', 'LT__nostril'],
+                   ['Center Philtrum', 'LT_in_philtrum'],
+                   ['Left Philtrum', 'LT__philtrum'],
+                   ['Left Inner Cheek', 'LT_in_cheek'],
+                   ['Left Upper Cheek', 'LT_up_cheek'],
+                   ['Left Squint', 'LT__squint'],
+                   ['Left Upper Crease', 'LT_up_crease'],
+                   ['Left Middle Crease', 'LT_mid_crease'],
+                   ['Left Lower Crease', 'LT_low_crease'],
+                   ['Left Middle Cheek', 'LT_mid_cheek'],
+                   ['Left Lower Cheek', 'LT_low_cheek'],
+                   ['Left Upper Jaw', 'LT_up_jaw'],
+                   ['Left Jaw Corner', 'LT_corner_jaw'],
+                   ['Left Lower Jaw', 'LT_low_jaw'],
+                   ['Left Chin', 'LT__chin'],
+                   ['Left Mid Chin', 'LT_mid_chin'],
+                   ['Center Chin', 'CT__chin'],
+                   ['Center Mid Chin', 'CT_mid_chin'],
+                   ['Center Neck', 'CT__neck'],
+                   ['Left Neck', 'LT__neck']]
+
+
+# placers will be added after UI-placement is completed
+# {moverName: [pLocName, pLocName, ...]}
+indirectMappings = {'CT__jaw': ['LT_up_jaw_pLoc', 'RT_up_jaw_pLoc'],
+                    'CT__mouthMover': ['CT_upper_lip_pLoc', 'CT_lower_lip_pLoc'],
+                    'CT__base': ['LT_corner_jaw_pLoc', 'RT_corner_jaw_pLoc']}
 
 # list of priCtls for first pass
 # order is important

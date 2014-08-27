@@ -29,28 +29,7 @@ class FaceJointPlacementContext():
             
         self.context = pm.draggerContext('FaceJointPlacementContext', pressCommand=self.onPress, name='FaceJointPlacementContext', cursor='crossHair')
         
-        self.jointsList = [['Left Inner Brow', 'LT_in_brow'],
-                           ['Left Middle Brow', 'LT_mid_brow'],
-                           ['Left Outer Brow', 'LT_out_brow'],
-                           ['Left Inner Forehead', 'LT_in_forehead'],
-                           ['Left Outer Forehead', 'LT_out_forehead'],
-                           ['Left Temple', 'LT_temple'],
-                           ['Left Squint', 'LT_squint'],
-                           ['Center Nose Tip', 'CT_noseTip'],
-                           ['Left Nostril', 'LT_nostril'],
-                           ['Center Philtrum', 'CT_philtrum'],
-                           ['Left Philtrum', 'LT_philtrum'],
-                           ['Left Upper Crease', 'LT_up_crease'],
-                           ['Left Middle Crease', 'LT_mid_crease'],
-                           ['Left Lower Crease', 'LT_low_crease'],
-                           ['Left Cheek', 'LT_cheek'],
-                           ['Left Upper Jaw', 'LT_up_jaw'],
-                           ['Left Jaw Corner', 'LT_corner_jaw'],
-                           ['Left Lower Jaw', 'LT_low_jaw'],
-                           ['Left Chin', 'LT_chin'],
-                           ['Center Chin', 'CT_chin'],
-                           ['Center Neck', 'CT_neck'],
-                           ['Left Neck', 'LT_neck']]
+        self.jointsList = ui.placerMapping
         
         self.jointIndex = 0
         self.ui = ui
@@ -91,10 +70,8 @@ class FaceJointPlacementContext():
         placementLoc.t.set(position)
         # placementLoc.localScale.set(0.05, 0.05, 0.05)
         # create attribute to tell FRS what type of bind this will be
-        if 'CT_philtrum' not in jntName:
-            placementLoc.addAttr('bindType', k=True, at='enum', en='direct=0:indirect=1:independent=2', dv=0)
-        else:
-            placementLoc.addAttr('bindType', k=True, at='enum', en='direct=0:indirect=1:independent=2', dv=1)
+        placementLoc.addAttr('bindType', k=True, at='enum', en='direct=0:indirect=1:independent=2', dv=0)
+        placementLoc.addAttr('orientType', k=True, at='enum', en='user=0:sliding=1:normal=2', dv=1)
         self.grp | placementLoc
         
         # set camera to focus on new placementLoc
@@ -115,7 +92,7 @@ class FaceJointPlacementContext():
         Calls UI to show the next joint's reference
         '''
         currentJointName, refPath = self.jointsList[self.jointIndex]
-        fullRefPath = r"C:\Users\Leon\Pictures\FRS\Images\FRSRef_%s.jpg" % refPath
+        fullRefPath = self.ui.imageRefPath + r"%s.jpg" % refPath
         pm.image(self.ui.img_jntReference, image=fullRefPath, e=True)
         self.ui.txt_jntCurrent.setLabel(currentJointName)
         
@@ -126,7 +103,7 @@ class FaceJointPlacementContext():
         '''
         pm.select(cl=True)
         pm.setToolTo('polySelectContext')
-        fullRefPath = r"C:\Users\Leon\Pictures\FRS\Images\FRSRef_CT_mouthLipLoop.jpg"
+        fullRefPath = self.ui.imageRefPath + "CT__mouthLipLoop.jpg"
         pm.image(self.ui.img_jntReference, image=fullRefPath, e=True)
         self.ui.txt_jntCurrent.setLabel('Select mouth lips loop')
         

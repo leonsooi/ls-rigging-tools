@@ -1,10 +1,14 @@
 import glob
 import os
 
-def removeFineIncrements():
+def removeFineIncrements(path, delete=False):
     '''
-    '''
+    import utils.increment_files as inc_files
+    reload(inc_files)
+    # use raw string to avoid problems with backslash
     path = r'G:\BACKUP\Documents\maya\projects\Sylph\scenes'
+    inc_files.removeFineIncrements(path)
+    '''
 
     incrementsTable = {} # {'basename.ext': [basename.####.ext, basename.####.ext]}
     allFineIncrements = glob.glob(path+'/*.[0-9][0-9][0-9][0-9].*')
@@ -25,27 +29,29 @@ def removeFineIncrements():
         print '--- ' + fines[-1] + ' -keep'        
         
     # actual deletion
-    for main, fines in incrementsTable.items():
-        print main
-        for f in fines[:-1]:
-            print '--- ' + f + ' -delete'
-            fullpath = path.replace('\\', '/') + '/' + f
-            print fullpath
-            if os.path.isfile(fullpath):
-                print 'file exists'
-                os.remove(fullpath)
-            else:
-                print 'no file found'
-        print '--- ' + fines[-1] + ' -keep'  
-        
+    if delete:
+        for main, fines in incrementsTable.items():
+            print main
+            for f in fines[:-1]:
+                print '--- ' + f + ' -delete'
+                fullpath = path.replace('\\', '/') + '/' + f
+                print fullpath
+                if os.path.isfile(fullpath):
+                    print 'file exists'
+                    os.remove(fullpath)
+                else:
+                    print 'no file found'
+            print '--- ' + fines[-1] + ' -keep'  
+    else:
+        print 'Preview Only'
 
-
-def removeFilesBetweenInterval():
-    '''
+def removeFilesBetweenInterval(path, interval=28800, delete=False):
     '''
     # remove files between intervals (in seconds)
     interval = 28800
     path = r'G:\BACKUP\Documents\maya\projects\ANIM350\scenes'
+    '''
+    
     rpath = path.replace('\\', '/') + '/'
     
     incrementsTable = {} # {'basename.ext': [basename.####.ext, basename.####.ext]}
@@ -73,18 +79,21 @@ def removeFilesBetweenInterval():
         print '--- ' + fines[-1] + ' -keep\n'        
         
     # actual deletion
-    for main, fines in incrementsTable.items():
-        print main
-        currTime = os.stat(rpath+fines[0]).st_mtime
-        for f in fines[1:-1]:
-            nextTime = os.stat(rpath+f).st_mtime
-            if nextTime - currTime < interval:
-                print '--- ' + f + ' -delete'
-                fullpath = rpath + f
-                if os.path.isfile(fullpath):
-                    print 'file exists'
-                    os.remove(fullpath)
-            else:
-                print '--- ' + f + ' -keep'
-                currTime = nextTime
-        print '--- ' + fines[-1] + ' -keep\n'  
+    if delete:
+        for main, fines in incrementsTable.items():
+            print main
+            currTime = os.stat(rpath+fines[0]).st_mtime
+            for f in fines[1:-1]:
+                nextTime = os.stat(rpath+f).st_mtime
+                if nextTime - currTime < interval:
+                    print '--- ' + f + ' -delete'
+                    fullpath = rpath + f
+                    if os.path.isfile(fullpath):
+                        print 'file exists'
+                        os.remove(fullpath)
+                else:
+                    print '--- ' + f + ' -keep'
+                    currTime = nextTime
+            print '--- ' + fines[-1] + ' -keep\n'  
+    else:
+        print 'Preview Only'

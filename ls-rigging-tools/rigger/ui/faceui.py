@@ -40,14 +40,14 @@ class newUI(pm.uitypes.Window):
     
     _LTPREFIX = 'LT_'
     _RTPREFIX = 'RT_'
-    
+    '''
     imageRefPath = 'C:/Users/Leon/Pictures/FRS/Images/'
     
     mesh = pm.PyNode('CT_face_geo')
     lf_eye = pm.PyNode('LT_eyeball_geo')
     rt_eye = pm.PyNode('RT_eyeball_geo')
-    
-    def __new__(cls):
+    '''
+    def __new__(cls, baseFilePath, placerMapping, meshNames):
         '''
         delete old window and create new instance
         '''
@@ -58,10 +58,16 @@ class newUI(pm.uitypes.Window):
 
         return pm.uitypes.Window.__new__(cls, self)
     
-    def __init__(self):
+    def __init__(self, baseFilePath, placerMapping, meshNames):
         '''
-        create UI
+        create UI and init vars
         '''
+        self.imageRefPath = baseFilePath
+        self.placerMapping = placerMapping
+        self.mesh = meshNames['face']
+        self.lf_eye = meshNames['leftEye']
+        self.rt_eye = meshNames['rightEye']
+        
         with pm.menu(l='Options') as menuOptions:
             pm.menuItem(l='Refresh')
             pm.menuItem(l='Reset')
@@ -82,7 +88,7 @@ class newUI(pm.uitypes.Window):
                     #self.chk_symmetry = pm.checkBox(l='Symmetry', v=True)
                     self.btn_startJntPlacement = pm.button(l='Start Joint Placement', c=pm.Callback(self.startJointPlacement))
                     
-                    self.img_jntReference = pm.image(image=self.imageRefPath+'FRSRef_default.jpg')
+                    self.img_jntReference = pm.image(image=self.imageRefPath+'default.jpg')
                 
                     with pm.rowLayout(numberOfColumns=3, adj=2) as jntRowLayout:
                         self.btn_jntScrollLt = pm.button(l='<<', w=40, en=False)
@@ -139,7 +145,7 @@ class newUI(pm.uitypes.Window):
         if self.txt_jntCurrent.getLabel() == 'Select mouth lips loop':
             
             self.txt_jntCurrent.setLabel('Select left eyelid loop')
-            fullRefPath = r"C:\Users\Leon\Pictures\FRS\Images\FRSRef_LT_eyeLidLoop.jpg"
+            fullRefPath = self.imageRefPath + "LT_eyeLidLoop.jpg"
             pm.image(self.img_jntReference, image=fullRefPath, e=True)
             
             # assign selection to placement_grp attr
