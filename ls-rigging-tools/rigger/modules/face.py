@@ -434,6 +434,8 @@ def createBndsFromPlacement(placementGrp):
     # Direct bnds - one bnd jnt for each loc
     #===========================================================================
     directPLoc = placementGrp.getChildren()
+    directPLoc = [loc for loc in directPLoc
+                  if loc.hasAttr('bindType')]
     
     for eachLoc in directPLoc:
         pm.select(cl=True)

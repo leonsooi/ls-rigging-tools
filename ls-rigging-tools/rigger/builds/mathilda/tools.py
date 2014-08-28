@@ -287,8 +287,17 @@ def loadAdvancedShaders():
     pm.importFile(filepath[0], i=True, ns='SHADERS')
     
     # create renderlayer
-    geoGrp = ['RIG:GEO'+':'+'CT_geo_grp', 'RIG:FACE:CT_mouth_geo_grp']
-    layer = pm.createRenderLayer(geoGrp, n='advanced_shading')
+    allGeoShapes = []
+    bodyGeoGrp = pm.PyNode('RIG:GEO'+':'+'CT_geo_grp')
+    faceGeoGrp = pm.PyNode('RIG:FACE:CT_mouth_geo_grp')
+    for shape in bodyGeoGrp.getChildren(ad=True, s=True):
+        if 'simple' not in shape.name():
+            allGeoShapes.append(shape)
+    for shape in faceGeoGrp.getChildren(ad=True, s=True):
+        allGeoShapes.append(shape)
+    allGeoShapes.append('RIG:frontHair_pfx')
+    allGeoShapes.append('RIG:backHair_pfx')
+    layer = pm.createRenderLayer(allGeoShapes, n='advanced_shading')
     pm.editRenderLayerGlobals(crl=layer)
     
     # get all advanced shaders
