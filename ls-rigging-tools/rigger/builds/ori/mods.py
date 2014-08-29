@@ -12,6 +12,169 @@ mel = Mel()
 import rigger.modules.priCtl as priCtl
 reload(priCtl)
 
+import utils.rigging as rt
+reload(rt)
+
+import rigger.utils.modulate as modulate 
+
+def addUpperLipCurlsSDKs():
+    '''
+    '''
+    # upper lips
+    coeffs = pm.group(em=True, n='CT_upperLipCurls_coeffs')
+    coeffs.addAttr('leftPinch', k=True)
+    coeffs.addAttr('leftSneer', k=True)
+    coeffs.addAttr('leftSide', k=True)
+    coeffs.addAttr('centerMid', k=True)
+    coeffs.addAttr('rightSide', k=True)
+    coeffs.addAttr('rightSneer', k=True)
+    coeffs.addAttr('rightPinch', k=True)
+    rt.connectSDK('LT_upperPinch_lip_ctrl.rx',
+    coeffs.leftPinch, {-90:1, 0:0, 90:-1})
+    rt.connectSDK('LT_upperSneer_lip_ctrl.rx',
+    coeffs.leftSneer, {-90:1, 0:0, 90:-1})
+    rt.connectSDK('LT_upperSide_lip_ctrl.rx',
+    coeffs.leftSide, {-90:1, 0:0, 90:-1})
+    rt.connectSDK('CT_upper_lip_ctrl.rx',
+    coeffs.centerMid, {-90:1, 0:0, 90:-1})
+    rt.connectSDK('RT_upperSneer_lip_ctrl.rx',
+    coeffs.rightSneer, {-90:1, 0:0, 90:-1})
+    rt.connectSDK('RT_upperSide_lip_ctrl.rx',
+    coeffs.rightSide, {-90:1, 0:0, 90:-1})
+    rt.connectSDK('RT_upperPinch_lip_ctrl.rx',
+    coeffs.rightPinch, {-90:1, 0:0, 90:-1})
+    
+    priCtls = [nt.Transform(u'RT_upperSneer_lip_pri_ctrl'),
+                nt.Transform(u'CT_upper_lip_pri_ctrl'),
+                nt.Transform(u'LT_upperSneer_lip_pri_ctrl')]
+                
+    attrs = ['leftPinch',
+    'leftSneer',
+    'leftSide',
+    'centerMid',
+    'rightSide',
+    'rightSneer',
+    'rightPinch']
+           
+        
+    for pCtl in priCtls:
+        token = pCtl.split('_')[0]
+        for attr in attrs:
+            mod = modulate.addInput(coeffs.attr(attr), 0, token)
+            rt.connectSDK(pCtl.rx, mod, {-90:1, 0:0, 90:-1})
+            
+    rt.connectSDK(coeffs.leftPinch, 
+    'blendShapeCt_face_geo.lipCurlIn_upperPinch_Lf', {0:0, -1:1})
+    rt.connectSDK(coeffs.leftSneer, 
+    'blendShapeCt_face_geo.lipCurlIn_upperSneer_Lf', {0:0, -1:1})
+    rt.connectSDK(coeffs.leftSide, 
+    'blendShapeCt_face_geo.lipCurlIn_upperSide_Lf', {0:0, -1:1})
+    rt.connectSDK(coeffs.centerMid, 
+    'blendShapeCt_face_geo.lipCurlIn_upper_Ct', {0:0, -1:1})
+    rt.connectSDK(coeffs.rightPinch, 
+    'blendShapeCt_face_geo.lipCurlIn_upperPinch_Rt', {0:0, -1:1})
+    rt.connectSDK(coeffs.rightSneer, 
+    'blendShapeCt_face_geo.lipCurlIn_upperSneer_Rt', {0:0, -1:1})
+    rt.connectSDK(coeffs.rightSide, 
+    'blendShapeCt_face_geo.lipCurlIn_upperSide_Rt', {0:0, -1:1})
+
+def addLowerLipCurlsSDKs():
+    '''
+    '''
+    # lower lips
+    coeffs = pm.group(em=True, n='CT_lowerLipCurls_coeffs')
+    coeffs.addAttr('leftPinch', k=True)
+    coeffs.addAttr('leftSneer', k=True)
+    coeffs.addAttr('leftSide', k=True)
+    coeffs.addAttr('centerMid', k=True)
+    coeffs.addAttr('rightSide', k=True)
+    coeffs.addAttr('rightSneer', k=True)
+    coeffs.addAttr('rightPinch', k=True)
+    rt.connectSDK('LT_lowerPinch_lip_ctrl.rx',
+    coeffs.leftPinch, {-90:-1, 0:0, 90:1})
+    rt.connectSDK('LT_lowerSneer_lip_ctrl.rx',
+    coeffs.leftSneer, {-90:-1, 0:0, 90:1})
+    rt.connectSDK('LT_lowerSide_lip_ctrl.rx',
+    coeffs.leftSide, {-90:-1, 0:0, 90:1})
+    rt.connectSDK('CT_lower_lip_ctrl.rx',
+    coeffs.centerMid, {-90:-1, 0:0, 90:1})
+    rt.connectSDK('RT_lowerSneer_lip_ctrl.rx',
+    coeffs.rightSneer, {-90:-1, 0:0, 90:1})
+    rt.connectSDK('RT_lowerSide_lip_ctrl.rx',
+    coeffs.rightSide, {-90:-1, 0:0, 90:1})
+    rt.connectSDK('RT_lowerPinch_lip_ctrl.rx',
+    coeffs.rightPinch, {-90:-1, 0:0, 90:1})
+    
+    priCtls = [nt.Transform(u'RT_lowerSneer_lip_pri_ctrl'),
+                nt.Transform(u'CT_lower_lip_pri_ctrl'),
+                nt.Transform(u'LT_lowerSneer_lip_pri_ctrl')]
+                
+    attrs = ['leftPinch',
+    'leftSneer',
+    'leftSide',
+    'centerMid',
+    'rightSide',
+    'rightSneer',
+    'rightPinch']
+           
+        
+    for pCtl in priCtls:
+        token = pCtl.split('_')[0]
+        for attr in attrs:
+            mod = modulate.addInput(coeffs.attr(attr), 0, token)
+            rt.connectSDK(pCtl.rx, mod, {-90:-1, 0:0, 90:1})
+            
+    rt.connectSDK(coeffs.leftPinch, 
+    'blendShapeCt_face_geo.lipCurlIn_lowerPinch_Lf', {0:0, -1:1})
+    rt.connectSDK(coeffs.leftSneer, 
+    'blendShapeCt_face_geo.lipCurlIn_lowerSneer_Lf', {0:0, -1:1})
+    rt.connectSDK(coeffs.leftSide, 
+    'blendShapeCt_face_geo.lipCurlIn_lowerSide_Lf', {0:0, -1:1})
+    rt.connectSDK(coeffs.centerMid, 
+    'blendShapeCt_face_geo.lipCurlIn_lower_Ct', {0:0, -1:1})
+    rt.connectSDK(coeffs.rightPinch, 
+    'blendShapeCt_face_geo.lipCurlIn_lowerPinch_Rt', {0:0, -1:1})
+    rt.connectSDK(coeffs.rightSneer, 
+    'blendShapeCt_face_geo.lipCurlIn_lowerSneer_Rt', {0:0, -1:1})
+    rt.connectSDK(coeffs.rightSide, 
+    'blendShapeCt_face_geo.lipCurlIn_lowerSide_Rt', {0:0, -1:1})
+
+
+def disableLipCtlsRotateX():
+    '''
+    '''
+    # disable lip controls rotateX
+    # use rotateX to drive 
+    
+    def useSurrogateXfo(ctl, blockChannels=[]):
+        '''
+        reroute priCtl matrix outputs
+        assume priCtl only have local matrix outputs
+        '''
+        xfo = pm.group(em=True, n=ctl+'_surrXfo')
+        ctlParent = ctl.getParent()
+        ctlParent | xfo
+        xfo.setMatrix(pm.dt.Matrix())
+        
+        allChannels = ['tx','ty','tz','rx','ry','rz','sx','sy','sz']
+        for channel in allChannels:
+            if channel not in blockChannels:
+                ctl.attr(channel) >> xfo.attr(channel)
+                
+        # reroute matrix outputs
+        allMatrixPlugs = ctl.matrix.outputs(p=True)
+        for plug in allMatrixPlugs:
+            xfo.matrix >> plug
+            
+    ctls = [nt.Transform(u'RT_upperSneer_lip_pri_ctrl'),
+            nt.Transform(u'CT_upper_lip_pri_ctrl'),
+            nt.Transform(u'LT_upperSneer_lip_pri_ctrl'),
+            nt.Transform(u'LT_lowerSneer_lip_pri_ctrl'),
+            nt.Transform(u'CT_lower_lip_pri_ctrl'),
+            nt.Transform(u'RT_lowerSneer_lip_pri_ctrl')]
+    for ctl in ctls:
+        useSurrogateXfo(ctl, ['rx'])
+
 def reverseTxOnControl(ctl):
     '''
     ctl = pm.PyNode('RT_lowerSneer_lip_pri_ctrl')
