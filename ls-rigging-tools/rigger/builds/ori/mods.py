@@ -175,6 +175,138 @@ def disableLipCtlsRotateX():
     for ctl in ctls:
         useSurrogateXfo(ctl, ['rx'])
 
+def flipScaleYOnControl(ctl, ctlGrp):
+    '''
+    '''
+    # create new control
+    newCtl = ctl.duplicate(n=ctl+'_new')[0]
+    origName = ctl.name()
+    ctl.rename(ctl+'_real')
+    newCtl.rename(origName)
+    # place it under same parent
+    # to get the same xforms
+    ctlParent = ctl.getParent()
+    
+    # attribute to switch between real and fake controls
+    try:
+        realAttr = ctlGrp.realRightControls
+        fakeAttr = ctlGrp.fakeRightControls
+    except:
+        ctlGrp.addAttr('realRightControls', at='bool', dv=0)
+        ctlGrp.realRightControls.set(cb=True)
+        realAttr = ctlGrp.realRightControls
+        ctlGrp.addAttr('fakeRightControls', at='bool', dv=1)
+        ctlGrp.fakeRightControls.set(cb=True)
+        fakeAttr = ctlGrp.fakeRightControls
+        
+    def connectShapesVis(ctl, attr):
+        for shape in ctl.getChildren(s=True):
+            attr >> shape.v
+    
+    connectShapesVis(ctl, realAttr)
+    connectShapesVis(newCtl, fakeAttr)
+    realAttr >> ctl.getShape().v
+    fakeAttr >> newCtl.getShape().v
+    
+    # extra xfo to flip scale
+    flipXfo = pm.group(em=True, n=origName+'_scaleY')
+    ctlParent | flipXfo
+    flipXfo.setMatrix(pm.dt.Matrix())
+    flipXfo | newCtl
+    flipXfo.sy.set(-1)
+    '''
+    # mirror ctl shape
+    leftCtl = pm.PyNode(origName.replace('RT_', 'LT_'))
+    pm.select(leftCtl, newCtl)
+    try:
+        mel.abRTServiceWireReplaceUI("MirrorFromTo")
+    except:
+        mel.source('abAutoRig')
+        mel.abRTWireReplaceUI();
+        mel.abRTServiceWireReplaceUI("MirrorFromTo");
+    '''
+    # connect back to ctl via mds
+    tmd = pm.createNode('multiplyDivide', n=ctl+'_revTranslate')
+    newCtl.t >> tmd.input1
+    tmd.input2.set(1,-1,1)
+    tmd.outputX >> ctl.tx
+    tmd.outputY >> ctl.ty
+    tmd.outputZ >> ctl.tz
+    rmd = pm.createNode('multiplyDivide', n=ctl+'_revRotate')
+    newCtl.r >> rmd.input1
+    rmd.input2.set(-1,1,-1)
+    rmd.outputX >> ctl.rx
+    rmd.outputY >> ctl.ry
+    rmd.outputZ >> ctl.rz
+    newCtl.s >> ctl.s
+
+
+def flipScaleXOnControl(ctl, ctlGrp):
+    '''
+    '''
+    # create new control
+    newCtl = ctl.duplicate(n=ctl+'_new')[0]
+    origName = ctl.name()
+    ctl.rename(ctl+'_real')
+    newCtl.rename(origName)
+    # place it under same parent
+    # to get the same xforms
+    ctlParent = ctl.getParent()
+    
+    # attribute to switch between real and fake controls
+    try:
+        realAttr = ctlGrp.realRightControls
+        fakeAttr = ctlGrp.fakeRightControls
+    except:
+        ctlGrp.addAttr('realRightControls', at='bool', dv=0)
+        ctlGrp.realRightControls.set(cb=True)
+        realAttr = ctlGrp.realRightControls
+        ctlGrp.addAttr('fakeRightControls', at='bool', dv=1)
+        ctlGrp.fakeRightControls.set(cb=True)
+        fakeAttr = ctlGrp.fakeRightControls
+        
+    def connectShapesVis(ctl, attr):
+        for shape in ctl.getChildren(s=True):
+            attr >> shape.v
+    
+    connectShapesVis(ctl, realAttr)
+    connectShapesVis(newCtl, fakeAttr)
+    realAttr >> ctl.getShape().v
+    fakeAttr >> newCtl.getShape().v
+    
+    # extra xfo to flip scale
+    flipXfo = pm.group(em=True, n=origName+'_scaleX')
+    ctlParent | flipXfo
+    flipXfo.setMatrix(pm.dt.Matrix())
+    flipXfo | newCtl
+    flipXfo.sx.set(-1)
+    
+    # mirror ctl shape
+    leftCtl = pm.PyNode(origName.replace('RT_', 'LT_'))
+    pm.select(leftCtl, newCtl)
+    try:
+        mel.abRTServiceWireReplaceUI("MirrorFromTo")
+    except:
+        mel.source('abAutoRig')
+        mel.abRTWireReplaceUI();
+        mel.abRTServiceWireReplaceUI("MirrorFromTo");
+    
+    # connect back to ctl via mds
+    tmd = pm.createNode('multiplyDivide', n=ctl+'_revTranslate')
+    newCtl.t >> tmd.input1
+    tmd.input2.set(-1,1,1)
+    tmd.outputX >> ctl.tx
+    tmd.outputY >> ctl.ty
+    tmd.outputZ >> ctl.tz
+    rmd = pm.createNode('multiplyDivide', n=ctl+'_revRotate')
+    newCtl.r >> rmd.input1
+    rmd.input2.set(1,-1,-1)
+    rmd.outputX >> ctl.rx
+    rmd.outputY >> ctl.ry
+    rmd.outputZ >> ctl.rz
+    newCtl.s >> ctl.s
+    
+
 def reverseTxOnControl(ctl):
     '''
     ctl = pm.PyNode('RT_lowerSneer_lip_pri_ctrl')
