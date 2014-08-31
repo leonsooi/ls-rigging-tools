@@ -251,7 +251,10 @@ def addIndependentPlacers(pGrp, mapping):
     '''
     '''
     for indPlacerName, refPlacers in mapping.items():
-        avgPt = getAveragePositionBetweenLocs(refPlacers)
+        print refPlacers
+        avgPt = getAveragePositionBetweenLocs(refPlacers[0])
+        if refPlacers[1]:
+            avgPt += refPlacers[1]
         addPlacementLoc(pGrp, indPlacerName, avgPt, 2, 3)
     
 

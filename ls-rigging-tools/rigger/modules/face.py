@@ -39,27 +39,37 @@ def selectVertsClosestToBnds(mll):
     closestVerts = [mesh.vtx[i] for i in vertIds]
     pm.select(closestVerts)
 
-def addPerimeterBndSystem(mesh):
+def addPerimeterBndSystem(mesh, perimeterPLocs):
     '''
+    depcrecated
     '''
     
     periBnds = []
-
-    periBnds += addPerimeterBnd(nt.Joint('LT_in_forehead_bnd'), nt.Joint('RT_in_forehead_bnd'), nt.Joint('LT_out_forehead_bnd'), mesh, True, vecMult=1)
-    periBnds += addPerimeterBnd(nt.Joint('LT_out_forehead_bnd'), nt.Joint('LT_in_forehead_bnd'), nt.Joint('LT_temple_bnd'), mesh, True, vecMult=1)
-    periBnds += addPerimeterBnd(nt.Joint('LT_temple_bnd'), nt.Joint('LT_out_forehead_bnd'), nt.Joint('LT_low_temple_bnd'), mesh, True, vecMult=1)
-    periBnds += addPerimeterBnd(nt.Joint('LT_low_temple_bnd'), nt.Joint('LT_temple_bnd'), nt.Joint('LT_out_cheek_bnd'), mesh, True, vecMult=1)
-    periBnds += addPerimeterBnd(nt.Joint('LT_out_cheek_bnd'), nt.Joint('LT_low_temple_bnd'), nt.Joint('LT_up_jaw_bnd'), mesh, True, vecMult=1)
-    periBnds += addPerimeterBnd(nt.Joint('LT_up_jaw_bnd'), nt.Joint('LT_out_cheek_bnd'), nt.Joint('LT_corner_jaw_bnd'), mesh, True, vecMult=1)
-    periBnds += addPerimeterBnd(nt.Joint('LT_corner_jaw_bnd'), nt.Joint('LT_up_jaw_bnd'), nt.Joint('LT_neck_bnd'), mesh, True, vecMult=1)
-    periBnds += addPerimeterBnd(nt.Joint('LT_neck_bnd'), nt.Joint('LT_corner_jaw_bnd'), nt.Joint('CT_neck_bnd'), mesh, True, vecMult=1)
-    periBnds += addPerimeterBnd(nt.Joint('CT_neck_bnd'), nt.Joint('LT_neck_bnd'), nt.Joint('RT_neck_bnd'), mesh, False, vecMult=1)
+    
+    pLocs = [pm.PyNode(pLoc) for pLoc in perimeterPLocs]
+    locScale = pLocs[0].localScaleX.get()
+    vecScale = locScale * 2.0
+    
+    # slice lists for prevLocs, currLocs and nextLocs
+    prevLocs = pLocs[:-2]
+    currLocs = pLocs[1:-1]
+    nextLocs = pLocs[2:]
+    
+    for prevLoc, currLoc, nextLoc in zip(prevLocs, currLocs, nextLocs):
+        if 'LT_' in currLoc.name():
+            mirror=True
+        else:
+            mirror=False
+        periBnds += addPerimeterBnd(currLoc, prevLoc, nextLoc, 
+                                    mesh, mirror, vecMult=vecScale)
     
     periGrp = pm.group(periBnds, n='CT_perimeterBnds_grp')
     return periGrp
 
+
 def addPerimeterBnd(currBnd, prevBnd, nextBnd, mesh, mirror, vecMult=1.0):
     """
+    DEPRECATED
     make facePerimeterBnd
     currBnd = pm.PyNode('LT_up_jaw_bnd')
     prevBnd = pm.PyNode('LT_out_cheek_bnd')
@@ -82,6 +92,7 @@ def addPerimeterBnd(currBnd, prevBnd, nextBnd, mesh, mirror, vecMult=1.0):
     normVec = mesh.getClosestNormal(currPos)[0]
     
     outVec = normVec.cross(tangVec)
+    outVec.normalize()
     
     outPos = currPos + outVec * vecMult
     

@@ -23,6 +23,7 @@ build_actions = ['-place',
                  '-primary_ctl_system_second',
                  '-load_weights',
                  'clean',
+                 '-skin_layers',
                  '-eyes',
                  '-eyeballs']
 
@@ -64,9 +65,23 @@ placerMappings = [['Center Brow', 'CT__brow', 0, 1],
 
 # placers will be added after UI-placement is completed
 # {moverName: [pLocName, pLocName, ...]}
-independentMappings = {'CT__jaw': ['LT_up_jaw_pLoc'],
-                    'CT__mouthMover': ['CT_upper_lip_pLoc', 'CT_lower_lip_pLoc'],
-                    'CT__base': ['LT__neck_pLoc']}
+independentMappings = {'CT__jaw': [['LT_up_jaw_pLoc'], (0,-0.85,-1.5)],
+                    'CT__mouthMover': [['CT_upper_lip_pLoc', 'CT_lower_lip_pLoc'], None],
+                    'CT__base': [['LT__neck_pLoc'], None]}
+
+# perimeter mappings for weighting boundary of face
+# pass in list of pLocs on the perimeter
+# vector will be calculated by averaging prevVec and nextVec (tangent)
+# cross multiply normalVec on mesh
+periPLocs = [u'RT_in_forehead_pLoc',
+                u'LT_in_forehead_pLoc',
+                u'LT_out_forehead_pLoc',
+                u'LT__temple_pLoc',
+                u'LT_up_jaw_pLoc',
+                u'LT_corner_jaw_pLoc',
+                u'LT__neck_pLoc',
+                u'CT__neck_pLoc',
+                u'RT__neck_pLoc']
 
 # list of priCtls for first pass
 # order is important
@@ -97,8 +112,7 @@ all_bnds_for_priCtls = addRightSideToList(bnds_for_priCtls)
 #             bnd: weight,
 #             bnd: weight}}
 
-priCtlMappings = {u'CT__jaw_pri_ctrl': {u'CT__base_bnd': 0.5,
-                       u'CT__chin_bnd': 1.0,
+priCtlMappings = {u'CT__jaw_pri_ctrl': {u'CT__chin_bnd': 1.0,
                        u'CT__jaw_bnd': 0.1,
                        u'CT__neck_bnd': 0.25,
                        u'CT_lower_lip_bnd': 1.0,

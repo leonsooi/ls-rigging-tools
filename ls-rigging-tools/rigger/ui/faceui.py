@@ -90,7 +90,15 @@ class newUI(pm.uitypes.Window):
                 with pm.verticalLayout(ratios=(1,10,1), spacing=10) as jntPlacementVertLayout:
                     
                     #self.chk_symmetry = pm.checkBox(l='Symmetry', v=True)
-                    self.btn_startJntPlacement = pm.button(l='Start Joint Placement', c=pm.Callback(self.startJointPlacement))
+                    with pm.horizontalLayout() as startPlacementLayout:
+                        self.btn_startJntPlacement = pm.button(l='Start Joint Placement', 
+                                                               c=pm.Callback(self.startJointPlacement),
+                                                               w=180)
+                        self.float_locScale = pm.floatSliderGrp(l='Scale', field=True, 
+                                                                cw3=(40,40,100), 
+                                                                min=0.01, max=1.0, v=1,
+                                                                pre=2, fmx=10.0,
+                                                                dc=pm.Callback(self.editLocScale))
                     
                     self.img_jntReference = pm.image(image=self.imageRefPath+'default.jpg')
                 
@@ -121,12 +129,16 @@ class newUI(pm.uitypes.Window):
                 with pm.verticalLayout(spacing=10) as buildRigVertLayout:
                     self.btn_buildRig = pm.button(l='Build Rig', c=pm.Callback(self.buildRig), en=False)
                 
-            with pm.columnLayout(adj=True) as expressionsLayout:
+            with pm.columnLayout(adj=True) as deformationLayout:
+                pass
+            
+            with pm.columnLayout(adj=True) as actionsLayout:
                 pass
                 
         mainTab.setTabLabel((geoSelectionLayout,'Geometry'))
         mainTab.setTabLabel((jntPlacementLayout,'Joints'))
-        mainTab.setTabLabel((expressionsLayout,'Expressions'))
+        mainTab.setTabLabel((deformationLayout,'Deformation'))
+        mainTab.setTabLabel((actionsLayout,'Action Units'))
         mainTab.setSelectTab(jntPlacementLayout)
         
         self.show()
@@ -144,6 +156,15 @@ class newUI(pm.uitypes.Window):
         
         jntPlacementContext = context.FaceJointPlacementContext(self.mesh, self, self.placementGrp)
         jntPlacementContext.runContext()
+        
+    def editLocScale(self):
+        '''
+        '''
+        try:
+            val = self.float_locScale.getValue()
+            self.placementGrp.locScale.set(val)
+        except AttributeError as e:
+            print e
         
     def selectNextItem(self):
         '''

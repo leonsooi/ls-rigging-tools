@@ -16,7 +16,7 @@ import maya.cmds as mc
 import loop_weighting as loop
 reload(loop)
 
-def createLipLayer(pGrp, loopNum=10):
+def getLipVertexLoops(pGrp, loopNum=10):
     '''
     '''
     mouthLipsLoop = pGrp.mouthLipsLoop.get()
@@ -25,7 +25,17 @@ def createLipLayer(pGrp, loopNum=10):
     treeRoot = loop.constructVertexLoops(loopNum)
     return treeRoot
 
-def weightLipLayer(treeRoot):
+def getBndToVertsMap(treeRoot):
     crv = pm.nt.Transform(u'CT_placement_grp_mouthLipLoopCrv')
     bndToVertsMap = loop.populateBndToVertsMap(crv, treeRoot)
     return bndToVertsMap
+
+def getBndToVertsIdsMap(treeRoot):
+    bndToVertsMap = getBndToVertsMap(treeRoot)
+    bndToVertsIdsMap = {}
+    for bnd, vertsList in bndToVertsMap.items():
+        bndName = bnd.name()
+        vertIds = [vert.index() for vert in vertsList]
+        bndToVertsIdsMap[bndName] = vertIds
+    return bndToVertsIdsMap
+

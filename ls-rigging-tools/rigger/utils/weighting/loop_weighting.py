@@ -53,6 +53,26 @@ def populateBndToVertsMap(crv, vertsTree):
         bndToVertsMap[closestBnd] += allVertsInTree
     return bndToVertsMap
 
+import rigger.modules.eye as eye
+reload(eye)
+
+def populateBndToVertsRingMap(crv, vertsTree):
+    '''
+    use this to get one vert ring per bind
+    this is used to get a selection of verts that
+    should not be relaxed (to prevent offsets b/t
+    controls and deformations)
+    '''
+    bndToVertsRingMap = initBndToVertsMap(crv)
+    firstVertsTrees = vertsTree.children
+    for bnd in bndToVertsRingMap.keys():
+        closestTree = eye.findClosestVertToJoint(bnd, 
+                                                 firstVertsTrees)
+        allVertsInTree = [closestTree.data.index()]
+        allVertsInTree += [vert.index() for vert in 
+                           closestTree.getAllDescendentsData()]
+        bndToVertsRingMap[bnd] = allVertsInTree
+    return bndToVertsRingMap
 
 def findChildren(root, orphans):
     '''
