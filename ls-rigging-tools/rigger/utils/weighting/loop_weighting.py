@@ -105,7 +105,7 @@ def constructVertexLoops(loops):
     
     root = data.Tree()
     
-    pm.progressWindow(title='Analyzing vertices', progress=0, max=len(vertLoops[0]))
+    #pm.progressWindow(title='Analyzing vertices', progress=0, max=len(vertLoops[0]))
     
     # find children for each vert in selection
     for eachVert in vertLoops[0]:
@@ -114,8 +114,8 @@ def constructVertexLoops(loops):
         findChildren(vertTree, vertLoops[1:])
         root.children.append(vertTree)
         # increment progress window
-        pm.progressWindow(e=True, step=1, status='\nAnalysing %s' % eachVert)
+        #pm.progressWindow(e=True, step=1, status='\nAnalysing %s' % eachVert)
     
-    pm.progressWindow(e=True, endProgress=True)
+    #pm.progressWindow(e=True, endProgress=True)
     
     return root

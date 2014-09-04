@@ -71,6 +71,8 @@ class newUI(pm.uitypes.Window):
         self.mesh = meshNames['face']
         self.lf_eye = meshNames['leftEye']
         self.rt_eye = meshNames['rightEye']
+        self.locTweakWidgets = {}
+        self.placementGrp = None
         
         with pm.menu(l='Options') as menuOptions:
             pm.menuItem(l='Refresh')
@@ -94,11 +96,6 @@ class newUI(pm.uitypes.Window):
                         self.btn_startJntPlacement = pm.button(l='Start Joint Placement', 
                                                                c=pm.Callback(self.startJointPlacement),
                                                                w=180)
-                        self.float_locScale = pm.floatSliderGrp(l='Scale', field=True, 
-                                                                cw3=(40,40,100), 
-                                                                min=0.01, max=1.0, v=1,
-                                                                pre=2, fmx=10.0,
-                                                                dc=pm.Callback(self.editLocScale))
                     
                     self.img_jntReference = pm.image(image=self.imageRefPath+'default.jpg')
                 
@@ -106,30 +103,59 @@ class newUI(pm.uitypes.Window):
                         self.btn_jntScrollLt = pm.button(l='<<', w=40, en=False)
                         self.txt_jntCurrent = pm.text(label='Click "Start Joint Placement" above to begin.', align='center')
                         self.btn_jntScrollRt = pm.button(l='>>', w=40, c=pm.Callback(self.selectNextItem), en=False)
-                '''        
-                with pm.verticalLayout() as edgeLoopsVertLayout:
-
-                    #pm.separator(style='in')
-                        
-                    #self.sel_eyeLoopLt = uitypes.Selector(l='Left Eye Loop', lw=100)
-                    #self.sel_eyeLoopRt = uitypes.Selector(l='Right Eye Loop', lw=100)
-                    self.int_eyeRigidLoops = pm.intSliderGrp(l='Eye Rigid Loops', field=True, cw3=(100,40,140),
-                                                          min=1, max=12, fieldMaxValue=99, v=4)
-                    self.int_eyeFalloffLoops = pm.intSliderGrp(l='Eye Falloff Loops', field=True, cw3=(100,40,140),
-                                                            min=1, max=12, fieldMaxValue=99, v=4)
-                    
-                    #pm.separator(style='in')
-                    
-                    #self.int_lipLoop = uitypes.Selector(l='Lip Loop', lw=100)
-                    self.int_lipRigidLoops = pm.intSliderGrp(l='Lip Rigid Loops', field=True, cw3=(100,40,140),
-                                                          min=1, max=12, fieldMaxValue=99, v=4)
-                    self.int_lipFalloffLoops = pm.intSliderGrp(l='Lip Falloff Loops', field=True, cw3=(100,40,140),
-                                                            min=1, max=12, fieldMaxValue=99, v=4)
-                '''    
-                with pm.verticalLayout(spacing=10) as buildRigVertLayout:
-                    self.btn_buildRig = pm.button(l='Build Rig', c=pm.Callback(self.buildRig), en=False)
                 
+                pm.separator(style='in')
+                
+                with pm.horizontalLayout(ratios=(1,5), spacing=5):
+                    
+                    with pm.verticalLayout():
+                        # left labels
+                        self.locTweakWidgets['txt_position'] = pm.text(label='Position', 
+                                                                       align='right', en=False)
+                        self.locTweakWidgets['txt_orient'] = pm.text(label='Orient', 
+                                                                       align='right', en=False)
+                        self.locTweakWidgets['txt_scale'] = pm.text(label='Scale', 
+                                                                       align='right', en=False)
+                        self.locTweakWidgets['txt_mirror'] = pm.text(label='Mirror', 
+                                                                       align='right', en=False)
+                    with pm.verticalLayout():
+                        # right buttons
+                        with pm.horizontalLayout():
+                            self.locTweakWidgets['btn_prevCV'] = pm.button(l='Prev CV', en=False,
+                                                                           c=pm.Callback(self.stepCV, -1))
+                            self.locTweakWidgets['btn_nextCV'] = pm.button(l='Next CV', en=False,
+                                                                           c=pm.Callback(self.stepCV, 1))
+                            self.locTweakWidgets['btn_snapToVtx'] = pm.button(l='Snap to Vtx', en=False)
+                            self.locTweakWidgets['btn_user'] = pm.button(l='User', en=False)
+                            
+                        with pm.horizontalLayout():
+                            self.locTweakWidgets['btn_normal'] = pm.button(l='Normal', en=False)
+                            self.locTweakWidgets['btn_normal_yup'] = pm.button(l='Normal + Y-up', en=False)
+                            self.locTweakWidgets['btn_world'] = pm.button(l='World', en=False)
+                            self.locTweakWidgets['btn_orient_user'] = pm.button(l='User', en=False)
+                            
+                        with pm.horizontalLayout():
+                            self.locTweakWidgets['float_scale'] = pm.floatSliderGrp(f=True,
+                                                                    min=0.01, max=1.0, v=0.5,
+                                                                pre=2, fmx=10.0, en=False,
+                                                                dc=pm.Callback(self.editLocScale))
+                        with pm.horizontalLayout():
+                            self.locTweakWidgets['btn_mirLtToRt'] = pm.button(l='Left to Right', en=False,
+                                                                              c=pm.Callback(self.mirrorLocs))
+                            self.locTweakWidgets['btn_mirRtToLt'] = pm.button(l='Right to Left', en=False)
+                
+                pm.separator(style='in')
+                
+                
+                
+                with pm.verticalLayout(spacing=5) as buildRigVertLayout:
+                    self.btn_updateLocs = pm.button(l='Update All Locators', en=False)
+                    self.btn_buildRig = pm.button(l='Build Rig', c=pm.Callback(self.buildRig), en=False)
+            
             with pm.columnLayout(adj=True) as deformationLayout:
+                pass
+            
+            with pm.columnLayout(adj=True) as motionLayout:
                 pass
             
             with pm.columnLayout(adj=True) as actionsLayout:
@@ -138,6 +164,7 @@ class newUI(pm.uitypes.Window):
         mainTab.setTabLabel((geoSelectionLayout,'Geometry'))
         mainTab.setTabLabel((jntPlacementLayout,'Joints'))
         mainTab.setTabLabel((deformationLayout,'Deformation'))
+        mainTab.setTabLabel((motionLayout,'Motion'))
         mainTab.setTabLabel((actionsLayout,'Action Units'))
         mainTab.setSelectTab(jntPlacementLayout)
         
@@ -151,17 +178,35 @@ class newUI(pm.uitypes.Window):
         self.btn_jntScrollRt.setEnable(True)
         
         self.placementGrp = pm.group(n='CT_placement_grp', em=True)
-        self.placementGrp.addAttr('locScale', at='float', dv=1.0)
+        self.placementGrp.addAttr('locScale', at='float', dv=0.5)
         self.placementGrp.locScale.set(cb=True)
+        
+        for btnName, btn in self.locTweakWidgets.items():
+            btn.setEnable(True)
         
         jntPlacementContext = context.FaceJointPlacementContext(self.mesh, self, self.placementGrp)
         jntPlacementContext.runContext()
         
+    def stepCV(self, stepAmt):
+        '''
+        '''
+        try:
+            locs = pm.ls(sl=True)
+            for loc in locs:
+                attr = loc.cv_id
+                currId = attr.get()
+                attr.set(currId+stepAmt)
+        except:
+            mc.warning('No locators on curve selected.')
+            
+    def mirrorLocs(self):
+        placementGrp.mirrorAllPlacements(self.placementGrp)
+                    
     def editLocScale(self):
         '''
         '''
         try:
-            val = self.float_locScale.getValue()
+            val = self.locTweakWidgets['float_scale'].getValue()
             self.placementGrp.locScale.set(val)
         except AttributeError as e:
             print e
@@ -186,9 +231,10 @@ class newUI(pm.uitypes.Window):
         elif self.txt_jntCurrent.getLabel() == 'Select left eyelid loop':
             # READY!
             self.txt_jntCurrent.setLabel('Ready to Build!')
-            fullRefPath = r"C:\Users\Leon\Pictures\FRS\Images\FRSRef_default.jpg"
+            fullRefPath = self.imageRefPath + "default.jpg"
             pm.image(self.img_jntReference, image=fullRefPath, e=True)
             self.btn_jntScrollRt.setEnable(False)
+            self.btn_updateLocs.setEnable(True)
             self.btn_buildRig.setEnable(True)
             pm.setToolTo('selectSuperContext')
             
@@ -197,51 +243,22 @@ class newUI(pm.uitypes.Window):
             self.placementGrp.addAttr('leftEyelidLoop', dt='stringArray')
             self.placementGrp.attr('leftEyelidLoop').set(len(sel), *sel, type='stringArray')
             
-            placementGrp.addEyeLoopPlacements(self.placementGrp)
+            # placementGrp.addEyeLoopPlacements(self.placementGrp)
+            # override for mathilda
+            placementGrp.addEyeLoopPlacements(self.placementGrp, [23,15,9,3])
+            # mathilda_override
+            pm.PyNode('LT_innerUpper_eyelid_pLoc').cv_id.set(18)
             
             placementGrp.addIndependentPlacers(self.placementGrp, self.indMapping)
-            '''
-            # create independent locs that can be adjusted
-            # JAW
-            pos = pm.PyNode('LT_up_jaw_pLoc').getRotatePivot(space='world')
-            pos.x = 0
-            placementLoc = pm.spaceLocator(n='CT_jaw_pLoc')   
-            placementLoc.t.set(pos)
-            # create attribute to tell FRS what type of bind this will be
-            placementLoc.addAttr('bindType', k=True, at='enum', en='direct=0:indirect=1:independent=2', dv=2)
-            self.placementGrp | placementLoc
             
-            # NOSE
-            pos = pm.PyNode('LT_up_crease_pLoc').getRotatePivot(space='world')
-            pos.x = 0
-            placementLoc = pm.spaceLocator(n='CT_noseMover_pLoc')   
-            placementLoc.t.set(pos)
-            # create attribute to tell FRS what type of bind this will be
-            placementLoc.addAttr('bindType', k=True, at='enum', en='direct=0:indirect=1:independent=2', dv=2)
-            self.placementGrp | placementLoc
+            # align jaw pLoc
+            cons = mc.aimConstraint('CT__mouthMover_pLoc', 'CT__jaw_pLoc',
+                                    aim=[0,0,1], u=[1,0,0], wu=[1,0,0])
+            mc.delete(cons)
             
-            # MOUTH
-            pos = (pm.PyNode('CT_philtrum_pLoc').getRotatePivot(space='world') +
-                   pm.PyNode('CT_chin_pLoc').getRotatePivot(space='world')) / 2.0
-            pos.x = 0
-            placementLoc = pm.spaceLocator(n='CT_mouthMover_pLoc')   
-            placementLoc.t.set(pos)
-            # create attribute to tell FRS what type of bind this will be
-            placementLoc.addAttr('bindType', k=True, at='enum', en='direct=0:indirect=1:independent=2', dv=2)
-            self.placementGrp | placementLoc
+            pm.selectMode(object=True)
+            mel.setObjectPickMask("Surface", False)
             
-            # EYE
-            placementLoc = pm.spaceLocator(n='LT_eyeMover_pLoc')
-            cgmPos.moveParentSnap(placementLoc.name(), self.lf_eye.name())
-            placementLoc.addAttr('bindType', k=True, at='enum', en='direct=0:indirect=1:independent=2', dv=2)
-            self.placementGrp | placementLoc
-            
-            placementLoc = pm.spaceLocator(n='RT_eyeMover_pLoc')
-            cgmPos.moveParentSnap(placementLoc.name(), self.rt_eye.name())
-            placementLoc.addAttr('bindType', k=True, at='enum', en='direct=0:indirect=1:independent=2', dv=2)
-            self.placementGrp | placementLoc
-            
-            '''
             placementGrp.snapPlacementsToMesh(self.placementGrp)
             placementGrp.mirrorAllPlacements(self.placementGrp)
             placementGrp.orientAllPlacements(self.placementGrp)
@@ -315,217 +332,3 @@ class newUI(pm.uitypes.Window):
         pm.progressWindow(e=True, endProgress=True) 
         
         pm.select(cl=True)
-            
-    
-        
-
-class UI(pm.uitypes.Window):
-    """
-    """
-    
-    # constants 
-    _TITLE = 'lsFaceRig Modules'
-    _WINDOW = 'lsFR_win'
-    
-    _LTPREFIX = 'LT_'
-    _RTPREFIX = 'RT_'
-    
-    def __new__(cls):
-        '''
-        delete old window and create new instance
-        '''
-        if pm.window(cls._WINDOW, exists=True):
-            pm.deleteUI(cls._WINDOW)
-            
-        self = pm.window(cls._WINDOW, title=cls._TITLE, menuBar=True)
-        return pm.uitypes.Window.__new__(cls, self)
-    
-    def __init__(self):
-        '''
-        create UI
-        '''
-        with pm.menu(l='Options') as menuOptions:
-            pm.menuItem(l='Symmetry', checkBox=True)
-            pm.menuItem(divider=True)
-            pm.menuItem(l='Refresh')
-            pm.menuItem(l='Reset')
-        
-        with pm.menu(l='Help') as menuHelp:
-            pm.menuItem(l='Documentation')
-            pm.menuItem(l='About')
-        
-        with pm.tabLayout() as mainTab:
-
-            with pm.columnLayout(adj=True) as jawLayout:
-                pass
-            
-            with pm.columnLayout(adj=True) as lipsLayout:
-                pass
-            
-            with pm.columnLayout(adj=True) as eyeLayout:
-                
-                with pm.frameLayout(label='Geometry', cll=True) as geoFrame:
-                    with pm.verticalLayout() as geoLayout:
-                        self.sel_eyeball = uitypes.Selector(l='Eyeball')
-                        self.sel_edgeloop = uitypes.Selector(l='Edge loop', bc=pm.Callback(self.initJointPlacement))
-                        
-                with pm.frameLayout(label='Joint Placement', cll=True, visible=False) as jntFrame:
-                    with pm.verticalLayout() as jntLayout:
-                        self.sel_innerVtx = uitypes.Selector(l='Inner Vtx')
-                        self.sel_upperVtx = uitypes.Selector(l='Upper Vtx')
-                        self.sel_outerVtx = uitypes.Selector(l='Outer Vtx')
-                        self.sel_lowerVtx = uitypes.Selector(l='Lower Vtx')
-                        
-                with pm.frameLayout(label='Deformation', cll=True) as skinFrame:
-                    with pm.verticalLayout() as skinLayout:
-                        self.float_blinkHeight = pm.floatSliderGrp(l='Blink height', field=True, cw3=(60,40,140), 
-                                                                   min=0, max=1, v=0.25, precision=2)
-                        self.int_rigidLoops = pm.intSliderGrp(l='Rigid loops', field=True, cw3=(60,40,140),
-                                                                 min=1, max=12, fieldMaxValue=99, v=4)
-                        self.int_falloffLoops = pm.intSliderGrp(l='Falloff loops', field=True, cw3=(60,40,140),
-                                                                 min=1, max=12, fieldMaxValue=99, v=4)
-                        self.btn_updateEyelidCrv = pm.button(l='Show Eyelid Curve', en=False)
-                        self.btn_updateMidCrv = pm.button(l='Show Mid Curve', en=False)
-                        self.btn_updateWeights = pm.button(l='Update Skin Weights', en=False)
-                        self.chk_useSkinLayers = pm.checkBox(l='Use ngSkinLayers', v=True)
-                        
-                with pm.frameLayout(label='Rig', cll=True) as rigFrame:
-                    with pm.verticalLayout() as rigLayout:
-                        self.btn_namePrefix = pm.textFieldGrp(l='Name Prefix', adj=2, cw2=(60,60))
-                        self.btn_createRig = pm.button(l='Build Rig', c=pm.Callback(self.createEyeRigCmd))
-            
-            with pm.columnLayout(adj=True) as browsLayout:
-                pass
-        
-        mainTab.setTabLabel((jawLayout,'Jaw'))
-        mainTab.setTabLabel((lipsLayout,'Lips'))
-        mainTab.setTabLabel((eyeLayout,'Eyes'))
-        mainTab.setTabLabel((browsLayout,'Brows'))
-        mainTab.setSelectTab(eyeLayout)
-        
-        self.show()
-    
-    def initJointPlacement(self):
-        '''
-        '''
-        edgeLoop = self.sel_edgeloop.getSelection()
-        pm.select(edgeLoop, r=True)
-        meval('ConvertSelectionToVertices')
-        vertLoop = pm.ls(sl=True, fl=True)
-        
-        # determine inner, upper, outer and lower verts
-        # find upper, outer, lower first
-        upperVtx = max(vertLoop, key=lambda vtx: vtx.getPosition()[1])
-        outerVtx = min(vertLoop, key=lambda vtx: vtx.getPosition()[2])
-        lowerVtx = min(vertLoop, key=lambda vtx: vtx.getPosition()[1])
-
-        # find out which side is outer on
-        if outerVtx.getPosition().x > upperVtx.getPosition().x:
-            # inner should be on min x
-            innerVtx = min(vertLoop, key=lambda vtx: vtx.getPosition()[0])
-        else:
-            # inner should be on max x
-            innerVtx = max(vertLoop, key=lambda vtx: vtx.getPosition()[0])
-            
-        # select/display verts
-        # pm.select(innerVtx, upperVtx, outerVtx, lowerVtx)
-        # reselect edge loop, so it looks like nothing happened
-        pm.select(edgeLoop, r=True)
-        
-        # update display
-        self.sel_innerVtx.setSelection(innerVtx)
-        self.sel_upperVtx.setSelection(upperVtx)
-        self.sel_outerVtx.setSelection(outerVtx)
-        self.sel_lowerVtx.setSelection(lowerVtx)
-    
-    def getClosestCV(self, crv, pt):
-        '''
-        crv - nt.nurbsCurve
-        pt - pm.dt.Point
-        returns nt.nurbsCurveCV closest to pt
-        '''
-        allCVPts = crv.getCVs()
-        cvId = allCVPts.index(min(allCVPts, key=lambda p: (pt-p).length()))
-        return crv.cv[cvId]
-    
-    def createEyeRigCmd(self):
-        
-        # hard code name for now
-        name = self.btn_namePrefix.getText()
-        if name == '':
-            name = 'LT_eye'
-        # get data from ui
-        eyePivot = self.sel_eyeball.getSelection()[0]
-        edgeLoop = self.sel_edgeloop.getSelection()
-        blinkLine = self.float_blinkHeight.getValue()
-        rigidLoops = self.int_rigidLoops.getValue()
-        falloffLoops = self.int_falloffLoops.getValue()
-        influenceLoops = rigidLoops + falloffLoops
-        
-        pm.progressWindow(title='Rigging eyelid', max=3, status='\nCreate bind joints...')
-        # first run will mess up UI, refresh to redraw window properly
-        pm.refresh()
-        
-        aimLocs, aimJnts, drvCrv = eye.constructEyelidsDeformer(name, eyePivot, edgeLoop)
-        
-        pm.progressWindow(e=True, step=1, status='\nCreate driver joints...')
-        
-        # get cv selections for inner, upper, outer, lower
-        innerPos = self.sel_innerVtx.getSelection().getPosition()
-        innerCV = self.getClosestCV(drvCrv, innerPos)
-        upperPos = self.sel_upperVtx.getSelection().getPosition()
-        upperCV = self.getClosestCV(drvCrv, upperPos)
-        outerPos = self.sel_outerVtx.getSelection().getPosition()
-        outerCV = self.getClosestCV(drvCrv, outerPos)
-        lowerPos = self.sel_lowerVtx.getSelection().getPosition()
-        lowerCV = self.getClosestCV(drvCrv, lowerPos)
-        
-        # select cvs for inner upper outer lower
-        cornerCVs = [innerCV, upperCV, outerCV, lowerCV]
-        eyePivotVec, sections, targetCrv, drvJnts, drvSkn = eye.constructEyelidsRig(name, eyePivot, cornerCVs)
-        # returned variables above need to be connected to masterGrp
-        # so that we can reweight later
-        
-        pm.progressWindow(e=True, step=1, status='\nWeight driver joints...')
-        
-        # reweighting (just to get the angles)
-        # though it would be better to get the angles from the previous function
-        # but that was not done properly
-        up, lw, drvSkn = eye.reweightAimCurve(eyePivotVec, sections, targetCrv, drvJnts, drvSkn)
-        upperAngle = max(up) * 1.05
-        lowerAngle = max(lw) * 1.05
-        
-        pm.progressWindow(e=True, endProgress=True)
-        
-        # get vertex loops
-        pm.select(edgeLoop, r=True)
-        meval('ConvertSelectionToVertices')
-        root = eye.constructVertexLoops(influenceLoops)
-        pm.select(cl=True)
-        
-        # calculate generation weights (for layer mask)
-        generationWeights = [1] * rigidLoops
-        linearFalloff = [float(index)/(falloffLoops+1) for index in range(falloffLoops,0,-1)]
-        smoothFalloff = pm.dt.smoothmap(0, 1, linearFalloff)
-        generationWeights += smoothFalloff
-        
-        # assume that skn weights are already set up
-        eye.setMeshWeights(root, aimJnts, generationWeights)
-        
-        masterGrp = eye.rigCleanup(name, aimJnts, drvJnts, aimLocs, drvSkn, targetCrv)
-        
-        # build eyeball rig
-        grp_eye, grp_aimEyeTgt = eye.buildEyeballRig(name, eyePivot, masterGrp, cornerCVs)
-        
-        eye.setConnections(masterGrp, drvJnts, upperAngle, lowerAngle, blinkLine)
-        
-        eye.addAutoEyelids(name, masterGrp)
-        
-        eye.createGUI(name, masterGrp)
-
-        # update UI buttons
-        self.btn_updateWeights.setEnable(True)
-        self.btn_updateMidCrv.setEnable(True)
-        self.btn_updateEyelidCrv.setEnable(True)
-        self.btn_createRig.setLabel('Rebuild Rig')
-        

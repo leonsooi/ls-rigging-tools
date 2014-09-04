@@ -779,6 +779,7 @@ def buildEyeballRig():
     # left eyeball
     pm.select(cl=True)
     eyeball = pm.PyNode('LT_eyeball_geo')
+    deformGeo = [eyeball, pm.PyNode('LT_eyeIris_geo')]
     bnd = pm.joint(n='LT_eyeball_bnd')
     bndGrp = pm.group(n='LT_eyeball_grp')
     bndHm = pm.group(n='LT_eyeball_hm')
@@ -786,7 +787,7 @@ def buildEyeballRig():
     
     pos = eyeball.getRotatePivot(space='world')
     bndHm.setTranslation(pos, space='world')
-    pm.skinCluster(bnd, eyeball)
+    pm.skinCluster(bnd, deformGeo)
     
     ctl = pm.PyNode('LT_eye_ctl')
     ctg = ctl.getParent()
@@ -796,6 +797,7 @@ def buildEyeballRig():
     # right eyeball
     pm.select(cl=True)
     eyeball = pm.PyNode('RT_eyeball_geo')
+    deformGeo = [eyeball, pm.PyNode('RT_eyeIris_geo')]
     bnd = pm.joint(n='RT_eyeball_bnd')
     bndGrp = pm.group(n='RT_eyeball_grp')
     bndHm = pm.group(n='RT_eyeball_hm')
@@ -803,14 +805,14 @@ def buildEyeballRig():
     
     pos = eyeball.getRotatePivot(space='world')
     bndHm.setTranslation(pos, space='world')
-    pm.skinCluster(bnd, eyeball)
+    pm.skinCluster(bnd, deformGeo)
     
     ctl = pm.PyNode('RT_eye_ctl')
     ctg = ctl.getParent()
     reader = localReader.create(bndGrp, ctg)
     pm.aimConstraint(ctl, reader, aim=(0,0,1), mo=True)
     
-
+    eyeball_grp.v.set(0)
 """    
 def buildEyeballRig(name, eyePivot, masterGrp, cornerCVs):
     '''
@@ -1185,13 +1187,17 @@ def addFleshyEye():
     ctl = pm.PyNode('LT_upper_eyelid_pri_ctrl')
     attr_keys = {'ty': {0:0.05, 0.25:0, 0.5:-0.04, 0.8:0, 1:0.05},
                  'rz': {0:0, 0.2:-0.5, 0.4:0, 0.6:0, 0.8:0.5, 1:0}}
-    addFleshyEyeToPriCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    attr_tans = {'ty': ['Flat', 'Spline', 'Flat', 'Spline', 'Flat'],
+                 'rz': ['Flat', 'Flat', 'Flat', 'Flat', 'Flat', 'Flat']}
+    addFleshyEyeToPriCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy, tangents=attr_tans)
     
     # lower
     ctl = pm.PyNode('LT_lower_eyelid_pri_ctrl')
     attr_keys = {'ty': {0:0.02, 0.3:0, 0.5:-0.03, 0.75:0, 1:0.02},
                  'rz': {0.2:0, 0.35:0.25, 0.5:0, 0.7:-0.25, 0.85:0}}
-    addFleshyEyeToPriCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    attr_tans = {'ty': ['Flat', 'Spline', 'Flat', 'Spline', 'Flat'],
+                 'rz': ['Flat', 'Flat', 'Spline', 'Flat', 'Flat']}
+    addFleshyEyeToPriCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy, tangents=attr_tans)
     
     #===========================================================================
     # Right side
@@ -1204,16 +1210,20 @@ def addFleshyEye():
     ctl = pm.PyNode('RT_upper_eyelid_pri_ctrl')
     attr_keys = {'ty': {0:0.05, 0.8:0, 0.5:-0.04, 0.25:0, 1:0.05},
                  'rz': {0:0, 0.8:0.5, 0.6:0, 0.4:0, 0.2:-0.5, 1:0}}
-    addFleshyEyeToPriCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    attr_tans = {'ty': ['Flat', 'Spline', 'Flat', 'Spline', 'Flat'],
+             'rz': ['Flat', 'Flat', 'Flat', 'Flat', 'Flat', 'Flat']}
+    addFleshyEyeToPriCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy, tangents=attr_tans)
     
     # lower
     ctl = pm.PyNode('RT_lower_eyelid_pri_ctrl')
     attr_keys = {'ty': {0:0.02, 0.75:0, 0.5:-0.03, 0.3:0, 1:0.02},
                  'rz': {0.85:0, 0.7:-0.25, 0.5:0, 0.35:0.25, 0.2:0}}
-    addFleshyEyeToPriCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy)
+    attr_tans = {'ty': ['Flat', 'Spline', 'Flat', 'Spline', 'Flat'],
+             'rz': ['Flat', 'Flat', 'Spline', 'Flat', 'Flat']}
+    addFleshyEyeToPriCtl(ctl, eye_pivot, attr_keys, eye_ctl.autoFleshy, tangents=attr_tans)
     
 
-def addFleshyEyeToPriCtl(ctl, eye_pivot, attr_keys, auto_attr):
+def addFleshyEyeToPriCtl(ctl, eye_pivot, attr_keys, auto_attr, tangents=None):
     '''
     eye_pivot is an xfo with radialPoseReader setup
     eye_pivot = pm.PyNode('RT_eyeball_bnd')
@@ -1237,7 +1247,17 @@ def addFleshyEyeToPriCtl(ctl, eye_pivot, attr_keys, auto_attr):
         mdl.output >> mdl2.input1
         auto_attr >> mdl2.input2
     
-        rt.connectSDK(eye_pivot.paramNormalized, mdl.input2, keys)
+        animNode = rt.connectSDK(eye_pivot.paramNormalized, mdl.input2, keys)
+        
+        if tangents:
+            attr_tans = tangents[attr]
+            animNode = pm.PyNode(animNode)
+            for arrayId in animNode.keyTanInType.getArrayIndices():
+                animNode.keyTanInType[arrayId].set(attr_tans[arrayId])
+                animNode.keyTanOutType[arrayId].set(attr_tans[arrayId])
+        else:
+            mc.warning('Eye fleshy tangents defaulting to linear.')
+        
         mdl2.output >> auto.attr(attr)
     
 def addFleshyEyeToCtl(ctl, eye_pivot, attr_keys, auto_attr):

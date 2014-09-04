@@ -34,6 +34,7 @@ class FaceJointPlacementContext():
         
         self.jointsList = ui.placerMapping
         
+        self.targetMesh = mesh
         self.jointIndex = 0
         self.ui = ui
         self.grp = grp
@@ -67,8 +68,10 @@ class FaceJointPlacementContext():
         jntName = self.jointsList[self.jointIndex-1][1]
         bindType = self.jointsList[self.jointIndex-1][2]
         orientType = self.jointsList[self.jointIndex-1][3]
-        placementGrp.addPlacementLoc(self.grp, jntName, 
+        loc = placementGrp.addPlacementLoc(self.grp, jntName, 
                                      position, bindType, orientType)
+        placementGrp.snapPLocToVert(loc, self.targetMesh)
+        placementGrp.snapOrientPLocOnMesh(loc, self.targetMesh)
         '''
         if 'CT_' in jntName:
             position[0] = 0.0

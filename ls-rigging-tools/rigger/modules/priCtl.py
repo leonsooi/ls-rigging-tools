@@ -18,6 +18,44 @@ def setPriCtlFirstPassWeights(priCtlMappings):
                 bnd.attr(attrName).set(weight)
             except pm.MayaNodeError as e:
                 pm.warning('Does not exist: ' + bndName)
+                
+def setPriCtlSecondPassWeights(priCtlWeights):
+    '''
+    '''
+    for attr, weight in priCtlWeights:
+        try:
+            targetAttr = pm.PyNode(attr)
+            targetAttr.set(weight)
+        except pm.MayaAttributeError as e:
+            print e
+                
+def getPriCtlSecondPassWeights(bndGrp):
+    '''
+    '''
+    allBnds = bndGrp.getChildren(type='joint', ad=True)
+    
+    allWeightsList = []
+    
+    for bnd in allBnds:
+        weightsList = getPriCtlWeights(bnd)
+        allWeightsList += weightsList
+        
+    return allWeightsList
+    
+def getPriCtlWeights(bnd):
+    '''
+    '''
+    weightsList = []
+    
+    all_attrs = bnd.listAttr(ud=True, u=True)
+    all_attrs = [attr for attr in all_attrs if 'pri_ctrl_weight' in attr.name()]
+    all_attrs = [attr for attr in all_attrs if attr.isFreeToChange() == 0]
+    
+    for src_attr in all_attrs:
+        weight = src_attr.get()
+        weightsList.append((src_attr.name(), weight))
+        
+    return weightsList
 
 def getPriCtlFirstPassWeights(bndGrp):
     '''
@@ -58,7 +96,23 @@ def setupPriCtlSecondPass(priCtlMappings):
     '''
     allPriCtls = []
     
+    ### Start Progress
+    progressAmt = 0
+    pm.progressWindow(title='Build Control System',
+                      status='Initialize controls...',
+                      max=len(priCtlMappings.items()),
+                      progress=progressAmt)
+    ###
+    
     for priCtlName, bndMappings in priCtlMappings.items():
+        
+        ### Progress
+        progressAmt += 1
+        pm.progressWindow(e=True,
+                          progress=progressAmt,
+                          status='Setup control "%s"...'%priCtlName)
+        ###
+        
         # change to bndName
         bndName = priCtlName.replace('_pri_ctrl', '_bnd')
         priCtlBnd = pm.PyNode(bndName)
@@ -67,6 +121,10 @@ def setupPriCtlSecondPass(priCtlMappings):
             secBnd = pm.PyNode(secBndName)
             connectBndToPriCtl(secBnd, priCtl, False, dv=weight)
         allPriCtls.append(priCtl)
+    
+    ### End Progress
+    pm.progressWindow(endProgress=True)
+    ###
         
     allPriCtlHms = [ctl.getParent(-1) for ctl in allPriCtls]
     pm.group(allPriCtlHms, n='CT_face_primary_ctls_grp') 

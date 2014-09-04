@@ -13,6 +13,18 @@ import rigger.modules.eye as eye
 import rigger.utils.xform as xform
 import utils.rigging as rt
 
+def snapOrientPLocOnMesh(loc, mesh):
+    '''
+    '''
+    mesh = pm.PyNode(mesh)
+    if loc.orientType.get() == 1:
+        rt.alignTransformToMesh(loc, mesh, 'sliding')
+    elif loc.orientType.get() == 2:
+        rt.alignTransformToMesh(loc, mesh, 'normal')
+    else:
+        # leave at world or user
+        pass
+
 def orientAllPlacements(pGrp):
     '''
     '''
@@ -123,7 +135,22 @@ def mirrorAllPlacements(pGrp):
         xform.mirrorFromTo(eachLeftLoc, eachRightLoc)
         eachRightLoc.bindType.set(bindType)
         eachRightLoc.orientType.set(orientType)
-            
+
+def snapPLocToVert(ploc, mesh):
+    '''
+    '''
+    mesh = pm.PyNode(mesh)
+    
+    # get closest vert on mesh
+    pt = pm.dt.Point(ploc.getTranslation(space='world'))
+    faceId = mesh.getClosestPoint(pt)[1]
+    verts = [mesh.vtx[i] for i in mesh.f[faceId].getVertices()]
+    closestVert = min(verts, 
+                      key=lambda x:(x.getPosition(space='world')-pt).length())
+    # snap to the vert
+    closestVertPt = closestVert.getPosition(space='world')
+    ploc.setTranslation(closestVertPt, space='world')
+
 def snapPlacementsToMesh(pGrp):
     '''
     using closest vert (not closest point)
@@ -257,6 +284,14 @@ def addIndependentPlacers(pGrp, mapping):
             avgPt += refPlacers[1]
         addPlacementLoc(pGrp, indPlacerName, avgPt, 2, 3)
     
+standardColorDict = {'black':1,'grayDark':2,'grayLight':3,'redDark':4,
+             'blueDark':5,'blueBright':6,'greenDark':7,'violetDark':8,
+             'violetBright':9,'brownReg':10,'brownDark':11,
+             'orangeDark':12,'redBright':13,'greenBright':14,'blueDull':15,
+             'white':16,'yellowBright':17,'blueSky':18,'teal':19,
+             'pink':20,'peach':21,'yellow':22,'greenBlue':23,'tan':24,
+             'olive':25,'greenYellow':26,'greenBlue':27,'blueGray':28,
+             'blueGrayDark':29,'purple':30,'purpleBrown':31}
 
 def addPlacementLoc(pGrp, pName, pt, bindType=0, orientType=0):
     '''
@@ -279,6 +314,18 @@ def addPlacementLoc(pGrp, pName, pt, bindType=0, orientType=0):
     if 'CT_' in pName:
         newPLoc.tx.set(0)
         newPLoc.tx.set(l=True)
+        
+    # color
+    locShape = newPLoc.getShape()
+    locShape.overrideEnabled.set(True)
+    if newPLoc.bindType.get() == 0:
+        locShape.overrideColor.set(18) # direct, bright blue
+    elif newPLoc.bindType.get() == 1:
+        locShape.overrideColor.set(17) # indirect, bright yellow
+    elif newPLoc.bindType.get() == 2:
+        locShape.overrideColor.set(16) # indie, white
+    else:
+        pass
         
     pGrp | newPLoc
     return newPLoc

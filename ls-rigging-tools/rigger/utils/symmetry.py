@@ -134,12 +134,13 @@ def mirror_bnd_weights(src_bnd):
         else:
             # CT remains as CT
             dest_attrName = src_attrName
-        dest_attr = dest_node.attr(dest_attrName)
+        
         try:
+            dest_attr = dest_node.attr(dest_attrName)
             print 'dest attr: ' + dest_attr
             print weight
             dest_attr.set(weight)
-        except RuntimeError as e:
+        except pm.MayaAttributeError as e:
             pass
             print e
         

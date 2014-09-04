@@ -15,6 +15,37 @@ reload(lip)
 
 import maya.cmds as mc
 
+def sumWeightsLists(list_of_weightslists):
+    '''
+    returns one weightslist
+    '''
+    # sum weights into a single list
+    zippedWeights = zip(*list_of_weightslists)
+    summedWeights = [sum(weight) for weight in zippedWeights]
+    return summedWeights
+
+def mergeBlockWeights(mll, layerId, srcInfs, destInf):
+    '''
+    srcInfs - list of infs to transfer from
+    assumes that all weights are 1 or 0 (block weights)
+    '''
+    infIdMap = getInfluenceIdMap(mll, layerId)
+    
+    # get weightslists for influences
+    listOfWeights = []
+    for inf in srcInfs + [destInf]:
+        infId = infIdMap[inf]
+        weights = mll.getInfluenceWeights(layerId, infId)
+        listOfWeights.append(weights)
+        
+    # sum weights into one list
+    sumWeights = sumWeightsLists(listOfWeights)
+    
+    # weight all to destInf
+    destInfId = infIdMap[destInf]
+    mll.setInfluenceWeights(layerId, destInfId, sumWeights)
+    
+
 def addInfluencesToSkn(skn, infs):
     '''
     adds infs
@@ -63,7 +94,7 @@ def getInfluenceIdMap(mll, layerId):
     {'layerName' : id}
     '''
     infIdMap = {}
-    infs = mll.listLayerInfluences(layerId)
+    infs = mll.listLayerInfluences(layerId, False)
     for infName, infId in infs:
         infIdMap[infName] = infId
     return infIdMap
@@ -99,15 +130,22 @@ def convertVertsListToWeightsList(vertList, vertCount):
             weightsList.append(0.0)
     return weightsList
 
-def addPerimeterBndSystem(mesh, perimeterPLocs, autoMirror=False):
+def addPerimeterBndSystem(mesh, perimeterPLocs, autoMirror=False, 
+                          vecScale=1.0,
+                          suffix=None):
     '''
     '''
     
     periBnds = []
     
     pLocs = [pm.PyNode(pLoc) for pLoc in perimeterPLocs]
-    locScale = pLocs[0].localScaleX.get()
-    vecScale = locScale * 2.0
+    
+    if vecScale:
+        pass
+    else:
+        # if None, use localScale
+        locScale = pLocs[0].localScaleX.get()
+        vecScale = locScale
     
     # slice lists for prevLocs, currLocs and nextLocs
     prevLocs = pLocs[:-2]
@@ -120,13 +158,38 @@ def addPerimeterBndSystem(mesh, perimeterPLocs, autoMirror=False):
         else:
             mirror=False
         periBnds += addPerimeterBnd(currLoc, prevLoc, nextLoc, 
-                                    mesh, mirror, vecMult=vecScale)
+                                    mesh, mirror, vecMult=vecScale, suffix=suffix)
     
     periGrp = pm.group(periBnds, n='CT_perimeterBnds_grp')
     return periGrp
 
+def addInbetweenBnd(bnds, mesh):
+    '''
+    add temporary bnds to help with skinning
+    '''
+    bndPts = [bnd.getTranslation(space='world')
+              for bnd in bnds]
+    avgPt = sum(bndPts)/len(bndPts)
+    closestPoint = mesh.getClosestPoint(avgPt)[0]
+    pm.select(cl=True)
+    newName = 'inbetween_%s_bnd'%'_'.join([bnd.name() for bnd in bnds])
+    bnd = pm.joint(n=newName)
+    bnd.setTranslation(closestPoint)
+    return bnd
 
-def addPerimeterBnd(currBnd, prevBnd, nextBnd, mesh, mirror, vecMult=1.0):
+def addInbetweenBndSystem(bndsList, mesh):
+    '''
+    bndsList should be a list of lists of bnds
+    '''
+    bnds = []
+    for bndList in bndsList:
+        bnd = addInbetweenBnd(bndList, mesh)
+        bnds.append(bnd)
+    inbtBnds = pm.group(bnds, n='CT_inbetweenBnds_grp')
+    return inbtBnds
+
+def addPerimeterBnd(currBnd, prevBnd, nextBnd, mesh, mirror, 
+                    vecMult=1.0, suffix=None):
     """
     make facePerimeterBnd
     currBnd = pm.PyNode('LT_up_jaw_bnd')
@@ -159,6 +222,8 @@ def addPerimeterBnd(currBnd, prevBnd, nextBnd, mesh, mirror, vecMult=1.0):
     
     pm.select(cl=True)
     periJnt = pm.joint(n=currBnd.name() + '_perimeter_bnd')
+    if suffix:
+        periJnt.rename(periJnt.name()+suffix)
     periJnt.radius.set(0.1)
     periJnt.setTranslation(outPos, space='world')
 
@@ -363,6 +428,7 @@ def buildLayer(mll, layerInfo, bindMethod=0 ):
     
     mll.setCurrentLayer(layerId)
     print infJnts
+    addInfluencesToSkn(skn, infJnts)
     mel.ngAssignWeights(mesh, bnj=True, ij='/'.join(infJnts), intensity=1.0)
     
     inMaskInfs = layerInfo[2]
