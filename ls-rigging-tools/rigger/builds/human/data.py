@@ -16,13 +16,13 @@ def addRightSideToList(l):
 
 # to switch off an action,
 # just add '-' or something so it won't run
-build_actions = ['-bind',
-                 '-sec_motion_system',
+build_actions = ['bind',
+                 'sec_motion_system',
                  '-primary_ctl_system_first',
-                 '-primary_ctl_system_second',
-                 '-load_weights',
-                 '-clean',
-                 '-skin_layers',
+                 'primary_ctl_system_second',
+                 'load_weights',
+                 'clean',
+                 'skin_layers',
                  'eyes',
                  'eyeballs',
                  'fleshy_eyes',
@@ -31,7 +31,7 @@ build_actions = ['-bind',
                  'finish_mathilda']
 
 # this list of lists is passed to the UI context while placing placers
-baseFilePath = r'C:\Users\Leon\Pictures\FRS\Images\human\\'
+baseFilePath = r'C:\Users\Leon\Pictures\FRS\Images\human_small\\'
 # direct placers ['label', '3-token-name', bindType, orientType]
 # bindType - direct, indirect, independent, surface
 # orientType - user, normalPrimary, normalSecondary, world

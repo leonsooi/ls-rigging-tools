@@ -7,6 +7,25 @@ import pymel.core as pm
 
 import cgm.lib.rigging as cgmrigging
 
+def addPriCtlDrivers(priBnd):
+    '''
+    find all priCtl drivers that are driving this bind
+    connect to this bind's priCtl so it moves together
+    '''
+    # get all priCtls driving this bnd
+    attachedCtl = priBnd.attr('attached_pri_ctl').get()
+    all_attrs = priBnd.listAttr(ud=True, l=True)
+    all_attrs = [attr for attr in all_attrs if 'pri_ctrl_weights' in attr.name()]
+    all_priCtls = [attr.attrName().replace('_weights','') for attr in all_attrs]
+    
+    # let other priCtl drive the new priCtl
+    for ctl in all_priCtls:
+        if ctl != attachedCtl:
+            driveAttachedPriCtl(priBnd, pm.PyNode(ctl))
+        else:
+            # don't drive an attached ctl
+            pass
+
 def setPriCtlFirstPassWeights(priCtlMappings):
     '''
     '''

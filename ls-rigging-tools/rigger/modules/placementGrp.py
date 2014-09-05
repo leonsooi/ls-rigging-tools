@@ -319,7 +319,7 @@ def addPlacementLoc(pGrp, pName, pt, bindType=0, orientType=0):
     locShape = newPLoc.getShape()
     locShape.overrideEnabled.set(True)
     if newPLoc.bindType.get() == 0:
-        locShape.overrideColor.set(18) # direct, bright blue
+        locShape.overrideColor.set(13) # direct, bright red
     elif newPLoc.bindType.get() == 1:
         locShape.overrideColor.set(17) # indirect, bright yellow
     elif newPLoc.bindType.get() == 2:

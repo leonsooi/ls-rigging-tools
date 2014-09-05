@@ -3,6 +3,7 @@ Created on Aug 26, 2014
 
 @author: Leon
 '''
+from ngSkinTools.ui.mainwindow import MainWindow
 
 import pymel.core as pm
 from pymel.core.language import Mel
@@ -18,6 +19,7 @@ def place():
     '''
     '''
     mel.cgmToolbox()
+    MainWindow.open()
     placerMappings = data.placerMappings
     indMappings = data.independentMappings
     baseFilePath = data.baseFilePath
