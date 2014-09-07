@@ -243,11 +243,11 @@ class newUI(pm.uitypes.Window):
             self.placementGrp.addAttr('leftEyelidLoop', dt='stringArray')
             self.placementGrp.attr('leftEyelidLoop').set(len(sel), *sel, type='stringArray')
             
-            # placementGrp.addEyeLoopPlacements(self.placementGrp)
+            placementGrp.addEyeLoopPlacements(self.placementGrp)
             # override for mathilda
-            placementGrp.addEyeLoopPlacements(self.placementGrp, [23,15,9,3])
+            # placementGrp.addEyeLoopPlacements(self.placementGrp, [23,15,9,3])
             # mathilda_override
-            pm.PyNode('LT_innerUpper_eyelid_pLoc').cv_id.set(18)
+            # pm.PyNode('LT_innerUpper_eyelid_pLoc').cv_id.set(18)
             
             placementGrp.addIndependentPlacers(self.placementGrp, self.indMapping)
             

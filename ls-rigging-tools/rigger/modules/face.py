@@ -1023,35 +1023,42 @@ def cleanFaceRig():
     #===========================================================================
     # shapes
     #===========================================================================
+    # TODO: calculate scale properly
+    # right now scale is hard-coded for Mathilda, at around 0.16
+    # for is placementGrp.locScale = 1.0,
+    # then scale her needs to be 6.25, etc.
+    locScale = pm.PyNode('CT_placement_grp.locScale').get()
+    ctlScale = 6.25 * locScale
+    
     # lips
-    replaceControlCurve(pm.PyNode('LT_lowerSneer_lip_pri_ctrl'), 'downArrow')
-    replaceControlCurve(pm.PyNode('RT_lowerSneer_lip_pri_ctrl'), 'downArrow')
-    replaceControlCurve(pm.PyNode('LT_upperSneer_lip_pri_ctrl'), 'upArrow')
-    replaceControlCurve(pm.PyNode('RT_upperSneer_lip_pri_ctrl'), 'upArrow')
-    replaceControlCurve(pm.PyNode('CT_lower_lip_pri_ctrl'), 'downArrow')
-    replaceControlCurve(pm.PyNode('CT_upper_lip_pri_ctrl'), 'upArrow')
-    replaceControlCurve(pm.PyNode('LT_corner_lip_pri_ctrl'), 'rightArrow')
-    replaceControlCurve(pm.PyNode('RT_corner_lip_pri_ctrl'), 'leftArrow')
+    replaceControlCurve(pm.PyNode('LT_lowerSneer_lip_pri_ctrl'), 'downArrow', scale=ctlScale)
+    replaceControlCurve(pm.PyNode('RT_lowerSneer_lip_pri_ctrl'), 'downArrow', scale=ctlScale)
+    replaceControlCurve(pm.PyNode('LT_upperSneer_lip_pri_ctrl'), 'upArrow', scale=ctlScale)
+    replaceControlCurve(pm.PyNode('RT_upperSneer_lip_pri_ctrl'), 'upArrow', scale=ctlScale)
+    replaceControlCurve(pm.PyNode('CT_lower_lip_pri_ctrl'), 'downArrow', scale=ctlScale)
+    replaceControlCurve(pm.PyNode('CT_upper_lip_pri_ctrl'), 'upArrow', scale=ctlScale)
+    replaceControlCurve(pm.PyNode('LT_corner_lip_pri_ctrl'), 'rightArrow', scale=ctlScale)
+    replaceControlCurve(pm.PyNode('RT_corner_lip_pri_ctrl'), 'leftArrow', scale=ctlScale)
     # eye
-    replaceControlCurve(pm.PyNode('LT_upper_eyelid_pri_ctrl'), 'upArrow')
-    replaceControlCurve(pm.PyNode('RT_upper_eyelid_pri_ctrl'), 'upArrow')
-    replaceControlCurve(pm.PyNode('LT_lower_eyelid_pri_ctrl'), 'downArrow')
-    replaceControlCurve(pm.PyNode('RT_lower_eyelid_pri_ctrl'), 'downArrow')
-    replaceControlCurve(pm.PyNode('LT_inner_eyelid_pri_ctrl'), 'leftArrow')
-    replaceControlCurve(pm.PyNode('LT_outer_eyelid_pri_ctrl'), 'rightArrow')
-    replaceControlCurve(pm.PyNode('RT_outer_eyelid_pri_ctrl'), 'leftArrow')
-    replaceControlCurve(pm.PyNode('RT_inner_eyelid_pri_ctrl'), 'rightArrow')
+    replaceControlCurve(pm.PyNode('LT_upper_eyelid_pri_ctrl'), 'upArrow', scale=ctlScale)
+    replaceControlCurve(pm.PyNode('RT_upper_eyelid_pri_ctrl'), 'upArrow', scale=ctlScale)
+    replaceControlCurve(pm.PyNode('LT_lower_eyelid_pri_ctrl'), 'downArrow', scale=ctlScale)
+    replaceControlCurve(pm.PyNode('RT_lower_eyelid_pri_ctrl'), 'downArrow', scale=ctlScale)
+    replaceControlCurve(pm.PyNode('LT_inner_eyelid_pri_ctrl'), 'leftArrow', scale=ctlScale)
+    replaceControlCurve(pm.PyNode('LT_outer_eyelid_pri_ctrl'), 'rightArrow', scale=ctlScale)
+    replaceControlCurve(pm.PyNode('RT_outer_eyelid_pri_ctrl'), 'leftArrow', scale=ctlScale)
+    replaceControlCurve(pm.PyNode('RT_inner_eyelid_pri_ctrl'), 'rightArrow', scale=ctlScale)
     # jaw
-    replaceControlCurve(pm.PyNode('CT__jaw_pri_ctrl'), 'jaw')
-    replaceControlCurve(pm.PyNode('CT__mouthMover_pri_ctrl'), 'mouth')
+    replaceControlCurve(pm.PyNode('CT__jaw_pri_ctrl'), 'jaw', scale=ctlScale)
+    replaceControlCurve(pm.PyNode('CT__mouthMover_pri_ctrl'), 'mouth', scale=ctlScale)
     # face
     faceCtl = pm.group(pm.PyNode('face_ctrls_grp'), pm.PyNode('CT_face_primary_ctls_grp'), n='CT_face_ctrl')
-    replaceControlCurve(pm.PyNode(faceCtl), 'head')
+    replaceControlCurve(pm.PyNode(faceCtl), 'head', scale=ctlScale)
     faceCtl.getShape().overrideEnabled.set(True)
     faceCtl.getShape().overrideColor.set(21)
     # brow
-    replaceControlCurve(pm.PyNode('LT_mid_brow_pri_ctrl'), 'brow')
-    replaceControlCurve(pm.PyNode('RT_mid_brow_pri_ctrl'), 'brow')
+    replaceControlCurve(pm.PyNode('LT_mid_brow_pri_ctrl'), 'brow', scale=ctlScale)
+    replaceControlCurve(pm.PyNode('RT_mid_brow_pri_ctrl'), 'brow', scale=ctlScale)
     # eye
     upLidPos = pm.PyNode('LT_upper_eyelid_pri_ctrl').getTranslation(space='world')
     lowLidPos = pm.PyNode('LT_lower_eyelid_pri_ctrl').getTranslation(space='world')
@@ -1060,7 +1067,7 @@ def cleanFaceRig():
     eyeCtg = pm.group(eyeCtl, n='LT_eye_ctg')
     eyeCth = pm.group(eyeCtg, n='LT_eye_hm')
     eyeCth.setTranslation(midPos, space='world')
-    replaceControlCurve(eyeCtl, 'eye', scale=10)
+    replaceControlCurve(eyeCtl, 'eye', scale=10*ctlScale)
     eyeCtl.overrideEnabled.set(True)
     eyeCtl.overrideColor.set(6)
     faceCtl | eyeCth
@@ -1071,7 +1078,7 @@ def cleanFaceRig():
     eyeCtg = pm.group(eyeCtl, n='RT_eye_ctg')
     eyeCth = pm.group(eyeCtg, n='RT_eye_hm')
     eyeCth.setTranslation(midPos, space='world')
-    replaceControlCurve(eyeCtl, 'eye', scale=10)
+    replaceControlCurve(eyeCtl, 'eye', scale=10*ctlScale)
     eyeCtl.overrideEnabled.set(True)
     eyeCtl.overrideColor.set(13)
     faceCtl | eyeCth

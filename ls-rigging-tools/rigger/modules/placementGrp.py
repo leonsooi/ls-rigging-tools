@@ -457,6 +457,8 @@ def addEyeLoopPlacements(pGrp, overrideCornerCVs=None):
     for _ in range(len(params)):
         if params[_] < 0:
             params[_] = totalParam + params[_]
+        elif params[_] > totalParam:
+            params[_] = params[_] - totalParam
     print params
     positions = [crv.getPointAtParam(p) for p in params]
     # see which position-y is higher
@@ -482,6 +484,8 @@ def addEyeLoopPlacements(pGrp, overrideCornerCVs=None):
     for _ in range(len(params)):
         if params[_] < 0:
             params[_] = totalParam + params[_]
+        elif params[_] > totalParam:
+            params[_] = params[_] - totalParam
     print params
     positions = [crv.getPointAtParam(p) for p in params]
     # see which position-y is higher

@@ -779,7 +779,8 @@ def buildEyeballRig():
     # left eyeball
     pm.select(cl=True)
     eyeball = pm.PyNode('LT_eyeball_geo')
-    deformGeo = [eyeball, pm.PyNode('LT_eyeIris_geo')]
+    # deformGeo = [eyeball, pm.PyNode('LT_eyeIris_geo')]
+    deformGeo = [eyeball]
     bnd = pm.joint(n='LT_eyeball_bnd')
     bndGrp = pm.group(n='LT_eyeball_grp')
     bndHm = pm.group(n='LT_eyeball_hm')
@@ -797,7 +798,8 @@ def buildEyeballRig():
     # right eyeball
     pm.select(cl=True)
     eyeball = pm.PyNode('RT_eyeball_geo')
-    deformGeo = [eyeball, pm.PyNode('RT_eyeIris_geo')]
+    # deformGeo = [eyeball, pm.PyNode('RT_eyeIris_geo')]
+    deformGeo = [eyeball]
     bnd = pm.joint(n='RT_eyeball_bnd')
     bndGrp = pm.group(n='RT_eyeball_grp')
     bndHm = pm.group(n='RT_eyeball_hm')
