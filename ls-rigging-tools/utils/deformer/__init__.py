@@ -270,6 +270,20 @@ def transferSkinWeightsFromGo():
     srcGeo = sel[-1]
     for geo in destGeos:
         transferSkinWeights(srcGeo, geo)
+        
+def massCopySkinWeightsGo():
+    '''
+    select all destGeos,
+    shift-select srcGeo,
+    run
+    '''
+    sel = mc.ls(os=True)
+    destGeos = sel[:-1]
+    srcGeo = sel[-1]
+    srcSkn = meval('findRelatedSkinCluster %s' % srcGeo)
+    for geo in destGeos:
+        destSkn = meval('findRelatedSkinCluster %s' % geo)
+        mc.copySkinWeights(ss=srcSkn, ds=destSkn, ia='oneToOne', sa='closestPoint', nm=1)
 
 #===============================================================================
 # BLENDSHAPE WEIGHTS

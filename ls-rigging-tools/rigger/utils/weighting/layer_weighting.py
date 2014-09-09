@@ -100,7 +100,7 @@ def getInfluenceIdMap(mll, layerId):
     return infIdMap
 
 
-def generateLipWeights(mll, pGrp, loops, layerId):
+def generateLipWeights(mll, pGrp, loops, layerId, returnNames=False):
     '''
     '''
     treeRoot = lip.getLipVertexLoops(pGrp, loops)
@@ -114,7 +114,10 @@ def generateLipWeights(mll, pGrp, loops, layerId):
     for bnd, vertsList in bndToVertsIdsMap.items():
         infId = infIdMap[bnd]
         weightsList = convertVertsListToWeightsList(vertsList, vertCount)
-        bndToWeightListMap[infId] = weightsList
+        if returnNames:
+            bndToWeightListMap[bnd] = weightsList
+        else:
+            bndToWeightListMap[infId] = weightsList
     return bndToWeightListMap, treeRoot
     
 def convertVertsListToWeightsList(vertList, vertCount):
