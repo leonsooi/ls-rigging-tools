@@ -29,6 +29,10 @@ def addOffset(node):
     offsetGrp.setMatrix(nodeMatrix, worldSpace=True)
     
     # hierarchy
+    # also check for sibling nodes, such as scaleX/Y xfos
+    siblings = node.getSiblings()
+    for sibling in siblings:
+        offsetGrp | sibling
     parentNode = node.getParent()
     parentNode | offsetGrp | node
     
@@ -46,7 +50,7 @@ def addOffset(node):
     plane.local >> posi.inputSurface
     posi.parameterU.set(0.5)
     posi.parameterV.set(0.5)
-    
+    '''
     # convert vectors to orientation using aim constraint
     aimc = pm.createNode('aimConstraint', n=node+'_surfOffset_aimc')
     offsetGrp | aimc
@@ -54,10 +58,42 @@ def addOffset(node):
     posi.tangentU >> aimc.worldUpVector
     aimc.aimVector.set((0,1,0))
     aimc.upVector.set((1,0,0))
+    '''
+    '''
+    # use cross products instead of aim constraint
+    vpZ = pm.createNode('vectorProduct', n=node+'_surfOffsetZVec_vp')
+    posi.normal >> vpZ.input1 # Y
+    posi.tangentU >> vpZ.input2
+    vpZ.operation.set(2)
+    vpX = pm.createNode('vectorProduct', n=node+'_surfOffsetXVec_vp')
+    posi.normal >> vpZ.input1 # Y
+    posi.tangentU >> vpZ.input2
+    vpZ.operation.set(2)'''
     
+    # just use vectors from posi to construct matrix!
+    mat = pm.createNode('fourByFourMatrix', n=node+'_surfOffset_fbfm')
+    # x-vector
+    posi.tangentUx >> mat.in00
+    posi.tangentUy >> mat.in01
+    posi.tangentUz >> mat.in02
+    # y-vector
+    posi.normalX >> mat.in10
+    posi.normalY >> mat.in11
+    posi.normalZ >> mat.in12
+    # z-vector
+    posi.tangentVx >> mat.in20
+    posi.tangentVy >> mat.in21
+    posi.tangentVz >> mat.in22
+    # position
+    posi.positionX >> mat.in30
+    posi.positionY >> mat.in31
+    posi.positionZ >> mat.in32
+
     # drive grp
-    aimc.constraintRotate >> offsetGrp.r
-    posi.position >> offsetGrp.t
+    dcm = pm.createNode('decomposeMatrix', n=node+'_surfOffset_dcm')
+    mat.output >> dcm.inputMatrix
+    dcm.outputTranslate >> offsetGrp.t
+    dcm.outputRotate >> offsetGrp.r
     
     return offsetGrp, plane
 

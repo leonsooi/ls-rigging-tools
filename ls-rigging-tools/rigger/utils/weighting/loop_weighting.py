@@ -79,17 +79,60 @@ def findChildren(root, orphans):
     Recursive function to find vertex children
     Iterates through orphans list to find verts connected to root
     '''
-
+    # iterate through the next vertexLoop
+    # find verts connected to root
     currOrphans = orphans[0]
     for eachVert in currOrphans:
         if root.data.isConnectedTo(eachVert):
             child = data.Tree()
             child.data = eachVert
             root.children.append(child)
-            
+    
+    # decide whether to repeat or terminate
     if len(orphans) > 1:
+        # search the next vertexLoop
         for eachChild in root.children:
             findChildren(eachChild, orphans[1:])
+    else:
+        # we have reached the last loop
+        pass
+            
+def constructVertexTree(loops):
+    '''
+    Organize verts into a tree
+    This helps us to automatically weights joints later
+    
+    TODO: write a mesh.VertexTree class to make this more object-like
+    also, should this inherit from the Tree class?
+    
+    Select vertex loop round the eyelid
+    number of "loops" - based on user input from UI
+    '''
+    # organise vertices in loops expanding outwards from the selection
+    selVerts = pm.ls(sl=True, fl=True)
+    vertLoops = mesh.VertexLoops(selVerts, loops)
+    
+    root = data.Tree()
+    
+    # recursive function is kind of slow...
+    # a progress window gives us something to look at while waiting...
+    pm.progressWindow(title='Analyzing vertices', 
+                      progress=0, 
+                      max=len(vertLoops[0]))
+    
+    # find children for each vert in selection
+    for eachVert in vertLoops[0]:
+        vertTree = data.Tree()
+        vertTree.data = eachVert
+        findChildren(vertTree, vertLoops[1:])
+        root.children.append(vertTree)
+        # increment progress window
+        pm.progressWindow(e=True, step=1, 
+                          status='\nAnalysing %s' % eachVert)
+    
+    pm.progressWindow(e=True, endProgress=True)
+    
+    return root
 
 def constructVertexLoops(loops):
     '''
@@ -97,7 +140,7 @@ def constructVertexLoops(loops):
     This helps us to automatically weights joints later
     
     Select vertex loop round the eyelid
-    Set global LOOPNUM
+    Set global LOOPNUM - based on user input from UI
     '''
     
     LOOPNUM = loops

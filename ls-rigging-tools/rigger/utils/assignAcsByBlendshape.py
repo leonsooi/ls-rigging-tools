@@ -30,6 +30,9 @@ def unifyAcsPos(bnds):
 
 def setAllAcsPosByDelta():
     '''
+    import rigger.utils.assignAcsByBlendshape as acs
+    reload(acs)
+    acs.setAllAcsPosByDelta()
     '''
     bndGrp = nt.Transform(u'CT_bnd_grp')
     allBnds = bndGrp.getChildren(ad=True, type='joint')
@@ -40,10 +43,15 @@ def setAllAcsPosByDelta():
     
     # bndVertMap = assignPriWeightsByBlendshape.buildBndVertMap()
     
-    corrMesh = nt.Mesh(u'CT_face_geo2Shape')
+    corrMesh = nt.Mesh(u'LT_allBrowsUp_bsgShape1')
     
     for bnd in allBnds:
-        setAcsPosByDelta(bnd, corrMesh)
+        try:
+            setAcsPosByDelta(bnd, corrMesh)
+        except AttributeError as e:
+            print 'hello'
+            print e
+            
 
 def setAcsPosByDelta(bnd, corrMesh):
     '''

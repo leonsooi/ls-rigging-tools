@@ -198,8 +198,12 @@ def build():
         pm.selectMode(object=True)
         
         # 4. bind tongue and teeth
+        '''
         geos = [nt.Transform(u'CT_lowerGums_geo'),
                 nt.Transform(u'CT_tongue_geo'),
+                nt.Transform(u'CT_lowerTeeth_geo')]
+                '''
+        geos = [nt.Transform(u'CT_tongue_geo'),
                 nt.Transform(u'CT_lowerTeeth_geo')]
         for geo in geos:
             pm.parentConstraint(pm.PyNode('CT__jaw_bnd'), geo, mo=True)
@@ -213,14 +217,14 @@ def build():
         '''
             
         # 6. smooth face mesh to make it look nicer
-        pm.PyNode('CT_face_geoShape').displaySmoothMesh.set(2)
+        # pm.PyNode('CT_face_geoShape').displaySmoothMesh.set(2)
         
 def buildEyeRig(pGrp):
     #--------------------------------------------------------- ADD LEFT EYE DEFORMER
     edgeLoop = [pm.PyNode(edge) for edge in pGrp.leftEyelidLoop.get()]
     eyePivot = pm.PyNode('LT_eyeball_geo')
     rigidLoops = 2
-    falloffLoops = 4
+    falloffLoops = 8
     eye.buildEyeRigCmd('LT_eye', eyePivot, edgeLoop, rigidLoops, falloffLoops)
     
     #---------------------------------------------------------- RIGHT EYE DEFORMER

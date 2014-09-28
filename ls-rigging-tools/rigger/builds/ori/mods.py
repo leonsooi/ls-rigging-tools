@@ -415,3 +415,19 @@ def addInOutEyelidCorners():
                     nt.Joint(u'RT_outerLower_eyelid_bnd'),
                     nt.Joint(u'RT_outCorner_eyeSocket_bnd')]
     priCtl.connectBndsToPriCtl(bndsToConnect, pCtl)
+    
+    '''
+    # may also need to be driven by eye movers
+    import rigger.modules.priCtl as priCtl
+    reload(priCtl)
+    
+    newCtl = nt.Transform(u'LT__eyeMover_pri_ctrl')
+    priCtl.driveAttachedPriCtl(nt.Joint(u'LT_outer_eyelid_bnd'), newCtl)
+    newCtl = nt.Transform(u'LT__eyeMover_pri_ctrl')
+    priCtl.driveAttachedPriCtl(nt.Joint(u'LT_inner_eyelid_bnd'), newCtl)
+    
+    newCtl = nt.Transform(u'RT__eyeMover_pri_ctrl')
+    priCtl.driveAttachedPriCtl(nt.Joint(u'RT_outer_eyelid_bnd'), newCtl)
+    newCtl = nt.Transform(u'RT__eyeMover_pri_ctrl')
+    priCtl.driveAttachedPriCtl(nt.Joint(u'RT_inner_eyelid_bnd'), newCtl)
+    '''

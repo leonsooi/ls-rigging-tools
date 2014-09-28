@@ -185,7 +185,7 @@ def createSurfaceContraint():
     for volume maintainence
     '''
     surf = nt.NurbsSurface(u'CT_volume_surfShape')
-    bnds = [pm.PyNode(name) for name in data.slidingBnds]
+    bnds = [pm.PyNode(name) for name in data.all_slidingBnds]
     
     for bnd in bnds:
         # addSurfaceConstraintToBnd(bnd, surf)
