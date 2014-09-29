@@ -10,7 +10,7 @@ mel = Mel()
 
 
 
-def addNegatorCtl(ctl):
+def addNegatorCtl(ctl, mirror=False):
     '''
     ctl should be a primaryCtl, which is connected to a bnd by message
     bnd is used for WS position
@@ -32,11 +32,6 @@ def addNegatorCtl(ctl):
     negCtl.t >> tmd.input1
     tmd.input2.set(-1,-1,-1)
     tmd.output >> negCtlRev.t
-    rmd = pm.createNode('multiplyDivide', n=ctl+'_negR_md')
-    negCtl.r >> rmd.input1
-    rmd.input2.set(-1,-1,-1)
-    rmd.output >> negCtlRev.r
-    negCtlRev.rotateOrder.set(5)
     # attach home to bnd
     if '_fake' not in ctl.name():
         bnd = ctl.message.outputs(type='joint')[0]
@@ -44,8 +39,25 @@ def addNegatorCtl(ctl):
         realCtl = pm.PyNode(ctl.replace('_fake',''))
         bnd = realCtl.message.outputs(type='joint')[0]
         negCtlHm.s.set(-1,1,1)
-    decMat = pm.createNode('decomposeMatrix', n=ctl+'_negHmAttachBnd_dcm')
-    bnd.worldMatrix >> decMat.inputMatrix
-    decMat.ot >> negCtlHm.t
-    decMat.outputRotate >> negCtlHm.r
+    pmm = pm.createNode('pointMatrixMult', n=ctl+'_negHmAttachBnd_pmm')
+    bnd.worldMatrix >> pmm.inMatrix
+    pmm.output >> negCtlHm.t
     
+    # drive original controls
+    # these connections may be overriden manually
+    negCtl.tx >> ctl.tx
+    negCtl.ty >> ctl.ty
+    negCtl.rz >> ctl.rz
+    negCtl.sx >> ctl.sx
+    negCtl.sy >> ctl.sy
+    
+    # flip x for mirroring
+    if mirror:
+        negCtlHm.s.set(-1,1,1)
+        # reverse tx and rz
+        md = pm.createNode('multiplyDivide', n=ctl+'_negTxRzForMirror_md')
+        negCtl.tx >> md.input1X
+        negCtl.rz >> md.input1Y
+        md.input2.set(-1,-1,-1)
+        md.outputX >> ctl.tx
+        md.outputY >> ctl.rz
