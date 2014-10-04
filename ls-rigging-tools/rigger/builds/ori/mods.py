@@ -240,6 +240,19 @@ def flipScaleYOnControl(ctl, ctlGrp):
     rmd.outputZ >> ctl.rz
     newCtl.s >> ctl.s
 
+def removeSxFakeCtls(ctl):
+    '''
+    # remove SxFakeCtls
+    # remove fakeCtl, SxParent, TMD and RMD
+    fakeTmds = pm.ls('*_real_revTranslate', type='multiplyDivide')
+    fakeCtls = [tmd.input1.inputs(type='transform')[0] for tmd in fakeTmds]
+    for ctl in fakeCtls:
+        removeSxFakeCtls(ctl)
+    '''
+    tmd = ctl.t.outputs(type='multiplyDivide')[0]
+    rmd = ctl.r.outputs(type='multiplyDivide', scn=True)[0]
+    sxParent = ctl.getParent()
+    pm.delete(tmd, rmd, sxParent)
 
 def flipScaleXOnControl(ctl, ctlGrp):
     '''
