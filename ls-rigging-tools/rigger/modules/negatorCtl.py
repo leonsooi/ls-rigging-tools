@@ -50,12 +50,18 @@ def addNegatorCtl(ctl, mirror=None, attach='bnd'):
     # these connections may be overriden manually
     
     # scales are connected directly, regardless of mirror
-    negCtl.s >> ctl.s
+    negCtl.sx >> ctl.sx
+    negCtl.sy >> ctl.sy
+    negCtl.sz >> ctl.sz
     
     # translate and rotate depend on mirror
     if mirror is None:
-        negCtl.t >> ctl.t
-        negCtl.r >> ctl.r
+        negCtl.tx >> ctl.tx
+        negCtl.ty >> ctl.ty
+        negCtl.tz >> ctl.tz
+        negCtl.rx >> ctl.rx
+        negCtl.ry >> ctl.ry
+        negCtl.rz >> ctl.rz
     elif mirror == 'X':
         # flip x for mirroring
         negCtlGrp.s.set(-1,1,1)

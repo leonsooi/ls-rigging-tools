@@ -23,7 +23,7 @@ def connectEyeDeformerToEyeMover(aimJntsGrp, moverBnd):
     masterGrp | consGrp | aimJntsGrp
     # constraints
     pCtl = pm.PyNode(moverBnd.attached_pri_ctl.get())
-    pm.parentConstraint(pCtl, consGrp)
+    pm.parentConstraint(moverBnd, consGrp)
     pm.scaleConstraint(pCtl, consGrp)
 
 def addBndsToEyeMover():
@@ -132,6 +132,10 @@ def addEyelidNoScaleJoints():
         decMat.ot >> noscale_bnd.t
         decMat.outputRotate >> noscale_bnd.r
         noscale_bnds_grp | noscale_bnd
+        # swap names
+        origName = bnd.nodeName()
+        bnd.rename(origName+'_scale')
+        noscale_bnd.rename(origName)
     
     # scaleNull = nt.Transform(u'null2')
     jntsGrp = nt.Transform(u'RT_eye_aimJnts_grp_0')
@@ -147,6 +151,10 @@ def addEyelidNoScaleJoints():
         decMat.ot >> noscale_bnd.t
         decMat.outputRotate >> noscale_bnd.r
         noscale_bnds_grp | noscale_bnd
+        # swap names
+        origName = bnd.nodeName()
+        bnd.rename(origName+'_scale')
+        noscale_bnd.rename(origName)
         
 def setJointLabels():
     # set joint labels by second token

@@ -6,6 +6,16 @@ import pymel.core as pm
 import koalaRigger.lib.createNode as cn
 reload(cn)
 
+def addFreezeGrp(node, suffix='_frzGrp'):
+    par = node.getParent()
+    frzGrp = pm.group(em=True, n=str(node)+suffix)
+    mat = node.getMatrix(ws=True)
+    frzGrp.setMatrix(mat, ws=True)
+    frzGrp | node
+    frzGrp.setParent(par)
+    pm.select(frzGrp, r=True)
+    return frzGrp
+
 def mirrorTransformGo():
     transforms = pm.ls(sl=True)
     mirrored = []

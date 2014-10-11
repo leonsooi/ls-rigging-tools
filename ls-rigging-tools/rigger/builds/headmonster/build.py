@@ -344,3 +344,24 @@ def removeScaleWeights():
         
         for src_attr in all_attrs:
             src_attr.set(0)
+            
+def addEyeballControls():
+    # left eye
+    eyeMover = pm.PyNode('LT__eyeMover_pri_ctrl')
+    eyeMat = eyeMover.getMatrix(ws=True)
+    eyeCtl = pm.group(em=True, n='LT_eye_ctl')
+    eyeCtg = pm.group(eyeCtl, n='LT_eye_ctg')
+    eyeCth = pm.group(eyeCtg, n='LT_eye_hm')
+    eyeCth.setMatrix(eyeMat, ws=True)
+    face.replaceControlCurve(eyeCtl, 'eye', scale=3.0)
+    eyeMover | eyeCth
+    # right eye
+    eyeMover = pm.PyNode('RT__eyeMover_pri_ctrl')
+    eyeMat = eyeMover.getMatrix(ws=True)
+    eyeCtl = pm.group(em=True, n='RT_eye_ctl')
+    eyeCtg = pm.group(eyeCtl, n='RT_eye_ctg')
+    eyeCth = pm.group(eyeCtg, n='RT_eye_hm')
+    eyeCth.setMatrix(eyeMat, ws=True)
+    face.replaceControlCurve(eyeCtl, 'eye', scale=3.0)
+    eyeMover | eyeCth
+    
