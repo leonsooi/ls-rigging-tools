@@ -5,7 +5,7 @@ Created on May 20, 2014
 '''
 import pymel.core as pm
 import pymel.core.nodetypes as nt
-
+'''
 # rename all shape nodes by parent
 nodes = pm.ls(dag=True)
 for n in nodes:
@@ -46,3 +46,23 @@ for n in nodes:
     if parentNode:
         if n.nodeName() == parentNode.nodeName():
             print n
+            '''
+            
+# rename curve shape based on xfo
+def renameCurvesBasedOnXfo(xfo):
+    '''
+    import rigger.utils.names as names
+    xfos = pm.ls(sl=True, type='transform')
+    for xfo in xfos:
+        names.renameCurvesBasedOnXfo(xfo)
+    '''
+    shapes = xfo.getChildren(s=True)
+    for _i, shape in enumerate(shapes):
+        print _i
+        print shape
+        if str(shape)[-4:] == 'Orig':
+            shape.rename(xfo+'Shape%dOrig'%_i)
+        elif str(shape)[-4:] == 'Deformed':
+            shape.rename(xfo+'Shape%dDeformed'%_i)
+        else:
+            shape.rename(xfo+'Shape%d'%_i)

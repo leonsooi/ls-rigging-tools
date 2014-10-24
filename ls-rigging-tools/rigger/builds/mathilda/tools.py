@@ -224,6 +224,48 @@ for sg in advSGs:
 import pymel.core as pm
 import sys
 
+def assignApproxNode(approxNode, selectionList):
+    '''
+    copy of assignApproxNode from mentalrayApproxEditor.mel
+    '''
+    attrLongName = 'miSubdivApprox'
+    
+    for obj in selectionList:
+        shapes = obj.getShapes(type='mesh', ad=True)
+        # all mesh shape nodes must be connected!
+        for shape in shapes:
+            try:
+                approxNode.message >> shape.attr(attrLongName)
+            except AttributeError:
+                shape.addAttr(attrLongName, at='message')
+                approxNode.message >> shape.attr(attrLongName)
+
+def createSubdivApproxNode():
+    '''
+    copy of createApproxNode from mentalrayApproxEditor.mel
+    node will be named "mathildaSubdivApprox"
+    '''
+    # delete existing node if exists
+    nodeName = 'mathildaSubdivApprox'
+    
+    # make sure mental ray is loaded first
+    if not pm.pluginInfo('Mayatomr', q=True, loaded=True):
+        pm.loadPlugin('Mayatomr', qt=True)
+    
+    # create approx node
+    approxNode = pm.createNode('mentalraySubdivApprox', n=nodeName)
+    
+    # get listNode
+    try:
+        mrItemsListNode = pm.ls(type='mentalrayItemsList')[0]
+    except IndexError:
+        mrItemsListNode = pm.createNode('mentalrayItemsList', n='mentalrayItemsList')
+    
+    # connect approx to list
+    pm.connectAttr(approxNode.message, mrItemsListNode.subdivApproxs, na=True)
+    
+    return approxNode
+
 def getSGsOnLayer(layer):
     '''
     return list of sgs connected to layer
@@ -269,6 +311,13 @@ def removeAdvancedShaders():
     try:
         pm.namespace(dnc=True, rm='SHADERS')
     except RuntimeError:
+        pass
+    
+    # remove approxNode
+    try:
+        approxNode = pm.PyNode('mathildaSubdivApprox')
+        pm.delete(approxNode)
+    except pm.MayaObjectError:
         pass
 
 def loadAdvancedShaders():
@@ -319,3 +368,7 @@ def loadAdvancedShaders():
     importedGeo = pm.PyNode('SHADERS'+':'+'CT_shaders_geo_grp')
     pm.delete(importedGeo)
     pm.delete(advLyr)
+    
+    # add subdivApprox node
+    approxNode = createSubdivApproxNode()
+    assignApproxNode(approxNode, [bodyGeoGrp, faceGeoGrp])

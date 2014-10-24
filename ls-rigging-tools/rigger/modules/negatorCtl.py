@@ -8,7 +8,25 @@ import pymel.core as pm
 from pymel.core.language import Mel
 mel = Mel()
 
-
+def forceIndividualChannels(eachNeg):
+    '''
+    use this when some channels are not propagating
+    
+    negCtls = pm.ls('*_negator', type='transform')
+    for eachNeg in negCtls:
+        forceIndividualChannels(eachNeg)
+    '''
+    realCtl = pm.PyNode(eachNeg.replace('_negator', ''))
+    if eachNeg.t.isConnectedTo(realCtl.t):
+        eachNeg.t // realCtl.t
+        eachNeg.tx >> realCtl.tx
+        eachNeg.ty >> realCtl.ty
+        eachNeg.tz >> realCtl.tz
+    if eachNeg.r.isConnectedTo(realCtl.r):
+        eachNeg.r // realCtl.r
+        eachNeg.rx >> realCtl.rx
+        eachNeg.ry >> realCtl.ry
+        eachNeg.rz >> realCtl.rz
 
 def addNegatorCtl(ctl, mirror=None, attach='bnd'):
     '''
