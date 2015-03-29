@@ -7,6 +7,17 @@ global proc lsQSetsMM_setup(){
     string $lsQSetsMMReleaseCmd = "if (`popupMenu -exists tempMM`) { deleteUI tempMM; }";
     runTimeCommand -ann "Marking menu for managing quick selection sets" -category "User Marking Menus" -command $lsQSetsMMReleaseCmd "lsQSetsMM_Release";
 }
+
+press:
+
+if (`popupMenu -exists tempMM`) { deleteUI tempMM; } 
+popupMenu -button 1 -ctl false -alt true -sh false -allowOptionBoxes true -parent `findPanelPopupParent` -mm 1 tempMM; 
+python("import lsQSetsMM"); 
+python("lsQSetsMM.createQSetMM()");
+
+release:
+
+if (`popupMenu -exists tempMM`) { deleteUI tempMM; }
 """
 
 import maya.cmds as mc

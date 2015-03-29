@@ -44,6 +44,7 @@ def addOffset(node):
     planeGrp = pm.group(plane, n=node+'_surfOffsetSrf_grp')
     planeHm = pm.group(planeGrp, n=node+'_surfOffsetSrf_hm')
     planeHm.setMatrix(nodeMatrix, worldSpace=True)
+    parentNode | planeHm
     
     # point on surface info
     posi = pm.createNode('pointOnSurfaceInfo', n=node+'_surfOffset_posi')

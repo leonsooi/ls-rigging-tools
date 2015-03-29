@@ -57,7 +57,10 @@ def addCurlJnt(side, finger):
     loc = pm.PyNode(baseJnt.replace('_a_jnt', 'Cup_loc'))
     parJnt = baseJnt.getParent()
     # orient loc so x is aimed to baseJnt
-    temp_con = pm.aimConstraint(baseJnt, loc, aim=(1,0,0), u=(0,0,1), wuo=parJnt, wut='objectrotation')
+    if '_rt' in side:
+        temp_con = pm.aimConstraint(baseJnt, loc, aim=(-1,0,0), u=(0,0,1), wuo=parJnt, wut='objectrotation')
+    else:
+        temp_con = pm.aimConstraint(baseJnt, loc, aim=(1,0,0), u=(0,0,1), wuo=parJnt, wut='objectrotation')
     pm.delete(temp_con)
     # create jnt
     pm.select(cl=True)
