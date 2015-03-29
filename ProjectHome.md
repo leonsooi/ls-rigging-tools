@@ -1,0 +1,1 @@
+Scripts for rigging in Maya. Most of them are quite haphazard at the moment (I wrote them while learning scripting and rigging at the same time.) I plan to organize and modularize the code, and hopefully make them more reusable for future use.
